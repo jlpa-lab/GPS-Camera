@@ -8,7 +8,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.mobile.myapplication" />
+                  <option name="appId" value="com.gps.map.camera.and.time.stamp" />
                   <option name="mobileSdkAppId" value="1:248956527978:android:5866a47faf4f7165b47113" />
                   <option name="projectId" value="gps-camera-c6ae0" />
                   <option name="projectNumber" value="248956527978" />

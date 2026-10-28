@@ -12,7 +12,7 @@
         android:layout_height="match_parent"
         android:background="@color/white">
 
-        <com.mobile.myapplication.TopCropImageView
+        <com.gps.map.camera.and.time.stamp.TopCropImageView
             android:id="@+id/ivBackground"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

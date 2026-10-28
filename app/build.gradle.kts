@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.myapplication"
+    namespace = "com.gps.map.camera.and.time.stamp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.mobile.myapplication"
+        applicationId = "com.gps.map.camera.and.time.stamp"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
