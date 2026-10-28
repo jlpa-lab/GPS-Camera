@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "248956527978",
+    "project_id": "gps-camera-c6ae0",
+    "storage_bucket": "gps-camera-c6ae0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248956527978:android:5866a47faf4f7165b47113",
+        "android_client_info": {
+          "package_name": "com.mobile.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOLkA2RiXL3cZhGHnw1szrE0q_g8ij_NA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

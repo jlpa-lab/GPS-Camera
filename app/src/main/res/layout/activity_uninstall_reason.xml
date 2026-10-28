@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/uninstall_reason_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/app_background">
+
+        <include
+            android:id="@+id/uninstall_reason_toolbar"
+            layout="@layout/view_uninstall_toolbar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/uninstall_reason_scroll"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            app:layout_constraintBottom_toTopOf="@id/fr_ads"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/uninstall_reason_toolbar">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="30dp">
+
+                <ImageView
+                    android:id="@+id/uninstall_reason_image"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_uninstall_image"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/uninstall_reason_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/poppins_bold"
+                    android:gravity="center"
+                    android:text="@string/uninstall_sorry_title"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/uninstall_reason_image" />
+
+                <TextView
+                    android:id="@+id/uninstall_reason_question"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="24dp"
+                    android:text="@string/uninstall_question"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/poppins_regular"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/uninstall_reason_title" />
+
+                <RadioGroup
+                    android:id="@+id/uninstall_reason_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="16dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/uninstall_reason_question">
+
+                    <RadioButton
+                        android:id="@+id/reason_feature"
+                        style="@style/UninstallReasonOption"
+                        android:paddingVertical="10dp"
+                        android:tag="feature_not_working"
+                        android:text="@string/reason_feature" />
+
+                    <RadioButton
+                        android:id="@+id/reason_ads"
+                        style="@style/UninstallReasonOption"
+                        android:checked="true"
+                        android:paddingVertical="10dp"
+                        android:tag="too_many_ads"
+                        android:text="@string/reason_ads" />
+
+                    <RadioButton
+                        android:id="@+id/reason_not_needed"
+                        style="@style/UninstallReasonOption"
+                        android:paddingVertical="10dp"
+                        android:tag="not_needed"
+                        android:text="@string/reason_not_needed" />
+
+                    <RadioButton
+                        android:id="@+id/reason_other"
+                        style="@style/UninstallReasonOption"
+                        android:paddingVertical="10dp"
+                        android:tag="other"
+                        android:text="@string/reason_other" />
+                </RadioGroup>
+
+                <LinearLayout
+                    android:id="@+id/uninstall_reason_buttons"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="16dp"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/uninstall_reason_group">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/cancel_button"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:background="@drawable/bg_transparent_btn_with_border"
+                        android:text="@string/cancel"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/poppins_medium"
+                        android:textAllCaps="false"
+                        android:textColor="@color/app_color_text" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/uninstall_button"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_btn_keep_phone_tracker"
+                        android:text="@string/uninstall"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/poppins_medium"
+                        android:gravity="center"
+                        android:textAllCaps="false"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <FrameLayout
+            android:id="@+id/fr_ads"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <include
+                android:id="@+id/shimmer_ads"
+                layout="@layout/layout_shimmer_native_language" />
+        </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
+
+
+
+

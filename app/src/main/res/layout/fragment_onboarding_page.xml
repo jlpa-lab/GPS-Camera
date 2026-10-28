@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/layoutAds">
+
+                <com.mobile.myapplication.TopCropImageView
+                    android:id="@+id/imgOnboarding"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@id/tvTitle" />
+
+                <!-- CHANGE: keep the white glassy fade attached to the image bottom. -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/_64sdp"
+                    android:background="@drawable/bg_onboarding_fade"
+                    android:elevation="1dp"
+                    app:layout_constraintBottom_toBottomOf="@id/imgOnboarding"
+                    app:layout_constraintStart_toStartOf="@id/imgOnboarding"
+                    app:layout_constraintEnd_toEndOf="@id/imgOnboarding" />
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_8sdp"
+                    android:gravity="center_horizontal"
+                    android:fontFamily="@font/poppins_bold"
+                    android:includeFontPadding="false"
+                    android:lineSpacingMultiplier="1.0"
+                    android:lineSpacingExtra="0dp"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="@dimen/_8sdp"
+                    app:layout_constraintTop_toBottomOf="@id/imgOnboarding"
+                    app:layout_constraintBottom_toTopOf="@+id/tvDes"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintWidth_percent="0.786"
+                    tools:text="Your Screen, Always Ready" />
+
+                <TextView
+                    android:id="@+id/tvDes"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/_16sdp"
+                    android:gravity="center"
+                    android:fontFamily="@font/poppins_regular"
+                    android:includeFontPadding="false"
+                    android:lineSpacingMultiplier="1.0"
+                    android:lineSpacingExtra="0dp"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="14sp"
+                    android:textStyle="normal"
+                    app:layout_constraintBottom_toTopOf="@id/btnNext"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintWidth_percent="0.786"
+                    tools:text="Quickly check time, date, and notifications while your phone is idle." />
+
+                <LinearLayout
+                    android:id="@+id/layoutIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/_8sdp"
+                    android:layout_marginStart="@dimen/space_horizontal_common"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/btnNext"
+                    app:layout_constraintBottom_toBottomOf="@id/btnNext">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/imgIndicator0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/_4sdp"
+                        android:src="@drawable/ic_onboarding_indicator" />
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/imgIndicator1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/_4sdp"
+                        android:src="@drawable/ic_onboarding_indicator" />
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/imgIndicator2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/_4sdp"
+                        android:src="@drawable/ic_onboarding_indicator" />
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/imgIndicator3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/_4sdp"
+                        android:src="@drawable/ic_onboarding_indicator" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btnNext"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_button_next_onboarding"
+                    android:paddingHorizontal="17dp"
+                    android:paddingVertical="8dp"
+                    android:text="@string/next"
+                    android:textColor="@color/app_color_text"
+                    android:textSize="14sp"
+                    android:textAllCaps="true"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginEnd="@dimen/space_horizontal_common"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <FrameLayout
+                android:id="@+id/layoutAds"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <include
+                    android:id="@+id/shimmerAds"
+                    layout="@layout/layout_shimmer_native_language"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+            </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:id="@+id/layoutAdsFull"
+            android:visibility="invisible"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <include
+                android:id="@+id/shimmerAdsFull"
+                layout="@layout/layout_shimmer_native_full"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/imgCloseAdsFull"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="@dimen/_16sdp"
+            android:layout_marginEnd="@dimen/_16sdp"
+            android:alpha="0.4"
+            android:elevation="10dp"
+            android:background="@drawable/bg_white_corner_100"
+            android:padding="4dp"
+            android:src="@drawable/ic_close"
+            android:tint="@color/black"
+            android:contentDescription="@string/close"
+            android:visibility="invisible"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
+
+
+
+

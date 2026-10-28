@@ -1,0 +1,84 @@
+<resources>
+    <string name="app_name">GPS Camera</string>
+    <string name="splash_content_description">GPS Camera</string>
+    <string name="splash_tagline">Explore worlds around you</string>
+    <string name="splash_disclaimer">This action may contain ads</string>
+    <string name="no_internet_icon_description">No internet connection</string>
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="no_internet_message">We couldn\'t load the data.&#10;Please check your internet&#10;connection.</string>
+    <string name="no_internet_connect">Connect internet</string>
+    <string name="onesignal_app_id" translatable="false">00000000-0000-0000-0000-000000000000</string>
+    <string name="notification_friend_entered">%1$s entered %2$s</string>
+    <string name="notification_friend_left">%1$s left %2$s</string>
+    <string name="notification_entry_alert">%1$s · Entry alert</string>
+    <string name="notification_exit_alert">%1$s · Exit alert</string>
+    <string name="notification_your_friend">Your friend</string>
+    <string name="notification_zone_alerts">Zone alerts</string>
+    <string name="notification_location_sharing">Location sharing</string>
+    <string name="notification_location_shared_title">Your location is being shared</string>
+    <string name="notification_zones_active">Zone alerts active</string>
+    <string name="notification_location_shared_text">Your live location is being shared with your accepted friends</string>
+    <string name="notification_location_shared_with">Your location is being shared with %1$s</string>
+    <string name="notification_watching_zones">Watching for friend arrivals and departures</string>
+    <string name="notification_arrived_at">Arrived at %1$s</string>
+    <string name="notification_left_zone">Left %1$s</string>
+    <string name="notification_entered_category">Entered %1$s · %2$s</string>
+    <string name="notification_exited_category">Exited %1$s · %2$s</string>
+    <string name="notification_safe_zone">safe zone</string>
+    <string name="notification_danger_zone">danger zone</string>
+
+    <string name="press_back_again_to_exit">Press back again to exit</string>
+
+    <string name="language_title">Language</string>
+    <string name="confirm_language">Confirm selected language</string>
+    <string name="language_english">English\nEnglish</string>
+    <string name="language_vietnamese">Tiếng Việt\nVietnamese</string>
+    <string name="language_chinese">简体中文\nChinese</string>
+    <string name="language_korean">한국어\nKorean</string>
+    <string name="language_french">Français\nFrench</string>
+    <string name="language_spanish">Español\nSpanish</string>
+    <string name="language_german">Deutsch\nGerman</string>
+    <string name="language_portuguese">Português\nPortuguese</string>
+    <string name="language_hindi">हिन्दी\nHindi</string>
+    <string name="language_arabic">العربية\nArabic</string>
+    <string name="language_japanese">日本語\nJapanese</string>
+    <string name="language_russian">Русский\nRussian</string>
+
+    <string name="onboarding_title_1">Add GPS Stamps to Photos</string>
+    <string name="onboarding_des_1">Show your location, date, and time right on every photo.</string>
+    <string name="onboarding_title_2">Capture with Location Details</string>
+    <string name="txt_uninstall">Uninstall</string>
+    <!-- CHANGE: remove the accidental suffix from the onboarding copy. -->
+    <string name="onboarding_des_2">Capture moments with location information in one shot.</string>
+    <string name="onboarding_title_3">Find Photos on the Map</string>
+    <string name="onboarding_des_3">See where your photos were taken and revisit those places.</string>
+    <!-- CHANGE: use the intended final onboarding title. -->
+    <string name="onboarding_title_4">Explore More GPS Tools</string>
+    <string name="onboarding_des_4">Use helpful map and compass tools wherever you go</string>
+
+    <string name="shortcut_uninstall_short">Uninstall</string>
+    <string name="shortcut_uninstall_long">Open uninstall options</string>
+    <string name="shortcut_phone_locator_short">Function 1</string>
+    <string name="shortcut_phone_locator_long">Open Function 1</string>
+    <string name="shortcut_track_friend_short">Function 2</string>
+    <string name="shortcut_track_friend_long">Open Function 2</string>
+    <string name="uninstall_keep_title">Over 90% of Users Love GPS Camera</string>
+    <string name="uninstall_keep_description">Don’t miss exploring new places, preview streets, and capture where your journey takes you.</string>
+    <string name="keep_phone_tracker">Keep Phone Tracker</string>
+    <string name="continue_to_uninstall">Continue To Uninstall</string>
+    <string name="uninstall_sorry_title">We’re truly sorry!</string>
+    <string name="uninstall_question">Anything you’re not happy with?</string>
+    <string name="reason_feature">Feature not working</string>
+    <string name="reason_ads">Too many ads</string>
+    <string name="reason_not_needed">I don’t need it</string>
+    <string name="reason_other">Other</string>
+    <string name="cancel">Cancel</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="welcome_back_title">Welcome Back</string>
+    <string name="welcome_back_description">Explore worlds around you</string>
+    <string name="get_started">Get Started</string>
+    <string name="back">Back</string>
+    <string name="start">Start</string>
+    <string name="ad_badge">Ad</string>
+    <string name="next">Next</string>
+</resources>

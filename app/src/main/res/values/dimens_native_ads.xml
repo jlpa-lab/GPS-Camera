@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="native_ad_badge_min_width">24dp</dimen>
+    <dimen name="native_ad_badge_min_height">18dp</dimen>
+    <dimen name="native_ad_badge_padding_horizontal">5dp</dimen>
+    <dimen name="native_ad_badge_padding_vertical">2dp</dimen>
+</resources>
