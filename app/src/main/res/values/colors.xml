@@ -16,4 +16,11 @@
     <color name="on_boarding_background">#0F161F</color>
     <color name="primary_text_color">#F3F7FC</color>
     <color name="secondary_text_color">#AFBDCE</color>
+    <color name="home_screen_top">#091321</color>
+    <color name="home_screen_bottom">#173D6D</color>
+    <color name="home_surface">#172638</color>
+    <color name="home_navigation">#101E2B</color>
+    <color name="home_accent">#7EBCFF</color>
+    <color name="home_premium">#1C3049</color>
+    <color name="earth_background">#080D15</color>
 </resources>

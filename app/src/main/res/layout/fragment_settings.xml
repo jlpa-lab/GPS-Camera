@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_gradient" android:gravity="center" android:orientation="vertical" android:padding="24dp">
+    <ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ic_settings" android:tint="@color/home_accent" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:fontFamily="@font/poppins_semibold" android:text="@string/coming_soon_title" android:textColor="@color/primary_text_color" android:textSize="24sp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:fontFamily="@font/poppins_regular" android:gravity="center" android:text="@string/settings_coming_soon_description" android:textColor="@color/secondary_text_color" android:textSize="15sp" />
+</LinearLayout>

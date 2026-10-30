@@ -6,6 +6,9 @@ import android.os.Bundle
 import com.gps.map.camera.and.time.stamp.MainActivity
 import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
+import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewActivity
+import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
+import com.gps.map.camera.and.time.stamp.ui.mapview.MapViewActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.uninstall.ConfirmUninstallActivity
@@ -25,4 +28,7 @@ object Routes {
     fun startConfirmUninstallActivity(fromActivity: Activity) = fromActivity.launch(
         ConfirmUninstallActivity::class.java)
     fun startWelcomeActivity(fromActivity: Activity) = fromActivity.launch(WelcomeActivity::class.java)
+    fun startEarthViewActivity(fromActivity: Activity) = fromActivity.launch(EarthViewActivity::class.java)
+    fun startStreetViewActivity(fromActivity: Activity) = fromActivity.launch(StreetViewActivity::class.java)
+    fun startMapViewActivity(fromActivity: Activity) = fromActivity.launch(MapViewActivity::class.java)
 }

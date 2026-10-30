@@ -1,47 +1,89 @@
 package com.gps.map.camera.and.time.stamp
 
+import android.graphics.Color
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.gps.map.camera.and.time.stamp.ui.theme.MyApplicationTheme
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.Fragment
+import com.gps.map.camera.and.time.stamp.ui.home.HomeFragment
+import com.gps.map.camera.and.time.stamp.ui.settings.SettingsFragment
+import com.gps.map.camera.and.time.stamp.ui.tools.ToolsFragment
+import com.gps.map.camera.and.time.stamp.ui.widget.WidgetFragment
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var navItems: List<View>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            MyApplicationTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "upcoming screen is on the way",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+
+        setContentView(R.layout.activity_main)
+        configureSystemBars()
+        bindBottomNavigation()
+
+        if (savedInstanceState == null) {
+            selectTab(0, HomeFragment())
+        }
+    }
+
+    private fun configureSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.home_navigation)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+
+        val bottomNavigation = findViewById<View>(R.id.bottom_navigation_bar)
+        val originalPaddingBottom = bottomNavigation.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNavigation) { view, insets ->
+            val navigationBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(
+                view.paddingLeft,
+                view.paddingTop,
+                view.paddingRight,
+                originalPaddingBottom + navigationBarInset
+            )
+            insets
+        }
+        ViewCompat.requestApplyInsets(bottomNavigation)
+    }
+
+    private fun bindBottomNavigation() {
+        navItems = listOf(
+            findViewById(R.id.nav_home),
+            findViewById(R.id.nav_tools),
+            findViewById(R.id.nav_widget),
+            findViewById(R.id.nav_settings)
+        )
+
+        navItems.forEachIndexed { index, item ->
+            item.setOnClickListener {
+                when (index) {
+                    0 -> selectTab(index, HomeFragment())
+                    1 -> selectTab(index, ToolsFragment())
+                    2 -> selectTab(index, WidgetFragment())
+                    3 -> selectTab(index, SettingsFragment())
                 }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun selectTab(index: Int, fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.main_fragment_container, fragment)
+            .commit()
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyApplicationTheme {
-        Greeting("Android")
+        navItems.forEachIndexed { itemIndex, item ->
+            item.isSelected = itemIndex == index
+        }
     }
 }
