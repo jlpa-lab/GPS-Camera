@@ -2,24 +2,32 @@ package com.gps.map.camera.and.time.stamp.ui.earthview
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.ProgressBar
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.LocationServices
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.bases.ext.isNetwork
+import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
+import com.gps.map.camera.and.time.stamp.utils.Routes
 import earth.worldwind.geom.Angle
 import earth.worldwind.geom.AltitudeMode
 import earth.worldwind.geom.LookAt
@@ -32,6 +40,7 @@ import earth.worldwind.layer.atmosphere.AtmosphereLayer
 import earth.worldwind.render.Color
 import earth.worldwind.render.Font
 import earth.worldwind.render.image.ImageSource
+import earth.worldwind.render.image.ResamplingMode
 import earth.worldwind.shape.Placemark
 import earth.worldwind.shape.PlacemarkAttributes
 import earth.worldwind.shape.TextAttributes
@@ -45,15 +54,41 @@ import android.text.TextWatcher
 
 class EarthViewActivity : AppCompatActivity() {
 
+    private enum class EarthState {
+        NO_PLACES,
+        MAP_FAILED,
+        OFFLINE
+    }
+
     private lateinit var worldWindow: EarthWorldWindow
+    private lateinit var mapContainer: FrameLayout
+    private lateinit var screenTitle: TextView
     private lateinit var searchInput: EditText
-    private lateinit var searchProgress: ProgressBar
     private lateinit var searchResults: RecyclerView
-    private lateinit var placeAdapter: EarthPlaceAdapter
+    private lateinit var earthControls: View
+    private lateinit var streetViewButton: View
+    private lateinit var resultStreetViewButton: View
+    private lateinit var placeDetails: View
+    private lateinit var placeTitle: TextView
+    private lateinit var placeAddress: TextView
+    private lateinit var mapLoading: View
+    private lateinit var statePanel: View
+    private lateinit var stateIcon: ImageView
+    private lateinit var stateTitle: TextView
+    private lateinit var stateMessage: TextView
+    private lateinit var statePrimaryButton: TextView
+    private lateinit var stateSecondaryButton: TextView
+    private lateinit var placeAdapter: EarthViewPlaceAdapter
 
     private val markerLayer = RenderableLayer("Earth view marker")
     private var searchJob: Job? = null
+    private var mapLoadingJob: Job? = null
     private var updatingSearchText = false
+    private var searchMode = false
+    private var resultMode = false
+    private var isMapLoading = false
+    private var earthState: EarthState? = null
+    private var selectedPlace: EarthPlace? = null
     private val locationClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -67,17 +102,34 @@ class EarthViewActivity : AppCompatActivity() {
         setContentView(R.layout.activity_earth_view)
 
         worldWindow = findViewById(R.id.earth_map_view)
+        mapContainer = findViewById(R.id.earth_map_container)
+        screenTitle = findViewById(R.id.earth_view_title)
         searchInput = findViewById(R.id.earth_view_search_input)
-        searchProgress = findViewById(R.id.earth_view_search_progress)
         searchResults = findViewById(R.id.earth_view_search_results)
+        earthControls = findViewById(R.id.earth_view_controls)
+        streetViewButton = findViewById(R.id.earth_view_street_view_button)
+        resultStreetViewButton = findViewById(R.id.earth_view_result_street_view_button)
+        placeDetails = findViewById(R.id.earth_view_place_details)
+        placeTitle = findViewById(R.id.earth_view_place_title)
+        placeAddress = findViewById(R.id.earth_view_place_address)
+        mapLoading = findViewById(R.id.earth_view_map_loading)
+        statePanel = findViewById(R.id.earth_view_state_panel)
+        stateIcon = findViewById(R.id.earth_view_state_icon)
+        stateTitle = findViewById(R.id.earth_view_state_title)
+        stateMessage = findViewById(R.id.earth_view_state_message)
+        statePrimaryButton = findViewById(R.id.earth_view_state_primary_button)
+        stateSecondaryButton = findViewById(R.id.earth_view_state_secondary_button)
 
-        placeAdapter = EarthPlaceAdapter(::moveToPlace)
+        placeAdapter = EarthViewPlaceAdapter(::moveToPlace)
         searchResults.layoutManager = LinearLayoutManager(this)
         searchResults.adapter = placeAdapter
 
         findViewById<View>(R.id.earth_view_back).setOnClickListener { finish() }
         findViewById<View>(R.id.earth_view_search_button).setOnClickListener {
             searchPlace(searchInput.text.toString(), showKeyboard = false)
+        }
+        findViewById<View>(R.id.earth_view_reset_globe).setOnClickListener {
+            resetGlobe()
         }
         findViewById<ImageButton>(R.id.earth_view_clear_search).setOnClickListener {
             searchInput.text?.clear()
@@ -94,6 +146,14 @@ class EarthViewActivity : AppCompatActivity() {
                 )
             }
         }
+        findViewById<View>(R.id.earth_view_street_view_button).setOnClickListener {
+            Routes.startStreetViewActivity(this)
+        }
+        resultStreetViewButton.setOnClickListener {
+            openSelectedPlaceInStreetView()
+        }
+        statePrimaryButton.setOnClickListener { handleStatePrimaryAction() }
+        stateSecondaryButton.setOnClickListener { handleStateSecondaryAction() }
         searchInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 searchPlace(searchInput.text.toString(), showKeyboard = false)
@@ -102,11 +162,16 @@ class EarthViewActivity : AppCompatActivity() {
                 false
             }
         }
+        searchInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) setSearchMode(true)
+        }
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
 
             override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = text?.toString()?.trim().orEmpty()
+                if (!updatingSearchText && resultMode) setResultMode(false)
+                if (!updatingSearchText && query.isNotEmpty()) setSearchMode(true)
                 findViewById<View>(R.id.earth_view_clear_search).visibility =
                     if (query.isEmpty()) View.GONE else View.VISIBLE
 
@@ -115,6 +180,10 @@ class EarthViewActivity : AppCompatActivity() {
                         searchJob?.cancel()
                         placeAdapter.submitList(emptyList())
                         searchResults.visibility = View.GONE
+                        if (!updatingSearchText && query.isEmpty()) {
+                            setSearchMode(false)
+                            resetGlobe()
+                        }
                     }
                     return
                 }
@@ -130,13 +199,37 @@ class EarthViewActivity : AppCompatActivity() {
         })
 
         configureGlobe()
+        setSearchMode(false)
+        if (!isNetwork()) showEarthState(EarthState.OFFLINE)
     }
 
     private fun configureGlobe() {
         worldWindow.engine.layers.addLayer(BackgroundLayer())
-        worldWindow.engine.layers.addLayer(BlueMarbleLandsatLayer())
+        worldWindow.engine.layers.addLayer(BlueMarbleLandsatLayer().apply {
+            tiledSurfaceImage?.apply {
+                detailControl = IMAGERY_DETAIL_CONTROL
+                useAncestorTileTexture = true
+                imageOptions?.resamplingMode = ResamplingMode.BILINEAR
+                setupTileCache(IMAGERY_TILE_CACHE_CAPACITY, IMAGERY_TILE_CACHE_LOW_WATER)
+            }
+        })
         worldWindow.engine.layers.addLayer(AtmosphereLayer())
         worldWindow.engine.layers.addLayer(markerLayer)
+        resetGlobe()
+    }
+
+    private fun resetGlobe() {
+        markerLayer.clearRenderables()
+        worldWindow.engine.cameraFromLookAt(
+            LookAt(
+                Position.fromDegrees(DEFAULT_GLOBE_LATITUDE, DEFAULT_GLOBE_LONGITUDE, 0.0),
+                AltitudeMode.CLAMP_TO_GROUND,
+                DEFAULT_GLOBE_RANGE_METERS,
+                Angle.fromDegrees(0.0),
+                Angle.fromDegrees(0.0),
+                Angle.fromDegrees(0.0)
+            )
+        )
         worldWindow.requestRedraw()
     }
 
@@ -148,34 +241,139 @@ class EarthViewActivity : AppCompatActivity() {
         val placeQuery = query.trim()
         if (placeQuery.length < MIN_QUERY_LENGTH) return
 
+        setResultMode(false)
+        setSearchMode(true)
+        setMapLoading(true)
         if (!showKeyboard) hideKeyboard()
         if (cancelCurrentJob) searchJob?.cancel()
-        searchProgress.visibility = View.VISIBLE
         searchJob = lifecycleScope.launch {
             val result = runCatching {
                 withContext(Dispatchers.IO) { EarthPlaceSearch.search(placeQuery) }
             }
-            searchProgress.visibility = View.GONE
             result.onSuccess { places ->
+                setMapLoading(false)
                 if (places.isEmpty()) {
                     placeAdapter.submitList(emptyList())
-                    searchResults.visibility = View.GONE
-                    Toast.makeText(
-                        this@EarthViewActivity,
-                        getString(R.string.earth_view_place_not_found, placeQuery),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showEarthState(EarthState.NO_PLACES)
                 } else {
+                    hideEarthState()
                     placeAdapter.submitList(places.take(MAX_SEARCH_RESULTS))
                     searchResults.visibility = View.VISIBLE
                 }
             }.onFailure {
-                Toast.makeText(
-                    this@EarthViewActivity,
-                    R.string.earth_view_search_failed,
-                    Toast.LENGTH_SHORT
-                ).show()
+                setMapLoading(false)
+                showEarthState(if (isNetwork()) EarthState.MAP_FAILED else EarthState.OFFLINE)
             }
+        }
+    }
+
+    private fun showEarthState(state: EarthState) {
+        earthState = state
+        isMapLoading = false
+        mapLoading.visibility = View.GONE
+        searchResults.visibility = View.GONE
+        placeDetails.visibility = View.GONE
+        resultStreetViewButton.visibility = View.GONE
+        earthControls.visibility = View.GONE
+        streetViewButton.visibility = View.GONE
+        mapContainer.visibility = View.GONE
+        statePanel.visibility = View.VISIBLE
+        resultMode = false
+        searchMode = state == EarthState.NO_PLACES
+
+        stateIcon.setImageResource(
+            when (state) {
+                EarthState.NO_PLACES -> R.drawable.ic_search
+                EarthState.MAP_FAILED -> R.drawable.ic_earth_map_error
+                EarthState.OFFLINE -> R.drawable.ic_globe
+            }
+        )
+        stateTitle.setText(
+            when (state) {
+                EarthState.NO_PLACES -> R.string.earth_view_no_places_title
+                EarthState.MAP_FAILED -> R.string.earth_view_map_failed_title
+                EarthState.OFFLINE -> R.string.earth_view_offline_title
+            }
+        )
+        stateMessage.setText(
+            when (state) {
+                EarthState.NO_PLACES -> R.string.earth_view_no_places_message
+                EarthState.MAP_FAILED -> R.string.earth_view_map_failed_message
+                EarthState.OFFLINE -> R.string.earth_view_offline_message
+            }
+        )
+        statePrimaryButton.setText(
+            when (state) {
+                EarthState.NO_PLACES -> R.string.earth_view_search_again
+                EarthState.MAP_FAILED,
+                EarthState.OFFLINE -> R.string.earth_view_retry
+            }
+        )
+        stateSecondaryButton.setText(
+            when (state) {
+                EarthState.NO_PLACES -> R.string.earth_view_explore_map
+                EarthState.MAP_FAILED -> R.string.earth_view_search_another_place
+                EarthState.OFFLINE -> R.string.earth_view_back_action
+            }
+        )
+        stateSecondaryButton.background = when (state) {
+            EarthState.NO_PLACES -> ContextCompat.getDrawable(this, R.drawable.bg_earth_street_view_button)
+            EarthState.MAP_FAILED -> ContextCompat.getDrawable(this, R.drawable.bg_earth_place_card)
+            EarthState.OFFLINE -> null
+        }
+        stateSecondaryButton.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (state == EarthState.OFFLINE) R.color.secondary_text_color else R.color.primary_text_color
+            )
+        )
+        updateScreenTitle()
+    }
+
+    private fun hideEarthState() {
+        earthState = null
+        statePanel.visibility = View.GONE
+        mapContainer.visibility = View.VISIBLE
+    }
+
+    private fun handleStatePrimaryAction() {
+        when (earthState) {
+            EarthState.NO_PLACES -> {
+                hideEarthState()
+                searchPlace(searchInput.text.toString(), showKeyboard = false)
+            }
+            EarthState.MAP_FAILED,
+            EarthState.OFFLINE -> retryCurrentMapOrSearch()
+            null -> Unit
+        }
+    }
+
+    private fun handleStateSecondaryAction() {
+        when (earthState) {
+            EarthState.NO_PLACES -> {
+                hideEarthState()
+                setSearchMode(false)
+                resetGlobe()
+            }
+            EarthState.MAP_FAILED -> {
+                searchInput.text?.clear()
+                hideEarthState()
+                setSearchMode(true)
+            }
+            EarthState.OFFLINE -> finish()
+            null -> Unit
+        }
+    }
+
+    private fun retryCurrentMapOrSearch() {
+        val query = searchInput.text.toString().trim()
+        hideEarthState()
+        if (query.length >= MIN_QUERY_LENGTH) {
+            searchPlace(query, showKeyboard = false)
+        } else {
+            setSearchMode(false)
+            resetGlobe()
+            if (!isNetwork()) showEarthState(EarthState.OFFLINE)
         }
     }
 
@@ -187,10 +385,91 @@ class EarthViewActivity : AppCompatActivity() {
         updatingSearchText = false
         searchInput.clearFocus()
         hideKeyboard()
+        setSearchMode(true)
+        setResultMode(false)
+        setMapLoading(true)
         showPlaceOnGlobe(place)
+        mapLoadingJob?.cancel()
+        mapLoadingJob = lifecycleScope.launch {
+            delay(MAP_LOADING_MIN_MS)
+            setResultMode(true, place)
+            setMapLoading(false)
+        }
     }
 
+    private fun setSearchMode(active: Boolean) {
+        searchMode = active
+        updateScreenTitle()
+        earthControls.visibility = if (active) View.GONE else View.VISIBLE
+        streetViewButton.visibility = if (active) View.GONE else View.VISIBLE
+        if (!active) setResultMode(false)
+        updateMapLayout()
+
+        if (!active) searchResults.visibility = View.GONE
+    }
+
+    private fun setResultMode(active: Boolean, place: EarthPlace? = null) {
+        resultMode = active
+        placeDetails.visibility = if (active) View.VISIBLE else View.GONE
+        resultStreetViewButton.visibility = if (active) View.VISIBLE else View.GONE
+        if (active && place != null) {
+            placeTitle.text = place.name
+            placeAddress.text = formatPlaceAddress(place)
+        }
+        updateScreenTitle()
+        updateMapLayout()
+    }
+
+    private fun updateMapLayout() {
+        val layoutParams = mapContainer.layoutParams as ConstraintLayout.LayoutParams
+        layoutParams.dimensionRatio = null
+        layoutParams.height = dp(MAP_HEIGHT_DP)
+        layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+        layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+        layoutParams.marginStart = dp(20)
+        layoutParams.marginEnd = dp(20)
+        layoutParams.topMargin = when {
+            resultMode -> dp(140)
+            searchMode && !isMapLoading -> dp(170)
+            else -> dp(250)
+        }
+        mapContainer.layoutParams = layoutParams
+        mapContainer.background = ContextCompat.getDrawable(this, R.drawable.bg_earth_map_result)
+        mapContainer.clipToOutline = true
+        mapContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
+    }
+
+    private fun formatPlaceAddress(place: EarthPlace): String {
+        val parts = place.address.split(',').map(String::trim).filter(String::isNotEmpty)
+        return when {
+            parts.size >= 2 -> parts.takeLast(2).joinToString(", ")
+            parts.firstOrNull().equals(place.name, ignoreCase = true) -> "Country"
+            else -> place.address
+        }
+    }
+
+    private fun setMapLoading(loading: Boolean) {
+        isMapLoading = loading
+        mapLoading.visibility = if (loading) View.VISIBLE else View.GONE
+        updateScreenTitle()
+        updateMapLayout()
+    }
+
+    private fun updateScreenTitle() {
+        screenTitle.setText(
+            if (isMapLoading || !searchMode || resultMode) {
+                R.string.earth_view_title
+            } else {
+                R.string.earth_view_search_title
+            }
+        )
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
+
     private fun showPlaceOnGlobe(place: EarthPlace) {
+        selectedPlace = place
         markerLayer.clearRenderables()
 
         val labelTextAttributes = TextAttributes().apply {
@@ -230,6 +509,18 @@ class EarthViewActivity : AppCompatActivity() {
             )
         )
         worldWindow.requestRedraw()
+    }
+
+    private fun openSelectedPlaceInStreetView() {
+        val place = selectedPlace ?: return
+        startActivity(
+            Intent(this, StreetViewActivity::class.java).apply {
+                putExtra(EXTRA_STREET_VIEW_PLACE_NAME, place.name)
+                putExtra(EXTRA_STREET_VIEW_PLACE_ADDRESS, place.address)
+                putExtra(EXTRA_STREET_VIEW_PLACE_LATITUDE, place.latitude)
+                putExtra(EXTRA_STREET_VIEW_PLACE_LONGITUDE, place.longitude)
+            }
+        )
     }
 
     private fun centerOnCurrentLocation() {
@@ -279,6 +570,7 @@ class EarthViewActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         searchJob?.cancel()
+        mapLoadingJob?.cancel()
         worldWindow.onPause()
         super.onDestroy()
     }
@@ -289,9 +581,21 @@ class EarthViewActivity : AppCompatActivity() {
     }
 
     private companion object {
-        const val MAX_SEARCH_RESULTS = 5
+        const val MAX_SEARCH_RESULTS = 3
         const val MIN_QUERY_LENGTH = 2
         const val SEARCH_DEBOUNCE_MS = 450L
+        const val MAP_LOADING_MIN_MS = 900L
         const val SEARCH_RANGE_METERS = 1_500.0
+        const val DEFAULT_GLOBE_LATITUDE = 18.0
+        const val DEFAULT_GLOBE_LONGITUDE = 0.0
+        const val DEFAULT_GLOBE_RANGE_METERS = 18_000_000.0
+        const val IMAGERY_DETAIL_CONTROL = 0.75
+        const val IMAGERY_TILE_CACHE_CAPACITY = 1_800L
+        const val IMAGERY_TILE_CACHE_LOW_WATER = 1_350L
+        const val MAP_HEIGHT_DP = 450
+        const val EXTRA_STREET_VIEW_PLACE_NAME = "earth_view_place_name"
+        const val EXTRA_STREET_VIEW_PLACE_ADDRESS = "earth_view_place_address"
+        const val EXTRA_STREET_VIEW_PLACE_LATITUDE = "earth_view_place_latitude"
+        const val EXTRA_STREET_VIEW_PLACE_LONGITUDE = "earth_view_place_longitude"
     }
 }

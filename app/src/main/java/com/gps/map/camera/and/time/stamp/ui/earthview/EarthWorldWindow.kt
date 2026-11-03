@@ -11,9 +11,9 @@ class EarthWorldWindow @JvmOverloads constructor(
 ) : WorldWindow(context, attrs) {
 
     init {
-        setPreserveEGLContextOnPause(false)
+        setPreserveEGLContextOnPause(true)
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY)
-        engine.renderResourceCache.remoteRetrievalQueueSize = 8
-        engine.renderResourceCache.localRetrievalQueueSize = 4
+        engine.renderResourceCache.remoteRetrievalQueueSize = 12
+        engine.renderResourceCache.localRetrievalQueueSize = 8
     }
 }
