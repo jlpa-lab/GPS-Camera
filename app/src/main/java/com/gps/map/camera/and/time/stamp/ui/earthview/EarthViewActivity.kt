@@ -1,5 +1,7 @@
 package com.gps.map.camera.and.time.stamp.ui.earthview
 
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -8,6 +10,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.view.animation.LinearInterpolator
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -57,6 +60,7 @@ class EarthViewActivity : AppCompatActivity() {
     private enum class EarthState {
         NO_PLACES,
         MAP_FAILED,
+        LOCATION_UNAVAILABLE,
         OFFLINE
     }
 
@@ -72,6 +76,7 @@ class EarthViewActivity : AppCompatActivity() {
     private lateinit var placeTitle: TextView
     private lateinit var placeAddress: TextView
     private lateinit var mapLoading: View
+    private lateinit var mapLoadingIcon: ImageView
     private lateinit var statePanel: View
     private lateinit var stateIcon: ImageView
     private lateinit var stateTitle: TextView
@@ -83,11 +88,13 @@ class EarthViewActivity : AppCompatActivity() {
     private val markerLayer = RenderableLayer("Earth view marker")
     private var searchJob: Job? = null
     private var mapLoadingJob: Job? = null
+    private var mapLoadingAnimator: ObjectAnimator? = null
     private var updatingSearchText = false
     private var searchMode = false
     private var resultMode = false
     private var isMapLoading = false
     private var earthState: EarthState? = null
+    private var failedSearchQuery: String? = null
     private var selectedPlace: EarthPlace? = null
     private val locationClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
 
@@ -113,6 +120,7 @@ class EarthViewActivity : AppCompatActivity() {
         placeTitle = findViewById(R.id.earth_view_place_title)
         placeAddress = findViewById(R.id.earth_view_place_address)
         mapLoading = findViewById(R.id.earth_view_map_loading)
+        mapLoadingIcon = findViewById(R.id.earth_view_map_loading_icon)
         statePanel = findViewById(R.id.earth_view_state_panel)
         stateIcon = findViewById(R.id.earth_view_state_icon)
         stateTitle = findViewById(R.id.earth_view_state_title)
@@ -200,7 +208,16 @@ class EarthViewActivity : AppCompatActivity() {
 
         configureGlobe()
         setSearchMode(false)
-        if (!isNetwork()) showEarthState(EarthState.OFFLINE)
+        if (!isNetwork()) {
+            showEarthState(EarthState.OFFLINE)
+        } else {
+            setMapLoading(true)
+            mapLoadingJob = lifecycleScope.launch {
+                delay(MAP_LOADING_MIN_MS)
+                setMapLoading(false)
+            }
+            showDefaultEarthLocation()
+        }
     }
 
     private fun configureGlobe() {
@@ -242,6 +259,7 @@ class EarthViewActivity : AppCompatActivity() {
         if (placeQuery.length < MIN_QUERY_LENGTH) return
 
         setResultMode(false)
+        mapLoadingJob?.cancel()
         setSearchMode(true)
         setMapLoading(true)
         if (!showKeyboard) hideKeyboard()
@@ -252,6 +270,7 @@ class EarthViewActivity : AppCompatActivity() {
             }
             result.onSuccess { places ->
                 setMapLoading(false)
+                failedSearchQuery = null
                 if (places.isEmpty()) {
                     placeAdapter.submitList(emptyList())
                     showEarthState(EarthState.NO_PLACES)
@@ -262,15 +281,20 @@ class EarthViewActivity : AppCompatActivity() {
                 }
             }.onFailure {
                 setMapLoading(false)
-                showEarthState(if (isNetwork()) EarthState.MAP_FAILED else EarthState.OFFLINE)
+                if (isNetwork()) {
+                    failedSearchQuery = placeQuery
+                    showEarthState(EarthState.MAP_FAILED)
+                } else {
+                    failedSearchQuery = null
+                    showEarthState(EarthState.OFFLINE)
+                }
             }
         }
     }
 
     private fun showEarthState(state: EarthState) {
         earthState = state
-        isMapLoading = false
-        mapLoading.visibility = View.GONE
+        setMapLoading(false)
         searchResults.visibility = View.GONE
         placeDetails.visibility = View.GONE
         resultStreetViewButton.visibility = View.GONE
@@ -281,10 +305,21 @@ class EarthViewActivity : AppCompatActivity() {
         resultMode = false
         searchMode = state == EarthState.NO_PLACES
 
+        if (state == EarthState.MAP_FAILED ||
+            state == EarthState.LOCATION_UNAVAILABLE ||
+            state == EarthState.OFFLINE
+        ) {
+            failedSearchQuery = null
+            updatingSearchText = true
+            searchInput.text?.clear()
+            updatingSearchText = false
+        }
+
         stateIcon.setImageResource(
             when (state) {
                 EarthState.NO_PLACES -> R.drawable.ic_search
                 EarthState.MAP_FAILED -> R.drawable.ic_earth_map_error
+                EarthState.LOCATION_UNAVAILABLE -> R.drawable.ic_my_location
                 EarthState.OFFLINE -> R.drawable.ic_globe
             }
         )
@@ -292,6 +327,7 @@ class EarthViewActivity : AppCompatActivity() {
             when (state) {
                 EarthState.NO_PLACES -> R.string.earth_view_no_places_title
                 EarthState.MAP_FAILED -> R.string.earth_view_map_failed_title
+                EarthState.LOCATION_UNAVAILABLE -> R.string.earth_view_location_unavailable_title
                 EarthState.OFFLINE -> R.string.earth_view_offline_title
             }
         )
@@ -299,6 +335,7 @@ class EarthViewActivity : AppCompatActivity() {
             when (state) {
                 EarthState.NO_PLACES -> R.string.earth_view_no_places_message
                 EarthState.MAP_FAILED -> R.string.earth_view_map_failed_message
+                EarthState.LOCATION_UNAVAILABLE -> R.string.earth_view_location_unavailable_message
                 EarthState.OFFLINE -> R.string.earth_view_offline_message
             }
         )
@@ -307,18 +344,21 @@ class EarthViewActivity : AppCompatActivity() {
                 EarthState.NO_PLACES -> R.string.earth_view_search_again
                 EarthState.MAP_FAILED,
                 EarthState.OFFLINE -> R.string.earth_view_retry
+                EarthState.LOCATION_UNAVAILABLE -> R.string.earth_view_try_again
             }
         )
         stateSecondaryButton.setText(
             when (state) {
                 EarthState.NO_PLACES -> R.string.earth_view_explore_map
                 EarthState.MAP_FAILED -> R.string.earth_view_search_another_place
+                EarthState.LOCATION_UNAVAILABLE -> R.string.earth_view_search_manually
                 EarthState.OFFLINE -> R.string.earth_view_back_action
             }
         )
         stateSecondaryButton.background = when (state) {
             EarthState.NO_PLACES -> ContextCompat.getDrawable(this, R.drawable.bg_earth_street_view_button)
             EarthState.MAP_FAILED -> ContextCompat.getDrawable(this, R.drawable.bg_earth_place_card)
+            EarthState.LOCATION_UNAVAILABLE -> ContextCompat.getDrawable(this, R.drawable.bg_earth_place_card)
             EarthState.OFFLINE -> null
         }
         stateSecondaryButton.setTextColor(
@@ -344,6 +384,7 @@ class EarthViewActivity : AppCompatActivity() {
             }
             EarthState.MAP_FAILED,
             EarthState.OFFLINE -> retryCurrentMapOrSearch()
+            EarthState.LOCATION_UNAVAILABLE -> retryCurrentLocation()
             null -> Unit
         }
     }
@@ -356,9 +397,15 @@ class EarthViewActivity : AppCompatActivity() {
                 resetGlobe()
             }
             EarthState.MAP_FAILED -> {
+                failedSearchQuery = null
                 searchInput.text?.clear()
                 hideEarthState()
                 setSearchMode(true)
+            }
+            EarthState.LOCATION_UNAVAILABLE -> {
+                hideEarthState()
+                setSearchMode(true)
+                resetGlobe()
             }
             EarthState.OFFLINE -> finish()
             null -> Unit
@@ -366,15 +413,42 @@ class EarthViewActivity : AppCompatActivity() {
     }
 
     private fun retryCurrentMapOrSearch() {
-        val query = searchInput.text.toString().trim()
+        val query = failedSearchQuery ?: searchInput.text.toString().trim()
         hideEarthState()
         if (query.length >= MIN_QUERY_LENGTH) {
+            failedSearchQuery = null
             searchPlace(query, showKeyboard = false)
         } else {
             setSearchMode(false)
             resetGlobe()
-            if (!isNetwork()) showEarthState(EarthState.OFFLINE)
+            if (!isNetwork()) {
+                showEarthState(EarthState.OFFLINE)
+            } else {
+                setMapLoading(true)
+                mapLoadingJob?.cancel()
+                mapLoadingJob = lifecycleScope.launch {
+                    delay(MAP_LOADING_MIN_MS)
+                    setMapLoading(false)
+                }
+            }
         }
+    }
+
+    private fun retryCurrentLocation() {
+        hideEarthState()
+        setSearchMode(false)
+        resetGlobe()
+        if (!isNetwork()) {
+            showEarthState(EarthState.OFFLINE)
+            return
+        }
+        setMapLoading(true)
+        mapLoadingJob?.cancel()
+        mapLoadingJob = lifecycleScope.launch {
+            delay(MAP_LOADING_MIN_MS)
+            setMapLoading(false)
+        }
+        showDefaultEarthLocation()
     }
 
     private fun moveToPlace(place: EarthPlace) {
@@ -424,15 +498,12 @@ class EarthViewActivity : AppCompatActivity() {
         val layoutParams = mapContainer.layoutParams as ConstraintLayout.LayoutParams
         layoutParams.dimensionRatio = null
         layoutParams.height = dp(MAP_HEIGHT_DP)
-        layoutParams.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+        layoutParams.topToTop = ConstraintLayout.LayoutParams.UNSET
+        layoutParams.topToBottom = R.id.earth_view_search_overlay
         layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.UNSET
         layoutParams.marginStart = dp(20)
         layoutParams.marginEnd = dp(20)
-        layoutParams.topMargin = when {
-            resultMode -> dp(140)
-            searchMode && !isMapLoading -> dp(170)
-            else -> dp(250)
-        }
+        layoutParams.topMargin = dp(12)
         mapContainer.layoutParams = layoutParams
         mapContainer.background = ContextCompat.getDrawable(this, R.drawable.bg_earth_map_result)
         mapContainer.clipToOutline = true
@@ -451,8 +522,29 @@ class EarthViewActivity : AppCompatActivity() {
     private fun setMapLoading(loading: Boolean) {
         isMapLoading = loading
         mapLoading.visibility = if (loading) View.VISIBLE else View.GONE
+        if (loading) {
+            startMapLoadingAnimation()
+        } else {
+            stopMapLoadingAnimation()
+        }
         updateScreenTitle()
         updateMapLayout()
+    }
+
+    private fun startMapLoadingAnimation() {
+        if (mapLoadingAnimator?.isRunning == true) return
+        mapLoadingAnimator = ObjectAnimator.ofFloat(mapLoadingIcon, View.ROTATION, 0f, 360f).apply {
+            duration = 900L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = LinearInterpolator()
+            start()
+        }
+    }
+
+    private fun stopMapLoadingAnimation() {
+        mapLoadingAnimator?.cancel()
+        mapLoadingAnimator = null
+        mapLoadingIcon.rotation = 0f
     }
 
     private fun updateScreenTitle() {
@@ -511,6 +603,29 @@ class EarthViewActivity : AppCompatActivity() {
         worldWindow.requestRedraw()
     }
 
+    private fun showDefaultEarthLocation() {
+        if (!hasLocationPermission()) {
+            showEarthState(EarthState.LOCATION_UNAVAILABLE)
+            return
+        }
+        locationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null && earthState == null && !searchMode && !resultMode) {
+                    showPlaceOnGlobe(
+                        EarthPlace(
+                            getString(R.string.earth_view_current_location),
+                            "",
+                            location.latitude,
+                            location.longitude
+                        )
+                    )
+                } else if (location == null && earthState == null) {
+                    showEarthState(EarthState.LOCATION_UNAVAILABLE)
+                }
+            }
+            .addOnFailureListener { showEarthState(EarthState.LOCATION_UNAVAILABLE) }
+    }
+
     private fun openSelectedPlaceInStreetView() {
         val place = selectedPlace ?: return
         startActivity(
@@ -550,7 +665,7 @@ class EarthViewActivity : AppCompatActivity() {
             PackageManager.PERMISSION_GRANTED
 
     private fun showLocationUnavailable() {
-        Toast.makeText(this, R.string.earth_view_location_unavailable, Toast.LENGTH_SHORT).show()
+        showEarthState(EarthState.LOCATION_UNAVAILABLE)
     }
 
     private fun hideKeyboard() {
@@ -571,6 +686,7 @@ class EarthViewActivity : AppCompatActivity() {
     override fun onDestroy() {
         searchJob?.cancel()
         mapLoadingJob?.cancel()
+        mapLoadingAnimator?.cancel()
         worldWindow.onPause()
         super.onDestroy()
     }
@@ -592,7 +708,7 @@ class EarthViewActivity : AppCompatActivity() {
         const val IMAGERY_DETAIL_CONTROL = 0.75
         const val IMAGERY_TILE_CACHE_CAPACITY = 1_800L
         const val IMAGERY_TILE_CACHE_LOW_WATER = 1_350L
-        const val MAP_HEIGHT_DP = 450
+        const val MAP_HEIGHT_DP = 540
         const val EXTRA_STREET_VIEW_PLACE_NAME = "earth_view_place_name"
         const val EXTRA_STREET_VIEW_PLACE_ADDRESS = "earth_view_place_address"
         const val EXTRA_STREET_VIEW_PLACE_LATITUDE = "earth_view_place_latitude"

@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/map_view_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
-
-    <com.google.android.gms.maps.MapView
-        android:id="@+id/map_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    android:background="@color/earth_background">
 
     <LinearLayout
         android:id="@+id/map_view_header"
@@ -19,7 +15,10 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="24dp"
-        android:paddingEnd="24dp">
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/map_view_back"
@@ -28,24 +27,27 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/map_view_back"
             android:padding="2dp"
-                android:src="@drawable/ic_back_nav" />
+            android:src="@drawable/ic_back_nav" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
+            android:layout_marginStart="12dp"
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/map_view_title"
             android:textColor="@color/primary_text_color"
-            android:textSize="18sp" />
+            android:textSize="24sp" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/map_view_search_overlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
-        android:orientation="vertical">
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_header">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -59,13 +61,14 @@
 
             <ImageButton
                 android:id="@+id/map_view_search_button"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:layout_gravity="center_vertical"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/map_view_search"
                 android:padding="0dp"
-                android:src="@drawable/ic_search" />
+                android:src="@drawable/ic_search"
+                android:tint="@color/home_accent" />
 
             <EditText
                 android:id="@+id/map_view_search_input"
@@ -81,7 +84,7 @@
                 android:padding="0dp"
                 android:textColor="@color/primary_text_color"
                 android:textColorHint="@color/secondary_text_color"
-                android:textSize="13sp" />
+                android:textSize="18sp" />
 
             <ProgressBar
                 android:id="@+id/map_view_search_progress"
@@ -92,109 +95,418 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/map_view_search_results"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="20dp"
-            android:background="@drawable/bg_earth_results"
-            android:elevation="8dp"
-            android:overScrollMode="never"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:visibility="gone" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/map_view_controls"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|center_vertical"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_map_controls"
-        android:elevation="8dp"
-        android:orientation="vertical"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
-
-        <ImageButton
-            android:id="@+id/map_view_zoom_in"
-            android:layout_width="48dp"
-            android:layout_height="56dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/map_view_zoom_in"
-            android:padding="14dp"
-            android:src="@drawable/ic_plus"
-            android:tint="@color/primary_text_color" />
-
-        <ImageButton
-            android:id="@+id/map_view_zoom_out"
-            android:layout_width="48dp"
-            android:layout_height="56dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/map_view_zoom_out"
-            android:padding="14dp"
-            android:src="@drawable/ic_minus"
-            android:tint="@color/primary_text_color" />
-
-        <ImageButton
-            android:id="@+id/map_view_my_location"
-            android:layout_width="48dp"
-            android:layout_height="56dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/map_view_my_location"
-            android:padding="12dp"
-            android:src="@drawable/ic_my_location"
-            android:tint="@color/primary_text_color" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/map_view_location_card"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
+    <FrameLayout
+        android:id="@+id/map_view_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="24dp"
-        android:background="@drawable/bg_earth_results"
-        android:elevation="8dp"
-        android:orientation="vertical"
-        android:paddingStart="16dp"
-        android:paddingTop="20dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp">
+        android:background="@drawable/bg_earth_map_result"
+        android:clipToOutline="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_search_overlay">
+
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/map_view_controls"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_gravity="top"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/map_view_layers"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_map_controls"
+                android:contentDescription="@string/map_view_layers"
+                android:elevation="8dp"
+                android:padding="11dp"
+                android:src="@drawable/ic_layers"
+                android:tint="@color/home_accent" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/map_view_my_location"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_map_controls"
+                android:contentDescription="@string/map_view_my_location"
+                android:elevation="8dp"
+                android:padding="11dp"
+                android:src="@drawable/ic_my_location"
+                android:tint="@color/home_accent" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/map_view_loading"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_container">
+
+        <ImageView
+            android:id="@+id/map_view_loading_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="@string/map_view_loading"
+            android:src="@drawable/ic_earth_loading" />
 
         <TextView
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/map_view_loading"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <include
+        android:id="@+id/map_view_state_panel"
+        layout="@layout/view_earth_view_state"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_search_overlay" />
+
+    <LinearLayout
+        android:id="@+id/map_view_style_panel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_container">
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/poppins_semibold"
-            android:text="@string/map_view_photo_locations"
+            android:text="@string/map_view_style"
             android:textColor="@color/primary_text_color"
-            android:textSize="17sp" />
+            android:textSize="18sp" />
 
-        <TextView
-            android:id="@+id/map_view_location_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="@font/poppins_regular"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/map_view_gallery_button"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="16dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/map_view_style_standard"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_map_style_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center"
+                android:text="@string/map_view_style_standard"
+                android:textColor="@color/home_accent"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/map_view_style_satellite"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_map_style_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center"
+                android:text="@string/map_view_style_satellite"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/map_view_place_details"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_container">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_map_place_card"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <TextView
+                android:id="@+id/map_view_place_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/primary_text_color"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/map_view_place_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/map_view_share_location"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_street_view_button"
             android:clickable="true"
             android:focusable="true"
             android:fontFamily="@font/poppins_semibold"
             android:gravity="center"
-            android:text="@string/map_view_open_gallery"
+            android:text="@string/map_view_share_location"
             android:textColor="@color/white"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/map_view_search_another_place"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_earth_search"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:text="@string/map_view_search_another_place"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp" />
     </LinearLayout>
-</FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/map_view_results_content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_container">
+
+        <TextView
+            android:id="@+id/map_view_results_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_semibold"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/map_view_search_results"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="12dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/map_view_search_mode"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="28dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/map_view_search_overlay">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/map_view_recent_searches"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:id="@+id/map_view_recent_station"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/map_view_recent_searches"
+                android:src="@drawable/ic_recent_location"
+                android:tint="@color/home_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="@string/map_view_recent_station"
+                android:textColor="@color/primary_text_color"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/map_view_recent_palace"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/map_view_recent_searches"
+                android:src="@drawable/ic_recent_location"
+                android:tint="@color/home_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="@string/map_view_recent_palace"
+                android:textColor="@color/primary_text_color"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/map_view_recent_gion"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/map_view_recent_searches"
+                android:src="@drawable/ic_recent_location"
+                android:tint="@color/home_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="@string/map_view_recent_gion"
+                android:textColor="@color/primary_text_color"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/map_view_search_places_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_street_view_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:text="@string/map_view_search_places"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/map_view_location_card"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/map_view_location_count"
+            android:layout_width="1dp"
+            android:layout_height="1dp" />
+
+        <TextView
+            android:id="@+id/map_view_gallery_button"
+            android:layout_width="1dp"
+            android:layout_height="1dp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,38 +6,19 @@
     android:layout_height="match_parent"
     android:background="@color/earth_background">
 
-    <FrameLayout
-        android:id="@+id/earth_map_container"
-        android:layout_width="0dp"
-        android:layout_height="450dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.gps.map.camera.and.time.stamp.ui.earthview.EarthWorldWindow
-            android:id="@+id/earth_map_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </FrameLayout>
-
     <LinearLayout
         android:id="@+id/earth_view_header_overlay"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:background="@color/earth_background"
         android:elevation="4dp"
-        android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="24dp"
-        android:paddingEnd="24dp">
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/earth_view_back"
@@ -59,17 +40,15 @@
             android:textSize="24sp" />
     </LinearLayout>
 
-    </LinearLayout>
-
     <LinearLayout
         android:id="@+id/earth_view_search_overlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
+        android:layout_marginTop="12dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/earth_view_header_overlay">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -119,8 +98,116 @@
                 android:src="@drawable/ic_close"
                 android:visibility="gone" />
         </FrameLayout>
-
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/earth_map_container"
+        android:layout_width="0dp"
+        android:layout_height="540dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_earth_map_result"
+        android:clipToOutline="true"
+        android:minHeight="540dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/earth_view_search_overlay">
+
+        <com.gps.map.camera.and.time.stamp.ui.earthview.EarthWorldWindow
+            android:id="@+id/earth_map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/earth_view_controls"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/earth_view_reset_globe"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_earth_view_control"
+                android:contentDescription="@string/earth_view_reset_globe"
+                android:elevation="8dp"
+                android:padding="11dp"
+                android:src="@drawable/ic_globe"
+                android:tint="@color/home_accent" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/earth_view_my_location"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_earth_view_control"
+                android:contentDescription="@string/earth_view_my_location"
+                android:elevation="8dp"
+                android:padding="11dp"
+                android:src="@drawable/ic_my_location"
+                android:tint="@color/home_accent" />
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/earth_view_map_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/earth_view_map_loading_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="@string/earth_view_map_loading"
+            android:src="@drawable/ic_earth_loading"
+            android:tint="@color/home_accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/earth_view_map_loading"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/earth_view_street_view_button"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_earth_street_view_button"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="@font/poppins_semibold"
+        android:gravity="center"
+        android:text="@string/earth_view_street_view"
+        android:textColor="@color/primary_text_color"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/earth_map_container" />
 
     <include
         android:id="@+id/earth_view_state_panel"
@@ -142,7 +229,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="24dp"
         android:background="@android:color/transparent"
@@ -200,7 +287,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_street_view_button"
+        android:background="@drawable/bg_earth_result_street_view_button"
         android:clickable="true"
         android:focusable="true"
         android:fontFamily="@font/poppins_semibold"
@@ -212,93 +299,5 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/earth_view_place_details" />
-
-    <LinearLayout
-        android:id="@+id/earth_view_map_loading"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ProgressBar
-            style="?android:attr/progressBarStyleSmall"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:indeterminateTint="@color/home_accent" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:fontFamily="@font/poppins_semibold"
-            android:text="@string/earth_view_map_loading"
-            android:textColor="@color/primary_text_color"
-            android:textSize="16sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/earth_view_controls"
-        android:layout_width="0dp"
-        android:layout_height="44dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginTop="56dp"
-        android:layout_marginEnd="32dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/earth_map_container">
-
-        <ImageButton
-            android:id="@+id/earth_view_reset_globe"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_map_controls"
-            android:contentDescription="@string/earth_view_reset_globe"
-            android:elevation="8dp"
-            android:padding="10dp"
-            android:src="@drawable/ic_globe"
-            android:tint="@color/home_accent" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <ImageButton
-            android:id="@+id/earth_view_my_location"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_map_controls"
-            android:contentDescription="@string/earth_view_my_location"
-            android:elevation="8dp"
-            android:padding="10dp"
-            android:src="@drawable/ic_my_location"
-            android:tint="@color/home_accent" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/earth_view_street_view_button"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_earth_street_view_button"
-        android:clickable="true"
-        android:focusable="true"
-        android:fontFamily="@font/poppins_semibold"
-        android:gravity="center"
-        android:text="@string/earth_view_street_view"
-        android:textColor="@color/primary_text_color"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/earth_view_controls" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
