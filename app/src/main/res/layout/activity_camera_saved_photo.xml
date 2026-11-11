@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#191A20"
+    android:orientation="vertical"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageButton
+            android:id="@+id/saved_photo_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="@color/white" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="12dp"
+            android:text="@string/preview_title"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/saved_photo_delete"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/delete_photo"
+            android:src="@android:drawable/ic_menu_delete"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="18dp"
+        android:background="#000000">
+
+        <ImageView
+            android:id="@+id/saved_photo_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/saved_photo_description"
+            android:scaleType="fitCenter" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="104dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp">
+
+        <TextView
+            android:id="@+id/share_whatsapp"
+            style="@style/SavedPhotoShareButton"
+            android:contentDescription="@string/share_whatsapp"
+            android:text="WA"
+            android:textColor="#25D366"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/share_facebook"
+            style="@style/SavedPhotoShareButton"
+            android:contentDescription="@string/share_facebook"
+            android:text="f"
+            android:textColor="#1877F2"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/share_instagram"
+            style="@style/SavedPhotoShareButton"
+            android:contentDescription="@string/share_instagram"
+            android:text="◎"
+            android:textColor="#E1306C" />
+
+        <TextView
+            android:id="@+id/share_more"
+            style="@style/SavedPhotoShareButton"
+            android:contentDescription="@string/share_more"
+            android:text="•••" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/saved_photo_ad_placeholder"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_marginTop="8dp"
+        android:background="#24252C"
+        android:contentDescription="@string/ad_placeholder">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/ad_placeholder"
+            android:textColor="#85858D"
+            android:textSize="12sp" />
+    </FrameLayout>
+</LinearLayout>

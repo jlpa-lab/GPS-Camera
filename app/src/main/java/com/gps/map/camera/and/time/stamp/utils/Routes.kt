@@ -7,12 +7,15 @@ import com.gps.map.camera.and.time.stamp.MainActivity
 import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewActivity
+import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
+import com.gps.map.camera.and.time.stamp.ui.livevideo.LiveVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
 import com.gps.map.camera.and.time.stamp.ui.mapview.MapViewActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.uninstall.ConfirmUninstallActivity
 import com.gps.map.camera.and.time.stamp.ui.welcome.WelcomeActivity
+import com.gps.map.camera.and.time.stamp.utils.Routes.launch
 import kotlin.jvm.java
 
 object Routes {
@@ -31,4 +34,11 @@ object Routes {
     fun startEarthViewActivity(fromActivity: Activity) = fromActivity.launch(EarthViewActivity::class.java)
     fun startStreetViewActivity(fromActivity: Activity) = fromActivity.launch(StreetViewActivity::class.java)
     fun startMapViewActivity(fromActivity: Activity) = fromActivity.launch(MapViewActivity::class.java)
+
+    fun startCameraActivity(fromActivity: Activity) =
+        fromActivity.launch(CameraActivity::class.java)
+
+    fun startLiveVideoActivity(fromActivity: Activity) =
+        fromActivity.launch(LiveVideoActivity::class.java)
+
 }

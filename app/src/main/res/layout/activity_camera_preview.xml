@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#191A20"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageButton
+            android:id="@+id/preview_back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="@color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:text="@string/preview_title"
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_preview_photo_card"
+        android:clipToOutline="true">
+
+        <ImageView
+            android:id="@+id/preview_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/captured_photo"
+            android:scaleType="centerCrop" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="76dp"
+        android:layout_marginBottom="12dp">
+
+        <ImageButton
+            android:id="@+id/preview_retake_button"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/retake_photo"
+            android:src="@android:drawable/ic_popup_sync"
+            app:tint="#B5B5BE" />
+        <TextView
+            android:id="@+id/preview_next_button"
+            android:layout_width="112dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="28dp"
+            android:background="@drawable/bg_preview_next_button"
+            android:gravity="center"
+            android:text="@string/next"
+            android:textColor="@android:color/white"
+            android:textSize="17sp" />
+        <TextView
+            android:id="@+id/preview_done_button"
+            android:layout_width="112dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="28dp"
+            android:background="@drawable/bg_preview_next_button"
+            android:gravity="center"
+            android:text="@string/done"
+            android:textColor="@android:color/white"
+            android:textSize="17sp"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

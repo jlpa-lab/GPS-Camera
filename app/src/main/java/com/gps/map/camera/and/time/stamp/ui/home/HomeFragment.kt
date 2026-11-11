@@ -23,9 +23,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         view.findViewById<View>(R.id.card_map_view).setOnClickListener {
             Routes.startMapViewActivity(requireActivity())
         }
-
-        setComingSoon(view, R.id.card_gps_camera, R.string.home_gps_camera)
-        setComingSoon(view, R.id.card_live_video, R.string.home_live_video)
+        view.findViewById<View>(R.id.card_gps_camera).setOnClickListener {
+            Routes.startCameraActivity(requireActivity())
+        }
+        view.findViewById<View>(R.id.card_live_video).setOnClickListener {
+            Routes.startLiveVideoActivity(requireActivity())
+        }
     }
 
     private fun setComingSoon(view: View, cardId: Int, labelId: Int) {

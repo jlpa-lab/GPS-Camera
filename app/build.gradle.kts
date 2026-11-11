@@ -115,6 +115,14 @@ dependencies {
     implementation("earth.worldwind:worldwind-android:2.1.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
+    implementation("androidx.appcompat:appcompat:1.8.0")
+    implementation("androidx.camera:camera-camera2:1.6.2")
+    implementation("androidx.camera:camera-lifecycle:1.6.2")
+    implementation("androidx.camera:camera-view:1.6.2")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
+    implementation("com.google.android.gms:play-services-location:21.4.0")
+    implementation("com.google.android.gms:play-services-maps:20.1.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

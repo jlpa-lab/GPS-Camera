@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#191A20">
+
+    <ImageView
+        android:id="@+id/editor_photo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/captured_photo"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:id="@+id/editor_header"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_gravity="top"
+        android:background="#F2191A20"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="14dp">
+        <ImageButton
+            android:id="@+id/editor_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@android:drawable/ic_media_previous"
+            android:tint="@android:color/white" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:text="@string/gps_camera_title"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/editor_save"
+            android:layout_width="88dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_editor_save_button"
+            android:gravity="center"
+            android:text="@string/save"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="74dp"
+        android:layout_gravity="top"
+        android:layout_marginTop="60dp"
+        android:background="#F2191A20"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+        <TextView
+            android:id="@+id/editor_tab_details"
+            style="@style/StampEditorTab"
+            android:text="@string/tab_details" />
+        <TextView
+            android:id="@+id/editor_tab_position"
+            style="@style/StampEditorTab"
+            android:text="@string/tab_position" />
+        <TextView
+            android:id="@+id/editor_tab_map"
+            style="@style/StampEditorTab"
+            android:textColor="#67A2FF"
+            android:text="@string/tab_map" />
+        <TextView
+            android:id="@+id/editor_tab_location"
+            style="@style/StampEditorTab"
+            android:text="@string/tab_location" />
+        <TextView
+            android:id="@+id/editor_tab_photo"
+            style="@style/StampEditorTab"
+            android:text="@string/tab_photo" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/editor_map_card"
+        android:layout_width="210dp"
+        android:layout_height="236dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_editor_map_card"
+        android:clipToOutline="true"
+        android:elevation="8dp">
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/editor_map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+        <TextView
+            android:id="@+id/editor_map_fallback"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#F2FFFFFF"
+            android:gravity="center"
+            android:padding="12dp"
+            android:text="@string/map_waiting_for_location"
+            android:textColor="#25303A"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_stamp_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_editor_stamp_panel"
+        android:elevation="7dp"
+        android:orientation="vertical"
+        android:padding="14dp">
+        <TextView
+            android:id="@+id/editor_date"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_editor_date_chip"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@android:color/white"
+            android:textSize="15sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/editor_address"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="3"
+                android:textColor="@android:color/white"
+                android:textSize="15sp" />
+            <TextView
+                android:id="@+id/editor_weather"
+                android:layout_width="92dp"
+                android:layout_height="92dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_editor_weather"
+                android:gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/editor_coordinates"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_editor_coordinates"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textColor="@android:color/white"
+            android:textSize="13sp" />
+    </LinearLayout>
+</FrameLayout>

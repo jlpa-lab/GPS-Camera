@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#071522">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/camera_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:scaleType="fillCenter" />
+
+    <LinearLayout
+        android:id="@+id/top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="top"
+        android:gravity="center_vertical"
+        android:background="#B3071522"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@android:drawable/ic_media_previous"
+            android:tint="@android:color/white" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:text="@string/gps_camera_title"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/map_card"
+        android:layout_width="132dp"
+        android:layout_height="150dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="72dp"
+        android:background="#EEFFFFFF"
+        android:elevation="6dp">
+
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/map_fallback_label"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#DDFFFFFF"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/map_waiting_for_location"
+            android:textColor="#263746"
+            android:textSize="12sp" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/location_stamp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="118dp"
+        android:background="#CC071522"
+        android:padding="12dp"
+        android:text="@string/location_waiting"
+        android:textColor="@android:color/white"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:id="@+id/camera_controls"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:layout_gravity="bottom"
+        android:background="#F20A1118"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp">
+
+        <ImageButton
+            android:id="@+id/flash_button"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/flash_off"
+            android:src="@android:drawable/ic_lock_idle_charging"
+            android:tint="@android:color/white" />
+
+        <Button
+            android:id="@+id/capture_button"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FFFFFFFF"
+            android:contentDescription="@string/take_photo"
+            android:text="●"
+            android:textColor="#1976D2"
+            android:textSize="36sp" />
+
+        <ImageButton
+            android:id="@+id/switch_camera_button"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/switch_camera"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:tint="@color/white" />
+    </LinearLayout>
+</FrameLayout>
+
+
