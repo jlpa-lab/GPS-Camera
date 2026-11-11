@@ -83,4 +83,97 @@
         <item name="android:textColor">@android:color/white</item>
         <item name="android:textSize">30sp</item>
     </style>
+
+    <style name="AreaMeasurementPrimaryAction">
+        <item name="android:background">@drawable/bg_area_measurement_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AreaMeasurementInvalidAction" parent="AreaMeasurementPrimaryAction">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="AreaMeasurementSecondaryAction">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AreaMeasurementBackAction">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="RoutePlanModeChip">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_route_plan_chip</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="RoutePlanPrimaryButton">
+        <item name="android:background">@drawable/bg_route_plan_primary</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="RoutePlanOutlineButton">
+        <item name="android:background">@drawable/bg_route_plan_outline</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="RoutePlanBackButton">
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="RoutePlanTextAction">
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:textColor">@color/home_accent</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="RoutePlanCaption">
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">16sp</item>
+    </style>
 </resources>

@@ -54,6 +54,16 @@
             android:theme="@style/Theme.EarthView" />
 
         <activity
+            android:name=".ui.measurement.AreaMeasurementActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView" />
+
+        <activity
+            android:name=".ui.route.RoutePlanActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView" />
+
+        <activity
             android:name=".ui.gallery.PhotoGalleryActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.EarthView" />

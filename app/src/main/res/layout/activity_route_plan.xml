@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/earth_background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/route_plan_header"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/earth_background"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <ImageButton
+            android:id="@+id/route_plan_back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/route_plan_back"
+            android:padding="4dp"
+            android:src="@drawable/ic_back_nav" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/route_plan_title"
+            android:textColor="@color/primary_text_color"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/route_plan_body"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/route_plan_input_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
+
+            <LinearLayout
+                android:id="@+id/route_plan_input_fields"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/route_plan_from_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_area_measurement_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/poppins_regular"
+                        android:text="@string/route_plan_from"
+                        android:textColor="@color/primary_text_color"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/route_plan_from_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:text="@string/route_plan_your_location"
+                        android:textColor="@color/home_accent"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/route_plan_to_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_area_measurement_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/poppins_regular"
+                        android:text="@string/route_plan_to"
+                        android:textColor="@color/primary_text_color"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/route_plan_to_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:text="@string/route_plan_select_destination"
+                        android:textColor="@color/home_accent"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/route_plan_input_modes"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/route_plan_mode_drive"
+                    style="@style/RoutePlanModeChip"
+                    android:text="@string/route_plan_drive" />
+
+                <TextView
+                    android:id="@+id/route_plan_mode_walk"
+                    style="@style/RoutePlanModeChip"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/route_plan_walk" />
+
+                <TextView
+                    android:id="@+id/route_plan_mode_cycle"
+                    style="@style/RoutePlanModeChip"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/route_plan_cycle" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="20dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/route_plan_location_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_regular"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/route_plan_location_settings"
+                    style="@style/RoutePlanTextAction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/route_plan_open_location_settings"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/route_plan_find"
+                style="@style/RoutePlanPrimaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_find_route" />
+
+            <TextView
+                android:id="@+id/route_plan_search_destination"
+                style="@style/RoutePlanOutlineButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_search_destination" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/route_plan_preview_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingBottom="40dp"
+            android:visibility="gone">
+
+            <FrameLayout
+                android:id="@+id/route_plan_map_container"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_earth_map_result"
+                android:clipToOutline="true">
+
+                <com.google.android.gms.maps.MapView
+                    android:id="@+id/route_plan_map"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:background="@drawable/bg_area_measurement_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="@string/route_plan_estimated_trip"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/route_plan_estimated_trip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:textColor="@color/home_accent"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/route_plan_preview_modes"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/route_plan_preview_mode_drive"
+                    style="@style/RoutePlanModeChip"
+                    android:text="@string/route_plan_drive" />
+
+                <TextView
+                    android:id="@+id/route_plan_preview_mode_walk"
+                    style="@style/RoutePlanModeChip"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/route_plan_walk" />
+
+                <TextView
+                    android:id="@+id/route_plan_preview_mode_cycle"
+                    style="@style/RoutePlanModeChip"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/route_plan_cycle" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/route_plan_view_directions"
+                style="@style/RoutePlanPrimaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_view_directions" />
+
+            <TextView
+                style="@style/RoutePlanCaption"
+                android:layout_width="match_parent"
+                android:layout_height="28dp"
+                android:gravity="center"
+                android:text="@string/route_plan_opens_google_maps" />
+
+            <TextView
+                android:id="@+id/route_plan_edit"
+                style="@style/RoutePlanOutlineButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_edit_route" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/route_plan_no_route_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingBottom="40dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="12dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_area_measurement_card"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:contentDescription="@string/route_plan_no_route_icon"
+                    android:src="@drawable/ic_area_measurement_warning"
+                    android:tint="@color/home_accent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="@string/route_plan_no_route_title"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/poppins_regular"
+                    android:gravity="center"
+                    android:text="@string/route_plan_no_route_message"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/route_plan_no_route_edit"
+                style="@style/RoutePlanPrimaryButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_edit_route" />
+
+            <TextView
+                android:id="@+id/route_plan_no_route_back"
+                style="@style/RoutePlanBackButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="20dp"
+                android:text="@string/route_plan_back_to_tools" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/route_plan_loading"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#660A111B"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/route_plan_loading_progress"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:indeterminateTint="@color/home_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="@string/route_plan_loading"
+                android:textColor="@color/primary_text_color"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

@@ -11,6 +11,8 @@ import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.livevideo.LiveVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
 import com.gps.map.camera.and.time.stamp.ui.mapview.MapViewActivity
+import com.gps.map.camera.and.time.stamp.ui.measurement.AreaMeasurementActivity
+import com.gps.map.camera.and.time.stamp.ui.route.RoutePlanActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.uninstall.ConfirmUninstallActivity
@@ -34,6 +36,11 @@ object Routes {
     fun startEarthViewActivity(fromActivity: Activity) = fromActivity.launch(EarthViewActivity::class.java)
     fun startStreetViewActivity(fromActivity: Activity) = fromActivity.launch(StreetViewActivity::class.java)
     fun startMapViewActivity(fromActivity: Activity) = fromActivity.launch(MapViewActivity::class.java)
+    fun startAreaMeasurementActivity(fromActivity: Activity) =
+        fromActivity.launch(AreaMeasurementActivity::class.java)
+
+    fun startRoutePlanActivity(fromActivity: Activity) =
+        fromActivity.launch(RoutePlanActivity::class.java)
 
     fun startCameraActivity(fromActivity: Activity) =
         fromActivity.launch(CameraActivity::class.java)

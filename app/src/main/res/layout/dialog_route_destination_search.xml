@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_area_measurement_card"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/route_place_search_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/poppins_semibold"
+        android:text="@string/route_plan_search_destination"
+        android:textColor="@color/primary_text_color"
+        android:textSize="18sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_route_plan_outline"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp">
+
+        <EditText
+            android:id="@+id/route_destination_search_input"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:fontFamily="@font/poppins_regular"
+            android:hint="@string/route_plan_search_hint"
+            android:imeOptions="actionSearch"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:textColor="@color/primary_text_color"
+            android:textColorHint="@color/secondary_text_color"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/route_destination_search_button"
+            style="@style/RoutePlanTextAction"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/route_plan_search" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/route_destination_search_progress"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="12dp"
+        android:indeterminateTint="@color/home_accent"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/route_destination_search_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_regular"
+        android:gravity="center"
+        android:textColor="@color/secondary_text_color"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/route_destination_search_results"
+        android:layout_width="match_parent"
+        android:layout_height="280dp"
+        android:layout_marginTop="8dp"
+        android:overScrollMode="ifContentScrolls" />
+</LinearLayout>
