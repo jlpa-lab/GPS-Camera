@@ -55,7 +55,7 @@ class LiveVideoActivity : AppCompatActivity(), OnMapReadyCallback {
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchQuery = s?.toString()?.trim().orEmpty()
+                searchQuery = s?.toString().orEmpty()
                 renderSearchResults()
                 renderMapMarkers()
             }
@@ -114,8 +114,8 @@ class LiveVideoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun matchingPins(): List<LiveVideoPin> {
         if (searchQuery.isBlank()) return emptyList()
-        val query = searchQuery.lowercase(Locale.getDefault())
-        return allPins.filter { it.name.lowercase(Locale.getDefault()).contains(query) }
+        // The exported app uses a case-sensitive substring match for camera names.
+        return allPins.filter { it.name.contains(searchQuery, ignoreCase = false) }
     }
 
     private fun renderSearchResults() {
@@ -138,7 +138,7 @@ class LiveVideoActivity : AppCompatActivity(), OnMapReadyCallback {
             row.findViewById<TextView>(R.id.live_video_result_name).text = pin.name
             row.findViewById<TextView>(R.id.live_video_result_coordinates).text =
                 String.format(Locale.getDefault(), "%.4f, %.4f", pin.latitude, pin.longitude)
-            row.setOnClickListener { openVideo(pin) }
+            row.setOnClickListener { focusPin(pin) }
             resultsContainer.addView(row)
         }
     }
@@ -165,6 +165,25 @@ class LiveVideoActivity : AppCompatActivity(), OnMapReadyCallback {
             putExtra(YoutubeVideoActivity.EXTRA_VIDEO_TITLE, pin.name)
             putExtra(YoutubeVideoActivity.EXTRA_PIN_ID, pin.id)
         })
+    }
+
+    /** Selecting a search result locates its map pin; the pin itself opens the video. */
+    private fun focusPin(pin: LiveVideoPin) {
+        val map = googleMap ?: return
+        // Clearing the query refreshes the map to show all pins, including this one.
+        searchInput.text?.clear()
+        val marker = markers.entries.firstOrNull { it.value == pin }?.key ?: return
+        resultsPanel.visibility = View.GONE
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(LatLng(pin.latitude, pin.longitude), 12f),
+            object : GoogleMap.CancelableCallback {
+                override fun onFinish() {
+                    marker.showInfoWindow()
+                }
+
+                override fun onCancel() = Unit
+            }
+        )
     }
 
     override fun onStart() { super.onStart(); mapView.onStart() }
