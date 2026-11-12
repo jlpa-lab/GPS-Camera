@@ -5,7 +5,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.os.Looper
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -14,6 +18,7 @@ import com.google.android.gms.tasks.CancellationTokenSource
 class GpsLocationProvider(context: Context) {
     private val appContext = context.applicationContext
     private val locationClient = LocationServices.getFusedLocationProviderClient(appContext)
+    private var locationCallback: LocationCallback? = null
 
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(
@@ -55,6 +60,67 @@ class GpsLocationProvider(context: Context) {
             }
     }
 
+    fun startLocationUpdates(
+        onUpdate: (Location) -> Unit,
+        onFailure: (LocationProblem) -> Unit
+    ) {
+        if (!hasPermission()) {
+            onFailure(LocationProblem.PERMISSION_DENIED)
+            return
+        }
+        if (!isLocationEnabled()) {
+            onFailure(LocationProblem.LOCATION_DISABLED)
+            return
+        }
+
+        stopLocationUpdates()
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, UPDATE_INTERVAL_MILLIS)
+            .setMinUpdateDistanceMeters(MIN_UPDATE_DISTANCE_METERS)
+            .build()
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.takeIf(::isUsable)?.let(onUpdate)
+            }
+        }
+        try {
+            locationClient.requestLocationUpdates(
+                request,
+                locationCallback!!,
+                Looper.getMainLooper()
+            )
+        } catch (_: SecurityException) {
+            stopLocationUpdates()
+            onFailure(LocationProblem.PERMISSION_DENIED)
+        } catch (_: IllegalStateException) {
+            stopLocationUpdates()
+            onFailure(LocationProblem.FIX_UNAVAILABLE)
+        }
+    }
+
+    fun reverseGeocode(location: Location, onResult: (String?) -> Unit) {
+        Thread {
+            val address = try {
+                if (!android.location.Geocoder.isPresent()) null else {
+                    @Suppress("DEPRECATION")
+                    android.location.Geocoder(appContext)
+                        .getFromLocation(location.latitude, location.longitude, 1)
+                        ?.firstOrNull()
+                        ?.let { result ->
+                            result.locality ?: result.subAdminArea ?: result.adminArea
+                        }
+                }
+            } catch (_: Exception) {
+                null
+            }
+            android.os.Handler(Looper.getMainLooper()).post { onResult(address) }
+        }.start()
+    }
+
+    fun stopLocationUpdates() {
+        locationCallback?.let { callback -> locationClient.removeLocationUpdates(callback) }
+        locationCallback = null
+    }
+
     private fun requestFreshLocation(
         onSuccess: (Location) -> Unit,
         onFailure: (LocationProblem) -> Unit
@@ -94,5 +160,7 @@ class GpsLocationProvider(context: Context) {
     private companion object {
         const val MAX_ACCEPTED_ACCURACY_METERS = 100f
         const val MAX_LOCATION_AGE_MILLIS = 5 * 60 * 1000L
+        const val UPDATE_INTERVAL_MILLIS = 5_000L
+        const val MIN_UPDATE_DISTANCE_METERS = 5f
     }
 }

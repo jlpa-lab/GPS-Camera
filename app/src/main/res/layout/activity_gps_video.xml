@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/gps_video_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/earth_background">
+
+    <FrameLayout
+        android:id="@+id/gps_video_camera_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/gps_video_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:implementationMode="compatible"
+            app:scaleType="fillCenter" />
+
+        <LinearLayout
+            android:id="@+id/gps_video_ready_top_bar"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_gravity="top"
+            android:background="#F20B121C"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp">
+
+            <ImageButton
+                android:id="@+id/gps_video_back"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/gps_video_back"
+                android:padding="8dp"
+                android:src="@drawable/ic_back_nav" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="18dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/gps_video_title"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+
+            <ImageButton
+                android:id="@+id/gps_video_flash"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/gps_video_flash"
+                android:padding="7dp"
+                android:src="@drawable/ic_flash" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/gps_video_stamp_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="178dp"
+            android:background="@drawable/bg_gps_video_stamp"
+            android:paddingStart="8dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="16dp">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="top|start"
+                android:contentDescription="@string/gps_video_location_stamp"
+                android:src="@drawable/ic_location_pin_white"
+                android:tint="@color/home_accent" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/gps_video_place"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="@string/gps_video_locating"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/gps_video_coordinates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="@string/gps_video_locating"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/gps_video_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="@font/poppins_regular"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/gps_video_ready_controls"
+            android:layout_width="match_parent"
+            android:layout_height="164dp"
+            android:layout_gravity="bottom"
+            android:background="@color/earth_background"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/gps_video_mode"
+                android:textColor="@color/home_accent"
+                android:textSize="17sp"
+                android:fontFamily="@font/poppins_semibold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/gps_video_gallery"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:id="@+id/gps_video_gallery_thumbnail"
+                        android:layout_width="46dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_area_measurement_card"
+                        android:contentDescription="@string/gps_video_gallery"
+                        android:scaleType="centerCrop" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/gps_video_gallery"
+                        android:textColor="@color/secondary_text_color"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center">
+                    <ImageButton
+                        android:id="@+id/gps_video_record"
+                        android:layout_width="74dp"
+                        android:layout_height="74dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_gps_video_record"
+                        android:contentDescription="@string/gps_video_record"
+                        android:scaleType="center" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center">
+                    <ImageButton
+                        android:id="@+id/gps_video_flip"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/gps_video_flip"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_flip_camera" />
+                </FrameLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/gps_video_recording_top_bar"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="top"
+            android:background="#F20B121C"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/gps_video_title"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/gps_video_quality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/gps_video_recording_controls"
+            android:layout_width="match_parent"
+            android:layout_height="192dp"
+            android:layout_gravity="bottom"
+            android:background="@color/earth_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="26dp"
+            android:paddingEnd="26dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/gps_video_zoom"
+                android:layout_width="72dp"
+                android:layout_height="42dp"
+                android:background="@drawable/bg_area_measurement_card"
+                android:gravity="center"
+                android:textColor="@color/primary_text_color"
+                android:textSize="16sp"
+                android:fontFamily="@font/poppins_semibold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/gps_video_pause"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:id="@+id/gps_video_pause_icon"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_gps_video_circle"
+                        android:padding="17dp"
+                        android:src="@drawable/ic_pause" />
+                    <TextView
+                        android:id="@+id/gps_video_pause_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/gps_video_pause"
+                        android:textColor="@color/primary_text_color"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/gps_video_stop"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <FrameLayout
+                        android:layout_width="76dp"
+                        android:layout_height="76dp"
+                        android:background="@drawable/bg_gps_video_stop"
+                        android:gravity="center">
+                        <View
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:layout_gravity="center"
+                            android:background="@drawable/bg_gps_video_record" />
+                    </FrameLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/gps_video_stop"
+                        android:textColor="@color/primary_text_color"
+                        android:textSize="15sp"
+                        android:fontFamily="@font/poppins_semibold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/gps_video_mic"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:id="@+id/gps_video_mic_icon"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_gps_video_circle"
+                        android:padding="15dp"
+                        android:src="@drawable/ic_mic" />
+                    <TextView
+                        android:id="@+id/gps_video_mic_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/gps_video_mic_on"
+                        android:textColor="@color/primary_text_color"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/gps_video_timer_pill"
+            android:layout_width="136dp"
+            android:layout_height="38dp"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="42dp"
+            android:background="@drawable/bg_gps_video_timer"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+            <View
+                android:id="@+id/gps_video_timer_dot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_gps_video_timer_dot" />
+            <TextView
+                android:id="@+id/gps_video_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:gravity="center"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp"
+                android:fontFamily="@font/poppins_semibold" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/gps_video_preview_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/earth_background"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/gps_video_preview_back"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/gps_video_back"
+                android:padding="8dp"
+                android:src="@drawable/ic_back_nav" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/gps_video_preview_title"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="16dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_area_measurement_card"
+            android:clipToOutline="true">
+
+            <VideoView
+                android:id="@+id/gps_video_player"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent" />
+
+            <LinearLayout
+                android:id="@+id/gps_video_preview_stamp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_margin="16dp"
+                android:background="@drawable/bg_gps_video_stamp"
+                android:orientation="vertical"
+                android:paddingStart="14dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:id="@+id/gps_video_preview_place"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/gps_video_preview_coordinates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/gps_video_preview_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/secondary_text_color"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/gps_video_position"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/gps_video_play"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/gps_video_play"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp"
+                android:fontFamily="@font/poppins_semibold" />
+            <TextView
+                android:id="@+id/gps_video_sound"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/gps_video_sound"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp"
+                android:fontFamily="@font/poppins_semibold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/gps_video_save"
+            style="@style/AreaMeasurementPrimaryAction"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/gps_video_save" />
+        <TextView
+            android:id="@+id/gps_video_record_again"
+            style="@style/LocationOutlineButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/gps_video_record_again" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/gps_video_failed_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/earth_background"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/gps_video_failed_back"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/gps_video_back"
+                android:padding="8dp"
+                android:src="@drawable/ic_back_nav" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/gps_video_preview_title"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="16dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_area_measurement_card"
+            android:gravity="center"
+            android:orientation="vertical">
+            <ImageView
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:contentDescription="@string/gps_video_save_failed"
+                android:src="@drawable/ic_area_measurement_warning" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/gps_video_save_failed"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/gps_video_save_failed_message"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/gps_video_retry_save"
+            style="@style/AreaMeasurementPrimaryAction"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/gps_video_retry_save" />
+        <TextView
+            android:id="@+id/gps_video_keep_previewing"
+            style="@style/LocationOutlineButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/gps_video_keep_previewing" />
+    </LinearLayout>
+</FrameLayout>

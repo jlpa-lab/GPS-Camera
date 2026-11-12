@@ -16,5 +16,11 @@ class ToolsFragment : Fragment(R.layout.fragment_tools) {
         view.findViewById<View>(R.id.tool_route_plan).setOnClickListener {
             Routes.startRoutePlanActivity(requireActivity())
         }
+        view.findViewById<View>(R.id.tool_location).setOnClickListener {
+            Routes.startLocationActivity(requireActivity())
+        }
+        view.findViewById<View>(R.id.tool_video).setOnClickListener {
+            Routes.startGpsVideoActivity(requireActivity())
+        }
     }
 }

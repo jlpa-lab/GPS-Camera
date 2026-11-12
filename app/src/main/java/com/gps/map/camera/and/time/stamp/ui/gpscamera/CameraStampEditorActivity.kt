@@ -31,6 +31,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.exifinterface.media.ExifInterface
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
+import com.gps.map.camera.and.time.stamp.ui.settings.StampTemplate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -82,6 +84,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var address = ""
     private var isSaving = false
     private var deleteSourceAfterSave = true
+    private val savedPreferences by lazy { AppSharedPreferencesApp(applicationContext) }
     private val galleryPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { selectedUri ->
         if (selectedUri != null) replacePhoto(selectedUri)
     }
@@ -389,8 +392,13 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun drawStamp(photo: Bitmap, mapBitmap: Bitmap?): Bitmap {
         val result = photo.copy(Bitmap.Config.ARGB_8888, true) ?: error("Could not create stamp canvas")
         val canvas = Canvas(result)
+        val template = StampTemplate.fromKey(savedPreferences.defaultStamp)
         val scale = maxOf(1f, photo.width / 1080f)
-        var textSize = 25f * scale
+        var textSize = when (template) {
+            StampTemplate.MINIMAL -> 22f * scale
+            StampTemplate.CLASSIC -> 25f * scale
+            StampTemplate.DETAILED -> 28f * scale
+        }
         val padding = 18f * scale
         if (mapBitmap != null && mapCardVisible) {
             val mapWidth = photo.width * 0.38f
@@ -405,7 +413,11 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         if (stampPanel.visibility == View.VISIBLE) {
-            val panelHeight = photo.height * 0.27f
+            val panelHeight = when (template) {
+                StampTemplate.MINIMAL -> photo.height * 0.21f
+                StampTemplate.CLASSIC -> photo.height * 0.27f
+                StampTemplate.DETAILED -> photo.height * 0.31f
+            }
             val panelTop = photo.height - panelHeight
             val panel = RectF(0f, panelTop, photo.width.toFloat(), photo.height.toFloat())
             val panelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xC9080A10.toInt() }
@@ -420,7 +432,9 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             canvas.drawText(capturedAt, chipRect.left + padding, chipRect.centerY() + textSize * 0.34f, textPaint)
 
             val addressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = textSize * 0.9f }
-            val addressLines = wrapText(address, addressPaint, photo.width * 0.62f).take(3)
+            val addressLines = wrapText(address, addressPaint, photo.width * 0.62f).take(
+                if (template == StampTemplate.MINIMAL) 1 else 3
+            )
             var baseline = chipRect.bottom + textSize * 1.6f
             addressLines.forEach { line ->
                 canvas.drawText(line, padding, baseline, addressPaint)

@@ -21,6 +21,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
+import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementUnit
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import java.util.Locale
 import kotlin.math.abs
@@ -42,6 +44,7 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var instruction: TextView
     private lateinit var pointsCount: TextView
     private lateinit var actionButton: TextView
+    private lateinit var unitButton: TextView
     private lateinit var areaValue: TextView
     private lateinit var perimeterValue: TextView
 
@@ -51,6 +54,7 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     private val points = mutableListOf<LatLng>()
     private var screenState = ScreenState.EMPTY
     private var areaUnit = AreaUnit.HECTARES
+    private val settingsPreferences by lazy { AppSharedPreferencesApp(applicationContext) }
     private val locationProvider by lazy { GpsLocationProvider(this) }
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -89,6 +93,7 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
         instruction = findViewById(R.id.area_measurement_instruction)
         pointsCount = findViewById(R.id.area_measurement_points_count)
         actionButton = findViewById(R.id.area_measurement_action)
+        unitButton = findViewById(R.id.area_measurement_unit)
 
         val areaCard = findViewById<View>(R.id.area_measurement_area_card)
         val perimeterCard = findViewById<View>(R.id.area_measurement_perimeter_card)
@@ -254,6 +259,11 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
         invalidBack.visibility = if (screenState == ScreenState.INVALID) View.VISIBLE else View.GONE
 
         pointsCount.text = points.size.toString()
+        unitButton.text = if (measurementUnit() == MeasurementUnit.METRIC) {
+            getString(R.string.area_measurement_units)
+        } else {
+            getString(R.string.area_measurement_imperial_units)
+        }
         instruction.text = if (points.isEmpty()) {
             getString(R.string.area_measurement_instruction)
         } else {
@@ -268,20 +278,35 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun formatArea(squareMeters: Double): String {
-        return if (areaUnit == AreaUnit.HECTARES) {
-            String.format(Locale.getDefault(), "%.1f ha", squareMeters / 10_000.0)
+        return if (measurementUnit() == MeasurementUnit.METRIC) {
+            if (areaUnit == AreaUnit.HECTARES) {
+                String.format(Locale.getDefault(), "%.1f ha", squareMeters / 10_000.0)
+            } else {
+                String.format(Locale.getDefault(), "%,.0f m²", squareMeters)
+            }
+        } else if (areaUnit == AreaUnit.HECTARES) {
+            String.format(Locale.getDefault(), "%.1f ac", squareMeters / 4_046.8564224)
         } else {
-            String.format(Locale.getDefault(), "%,.0f m²", squareMeters)
+            String.format(Locale.getDefault(), "%,.0f ft²", squareMeters * 10.7639104167)
         }
     }
 
     private fun formatDistance(meters: Double): String {
-        return if (meters >= 1_000.0) {
+        return if (measurementUnit() == MeasurementUnit.IMPERIAL) {
+            if (meters >= 1_609.344) {
+                String.format(Locale.getDefault(), "%.1f mi", meters / 1_609.344)
+            } else {
+                String.format(Locale.getDefault(), "%,.0f ft", meters * 3.280839895)
+            }
+        } else if (meters >= 1_000.0) {
             String.format(Locale.getDefault(), "%.1f km", meters / 1_000.0)
         } else {
             String.format(Locale.getDefault(), "%.0f m", meters)
         }
     }
+
+    private fun measurementUnit(): MeasurementUnit =
+        MeasurementUnit.fromKey(settingsPreferences.measurementUnit)
 
     private fun showInvalidState() {
         screenState = ScreenState.INVALID

@@ -31,6 +31,7 @@ import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.welcome.WelcomeActivity
+import com.gps.map.camera.and.time.stamp.ui.theme.ThemeManager
 
 /** Tracks the visible activity so application-level resume navigation stays safe. */
 class GlobalApplication : AdsMultiDexApplication() {
@@ -47,6 +48,7 @@ class GlobalApplication : AdsMultiDexApplication() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        ThemeManager.initialize(this)
         LocaleManager.initialize(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleObserver())
         registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())

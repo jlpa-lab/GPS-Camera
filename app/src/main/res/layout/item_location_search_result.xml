@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/location_search_result_name"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:ellipsize="end"
+    android:focusable="true"
+    android:fontFamily="@font/poppins_semibold"
+    android:gravity="center_vertical"
+    android:maxLines="1"
+    android:paddingStart="28dp"
+    android:paddingEnd="20dp"
+    android:textColor="@color/primary_text_color"
+    android:textSize="16sp" />

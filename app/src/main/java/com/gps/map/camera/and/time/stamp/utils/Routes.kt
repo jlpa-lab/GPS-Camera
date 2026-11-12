@@ -8,10 +8,12 @@ import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewActivity
 import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
+import com.gps.map.camera.and.time.stamp.ui.gpsvideo.GpsVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.livevideo.LiveVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
 import com.gps.map.camera.and.time.stamp.ui.mapview.MapViewActivity
 import com.gps.map.camera.and.time.stamp.ui.measurement.AreaMeasurementActivity
+import com.gps.map.camera.and.time.stamp.ui.location.LocationActivity
 import com.gps.map.camera.and.time.stamp.ui.route.RoutePlanActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
@@ -42,8 +44,14 @@ object Routes {
     fun startRoutePlanActivity(fromActivity: Activity) =
         fromActivity.launch(RoutePlanActivity::class.java)
 
+    fun startLocationActivity(fromActivity: Activity) =
+        fromActivity.launch(LocationActivity::class.java)
+
     fun startCameraActivity(fromActivity: Activity) =
         fromActivity.launch(CameraActivity::class.java)
+
+    fun startGpsVideoActivity(fromActivity: Activity) =
+        fromActivity.launch(GpsVideoActivity::class.java)
 
     fun startLiveVideoActivity(fromActivity: Activity) =
         fromActivity.launch(LiveVideoActivity::class.java)

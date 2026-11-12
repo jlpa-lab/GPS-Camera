@@ -20,6 +20,12 @@ class AppSharedPreferencesApp(context: Context) : AppSharedPref {
         private const val IS_USER_GLOBAL = "is_user_global"
 
         private const val IS_RATE = "is_rate"
+
+        private const val APPEARANCE_MODE = "appearance_mode"
+
+        private const val MEASUREMENT_UNIT = "measurement_unit"
+
+        private const val DEFAULT_STAMP = "default_stamp"
     }
 
     override val sharedPref: SharedPreferences =
@@ -51,6 +57,18 @@ class AppSharedPreferencesApp(context: Context) : AppSharedPref {
     override var isRate: Boolean
         get() = sharedPref.getBoolean(IS_RATE, false)
         set(value) = editor.putBoolean(IS_RATE, value).apply()
+
+    override var appearanceMode: String
+        get() = sharedPref.getString(APPEARANCE_MODE, "dark") ?: "dark"
+        set(value) = editor.putString(APPEARANCE_MODE, value).apply()
+
+    override var measurementUnit: String
+        get() = sharedPref.getString(MEASUREMENT_UNIT, "metric") ?: "metric"
+        set(value) = editor.putString(MEASUREMENT_UNIT, value).apply()
+
+    override var defaultStamp: String
+        get() = sharedPref.getString(DEFAULT_STAMP, "classic") ?: "classic"
+        set(value) = editor.putString(DEFAULT_STAMP, value).apply()
 
 }
 

@@ -19,6 +19,12 @@ interface AppSharedPref {
     var isUserGlobal: Boolean
 
     var isRate: Boolean
+
+    var appearanceMode: String
+
+    var measurementUnit: String
+
+    var defaultStamp: String
 }
 
 

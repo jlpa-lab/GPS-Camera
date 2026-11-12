@@ -15,6 +15,7 @@
     <color name="tracker_green">#2878F0</color>
     <color name="on_boarding_background">#0F161F</color>
     <color name="primary_text_color">#F3F7FC</color>
+    <color name="location_primary_text">#EEF4FC</color>
     <color name="secondary_text_color">#AFBDCE</color>
     <color name="home_screen_top">#091321</color>
     <color name="home_screen_bottom">#173D6D</color>
