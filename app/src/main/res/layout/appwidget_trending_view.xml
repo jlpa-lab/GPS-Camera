@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="225dp"
+    android:background="@drawable/bg_widget_trending_card"
+    android:clipToOutline="true"
+    android:orientation="vertical"
+    android:padding="1dp">
+
+    <ImageView
+        android:id="@+id/widget_image"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:contentDescription="@string/widget_trending_view"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:id="@+id/widget_action"
+        android:layout_width="match_parent"
+        android:layout_height="63dp"
+        android:background="@drawable/bg_widget_trending_footer"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="22dp"
+        android:paddingEnd="18dp">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/poppins_semibold"
+            android:textColor="@color/primary_text_color"
+            android:textSize="17sp" />
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:contentDescription="@string/widget_trending_view"
+            android:src="@drawable/ic_arrow_right"
+            android:tint="#A7C9FF" />
+    </LinearLayout>
+</LinearLayout>

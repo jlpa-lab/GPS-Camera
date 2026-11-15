@@ -1,178 +1,543 @@
 package com.gps.map.camera.and.time.stamp.ui.streetview
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
+import android.graphics.Point
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.ProgressBar
+import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.location.LocationServices
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.OnStreetViewPanoramaReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.StreetViewPanoramaLocation
+import com.google.android.gms.maps.model.StreetViewPanoramaCamera
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
-import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceAdapter
-import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
-import com.gps.map.camera.and.time.stamp.utils.Routes
-import android.text.Editable
-import android.text.TextWatcher
-import kotlinx.coroutines.Dispatchers
+import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
-class StreetViewActivity : AppCompatActivity(), OnStreetViewPanoramaReadyCallback {
+/** Lets the user drop Pegman on a real map before opening Street View. */
+class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
+    OnStreetViewPanoramaReadyCallback {
 
-    private enum class StreetViewState {
-        STREET_VIEW_FAILED,
-        LOCATION_UNAVAILABLE
-    }
+    private enum class ScreenState { DRAG, RELEASE, PANORAMA, UNAVAILABLE }
 
     private lateinit var panoramaView: StreetViewPanoramaView
-    private lateinit var panoramaContainer: FrameLayout
-    private lateinit var searchInput: EditText
-    private lateinit var searchProgress: ProgressBar
-    private lateinit var searchResults: RecyclerView
-    private lateinit var placeAdapter: EarthPlaceAdapter
-    private lateinit var defaultControls: View
-    private lateinit var exploreEarthButton: View
-    private lateinit var backToMapButton: View
-    private lateinit var contentScroll: View
-    private lateinit var statePanel: View
-    private lateinit var stateIcon: android.widget.ImageView
-    private lateinit var stateTitle: TextView
-    private lateinit var stateMessage: TextView
-    private lateinit var statePrimaryButton: TextView
-    private lateinit var stateSecondaryButton: TextView
-    private lateinit var locationTitle: TextView
-    private lateinit var locationDescription: TextView
-    private lateinit var locationMeta: TextView
+    private lateinit var mapView: MapView
+    private lateinit var previewContainer: FrameLayout
+    private lateinit var mapContainer: FrameLayout
+    private lateinit var dragHint: View
+    private lateinit var hintIcon: ImageView
+    private lateinit var hintTitle: TextView
+    private lateinit var hintMessage: TextView
+    private lateinit var tryAnotherRoad: TextView
+    private lateinit var panoramaLocation: View
+    private lateinit var panoramaFullscreen: TextView
+    private lateinit var mapPlace: TextView
+    private lateinit var pegman: ImageView
+    private lateinit var mapZoomIn: TextView
+    private lateinit var mapZoomOut: TextView
+    private lateinit var panoramaZoomIn: TextView
+    private lateinit var panoramaZoomOut: TextView
+
+    private var googleMap: GoogleMap? = null
+    private val coverageRoads = mutableListOf<Polyline>()
+    private var shouldUseCurrentLocation = false
+    private var manualPlaceSelected = false
     private var panorama: StreetViewPanorama? = null
-    private var searchJob: Job? = null
+    private var panoramaHasLocation = false
     private var selectedPlace: EarthPlace? = null
-    private var streetViewState: StreetViewState? = null
-    private val locationClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
+    private var state = ScreenState.DRAG
+    private var mapFullscreen = false
+    private var panoramaFullscreenMode = false
+    private var permissionWasRequested = false
+    private var returningFromSettings = false
+    private var lastLocationProblem: GpsLocationProvider.LocationProblem? = null
+    private var downRawX = 0f
+    private var downRawY = 0f
+    private var pegmanMoved = false
+    private var locationJob: Job? = null
+    private var panoramaJob: Job? = null
+    private var panoramaRequest = 0
+    private val locationProvider by lazy { GpsLocationProvider(this) }
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.any { it }) {
+            enableMyLocationLayer()
+            findCurrentPlace()
+        } else {
+            lastLocationProblem = GpsLocationProvider.LocationProblem.PERMISSION_DENIED
+            showUnavailable()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_street_view)
+        bindViews()
+        selectedPlace = if (
+            intent.getBooleanExtra(EXTRA_CURRENT_LOCATION_ONLY, false)
+        ) {
+            null
+        } else {
+            readInitialPlace()
+        }
+        shouldUseCurrentLocation = selectedPlace == null
+        bindActions()
 
-        panoramaView = findViewById(R.id.street_view_panorama)
-        panoramaContainer = findViewById(R.id.street_view_panorama_container)
-        searchInput = findViewById(R.id.street_view_search_input)
-        searchProgress = findViewById(R.id.street_view_search_progress)
-        searchResults = findViewById(R.id.street_view_search_results)
-        defaultControls = findViewById(R.id.street_view_default_controls)
-        exploreEarthButton = findViewById(R.id.street_view_explore_earth_button)
-        backToMapButton = findViewById(R.id.street_view_back_to_map)
-        contentScroll = findViewById(R.id.street_view_content_scroll)
-        statePanel = findViewById(R.id.street_view_state_panel)
-        stateIcon = findViewById(R.id.earth_view_state_icon)
-        stateTitle = findViewById(R.id.earth_view_state_title)
-        stateMessage = findViewById(R.id.earth_view_state_message)
-        statePrimaryButton = findViewById(R.id.earth_view_state_primary_button)
-        stateSecondaryButton = findViewById(R.id.earth_view_state_secondary_button)
-        locationTitle = findViewById(R.id.street_view_location_title)
-        locationDescription = findViewById(R.id.street_view_location_description)
-        locationMeta = findViewById(R.id.street_view_location_meta)
-        selectedPlace = readInitialPlace()
-        panoramaContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
-        panoramaContainer.clipToOutline = true
-        updateStreetViewMode(selectedPlace != null)
-
-        searchResults.layoutManager = LinearLayoutManager(this)
-        placeAdapter = EarthPlaceAdapter(::showPlace)
-        searchResults.adapter = placeAdapter
-
-        findViewById<View>(R.id.street_view_back).setOnClickListener { finish() }
-        findViewById<View>(R.id.street_view_search_button).setOnClickListener {
-            searchPlace(searchInput.text.toString())
-        }
-        findViewById<View>(R.id.street_view_earth_button).setOnClickListener {
-            Routes.startEarthViewActivity(this)
-        }
-        findViewById<View>(R.id.street_view_reset_button).setOnClickListener {
-            resetDefaultStreetView()
-        }
-        exploreEarthButton.setOnClickListener {
-            Routes.startEarthViewActivity(this)
-        }
-        backToMapButton.setOnClickListener {
-            finish()
-        }
-        statePrimaryButton.setOnClickListener { retryStreetView() }
-        stateSecondaryButton.setOnClickListener { chooseAnotherPlace() }
-        findViewById<ImageButton>(R.id.street_view_clear_search).setOnClickListener {
-            searchInput.text?.clear()
-            searchInput.clearFocus()
-            hideKeyboard()
-        }
-        searchInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                searchPlace(searchInput.text.toString())
-                true
-            } else {
-                false
-            }
-        }
-        searchInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
-
-            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
-                findViewById<View>(R.id.street_view_clear_search).visibility =
-                    if (text?.isNotBlank() == true) View.VISIBLE else View.GONE
-            }
-
-            override fun afterTextChanged(text: Editable?) = Unit
-        })
-
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync(this)
         panoramaView.onCreate(savedInstanceState)
         panoramaView.getStreetViewPanoramaAsync(this)
+
+        selectedPlace?.let { updatePlace(it) } ?: findCurrentPlace()
+        showPreviewState()
+    }
+
+    private fun bindViews() {
+        panoramaView = findViewById(R.id.street_view_panorama)
+        mapView = findViewById(R.id.street_view_aerial_map)
+        previewContainer = findViewById(R.id.street_view_preview_container)
+        mapContainer = findViewById(R.id.street_view_map_container)
+        dragHint = findViewById(R.id.street_view_drag_hint)
+        hintIcon = findViewById(R.id.street_view_hint_icon)
+        hintTitle = findViewById(R.id.street_view_hint_title)
+        hintMessage = findViewById(R.id.street_view_hint_message)
+        tryAnotherRoad = findViewById(R.id.street_view_try_another_road)
+        panoramaLocation = findViewById(R.id.street_view_panorama_location)
+        panoramaFullscreen = findViewById(R.id.street_view_panorama_fullscreen)
+        mapPlace = findViewById(R.id.street_view_map_place)
+        pegman = findViewById(R.id.street_view_pegman)
+        mapZoomIn = findViewById(R.id.street_view_map_zoom_in)
+        mapZoomOut = findViewById(R.id.street_view_map_zoom_out)
+        panoramaZoomIn = findViewById(R.id.street_view_panorama_zoom_in)
+        panoramaZoomOut = findViewById(R.id.street_view_panorama_zoom_out)
+
+        previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
+        previewContainer.clipToOutline = true
+        mapContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
+        mapContainer.clipToOutline = true
+        // Keep Pegman visible even while the location fix or the map camera
+        // is still being initialised. It is the entry point for a manual map
+        // selection, so it must never depend on a panorama callback.
+        pegman.visibility = View.VISIBLE
+
+        // The page container must not steal map gestures. In particular, a
+        // vertical move during a pinch can otherwise be interpreted as page
+        // scrolling instead of Google Maps zoom/pan input.
+        protectMapGestures(mapView)
+        protectMapGestures(panoramaView)
+    }
+
+    private fun protectMapGestures(mapSurface: View) {
+        mapSurface.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_POINTER_DOWN,
+                MotionEvent.ACTION_MOVE -> view.parent?.requestDisallowInterceptTouchEvent(true)
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL -> view.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+            false
+        }
+    }
+
+    private fun bindActions() {
+        findViewById<View>(R.id.street_view_back).setOnClickListener {
+            if (state == ScreenState.PANORAMA) {
+                finish()
+            } else if (mapFullscreen) {
+                toggleMapFullscreen()
+            } else {
+                finish()
+            }
+        }
+        findViewById<ImageButton>(R.id.street_view_map_fullscreen)
+            .setOnClickListener { toggleMapFullscreen() }
+        panoramaFullscreen.setOnClickListener { togglePanoramaFullscreen() }
+        tryAnotherRoad.setOnClickListener { openStreetView() }
+        pegman.setOnTouchListener(::onPegmanTouch)
+        mapZoomIn.setOnClickListener { zoomMap(1f) }
+        mapZoomOut.setOnClickListener { zoomMap(-1f) }
+        panoramaZoomIn.setOnClickListener { zoomPanorama(0.5f) }
+        panoramaZoomOut.setOnClickListener { zoomPanorama(-0.5f) }
+    }
+
+    override fun onMapReady(map: GoogleMap) {
+        googleMap = map
+        map.uiSettings.isMapToolbarEnabled = false
+        map.uiSettings.isZoomControlsEnabled = false
+        map.uiSettings.isCompassEnabled = false
+        map.uiSettings.isZoomGesturesEnabled = true
+        map.uiSettings.isScrollGesturesEnabled = true
+        map.uiSettings.isRotateGesturesEnabled = true
+        map.uiSettings.isTiltGesturesEnabled = false
+        map.mapType = GoogleMap.MAP_TYPE_NORMAL
+        map.setOnMapClickListener(::selectMapPoint)
+        map.setOnPolylineClickListener { road ->
+            // Blue coverage roads are real interaction targets, not decoration.
+            // Resolve the panorama at the road end when the user taps one.
+            road.points.lastOrNull()?.let(::selectMapPoint)
+        }
+        enableMyLocationLayer()
+        selectedPlace?.let { drawPlace(it) } ?: resetPegmanToCorner()
+    }
+
+    private fun enableMyLocationLayer() {
+        val map = googleMap ?: return
+        if (!locationProvider.hasPermission()) return
+        try {
+            // Let Google Maps render its native blue current-location dot.
+            map.isMyLocationEnabled = true
+        } catch (_: SecurityException) {
+            // Permission may be revoked while the map is starting.
+        }
     }
 
     override fun onStreetViewPanoramaReady(readyPanorama: StreetViewPanorama) {
         panorama = readyPanorama
-        readyPanorama.setOnStreetViewPanoramaChangeListener { location ->
-            if (location == null) {
-                showStreetViewState(StreetViewState.STREET_VIEW_FAILED)
-            } else {
-                hideStreetViewState()
-            }
-        }
         readyPanorama.isUserNavigationEnabled = true
         readyPanorama.isZoomGesturesEnabled = true
         readyPanorama.isPanningGesturesEnabled = true
         readyPanorama.isStreetNamesEnabled = true
-        val initialPlace = selectedPlace
-        if (initialPlace == null) {
-            loadDefaultStreetView()
-        } else {
-            readyPanorama.setPosition(
-                LatLng(initialPlace.latitude, initialPlace.longitude),
-                PANORAMA_SEARCH_RADIUS_METERS
-            )
-            searchInput.setText(initialPlace.name)
-            updateLocationCard(
-                initialPlace.name,
-                formatAddress(initialPlace)
-            )
-            updateStreetViewMode(true)
+        readyPanorama.setOnStreetViewPanoramaChangeListener { location ->
+            if (location == null) {
+                panoramaHasLocation = false
+                if (state == ScreenState.PANORAMA) showUnavailable()
+            } else {
+                panoramaHasLocation = true
+                panoramaJob?.cancel()
+                drawCoverageRoad(location)
+                showPreviewState()
+            }
         }
+        // The preview is the default state. If the panorama callback arrived
+        // after the place was loaded, request that place now instead of waiting
+        // for a Pegman drag.
+        selectedPlace?.let {
+            requestPanorama(LatLng(it.latitude, it.longitude))
+        } ?: showPreviewState()
+    }
+
+    private fun onPegmanTouch(view: View, event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                view.tag = floatArrayOf(view.translationX, view.translationY)
+                downRawX = event.rawX
+                downRawY = event.rawY
+                pegmanMoved = false
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val start = view.tag as? FloatArray ?: return true
+                pegmanMoved = pegmanMoved ||
+                    abs(event.rawX - downRawX) > dp(8) || abs(event.rawY - downRawY) > dp(8)
+                view.translationX = start[0] + event.rawX - downRawX
+                view.translationY = start[1] + event.rawY - downRawY
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                val wasMoved = pegmanMoved
+                val droppedPoint = if (wasMoved) pegmanDropPoint() else null
+                view.animate().translationX(0f).translationY(0f).setDuration(160).start()
+                if (droppedPoint != null) {
+                    selectMapPoint(droppedPoint)
+                } else {
+                    openStreetView()
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                view.animate().translationX(0f).translationY(0f).setDuration(160).start()
+                return true
+            }
+        }
+        return true
+    }
+
+    private fun showDragState() {
+        // Kept as a compatibility entry point for older state callbacks. The
+        // usable preview is now always the first screen; the user can tap a
+        // covered road or Pegman directly.
+        showPreviewState()
+    }
+
+    private fun showReleaseState() {
+        showPreviewState()
+    }
+
+    private fun showPreviewState() {
+        state = ScreenState.PANORAMA
+        val hasPreview = selectedPlace != null && panorama != null && panoramaHasLocation
+        dragHint.visibility = if (hasPreview) View.GONE else View.VISIBLE
+        panoramaView.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaLocation.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaFullscreen.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaZoomIn.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaZoomOut.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        tryAnotherRoad.visibility = View.GONE
+        findViewById<TextView>(R.id.street_view_section_title)
+            .setText(R.string.street_view_title)
+        if (!hasPreview) {
+            hintIcon.setImageResource(R.drawable.ic_globe)
+            hintIcon.background = null
+            hintIcon.setPadding(dp(20), dp(20), dp(20), dp(20))
+            hintTitle.setText(R.string.street_view_title)
+            hintMessage.setText(R.string.street_view_loading_message)
+        }
+    }
+
+    private fun openStreetView(point: LatLng? = null) {
+        val place = selectedPlace
+        if (place == null) {
+            showUnavailable()
+            return
+        }
+        requestPanorama(point ?: LatLng(place.latitude, place.longitude))
+    }
+
+    private fun showUnavailable() {
+        state = ScreenState.UNAVAILABLE
+        panoramaHasLocation = false
+        panoramaJob?.cancel()
+        dragHint.visibility = View.VISIBLE
+        panoramaView.visibility = View.GONE
+        panoramaLocation.visibility = View.GONE
+        panoramaFullscreen.visibility = View.GONE
+        hintIcon.setImageResource(R.drawable.ic_earth_map_error)
+        hintIcon.background = null
+        hintIcon.setPadding(dp(20), dp(20), dp(20), dp(20))
+        hintTitle.setText(R.string.street_view_no_street_view_title)
+        hintMessage.setText(R.string.street_view_no_coverage_message)
+        tryAnotherRoad.visibility = View.VISIBLE
+    }
+
+    private fun updatePlace(place: EarthPlace) {
+        selectedPlace = place
+        mapPlace.text = formatMapPlace(place)
+        findViewById<TextView>(R.id.street_view_location_title).text = place.name
+        findViewById<TextView>(R.id.street_view_location_description).text =
+            getString(R.string.street_view_location_meta)
+        drawPlace(place)
+    }
+
+    private fun drawPlace(place: EarthPlace) {
+        googleMap?.let { map ->
+            val point = LatLng(place.latitude, place.longitude)
+            map.clear()
+            clearCoverageRoads()
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 16f))
+            positionPegman(point)
+        }
+        // Request the nearest panorama immediately so coverage roads are
+        // visible before the user opens Street View.
+        panorama?.setPosition(
+            LatLng(place.latitude, place.longitude),
+            PANORAMA_SEARCH_RADIUS_METERS
+        )
+    }
+
+    private fun selectMapPoint(point: LatLng) {
+        manualPlaceSelected = true
+        shouldUseCurrentLocation = false
+        val current = selectedPlace ?: EarthPlace(
+            getString(R.string.earth_view_current_location),
+            "",
+            point.latitude,
+            point.longitude
+        )
+        selectedPlace = current.copy(latitude = point.latitude, longitude = point.longitude)
+        mapPlace.text = formatMapPlace(selectedPlace!!)
+        clearCoverageRoads()
+        positionPegman(point)
+        // A normal map tap is the quick path: resolve the nearest panorama and
+        // show it immediately. Pegman remains available for another road.
+        openStreetView(point)
+    }
+
+    private fun pegmanDropPoint(): LatLng? {
+        val map = googleMap ?: return null
+        val x = (pegman.x + pegman.translationX + pegman.width / 2f - mapView.left).toInt()
+        val y = (pegman.y + pegman.translationY + pegman.height - mapView.top).toInt()
+        return map.projection.fromScreenLocation(Point(x, y))
+    }
+
+    private fun positionPegman(point: LatLng) {
+        val map = googleMap ?: return
+        pegman.post {
+            if (mapContainer.width == 0 || mapContainer.height == 0) return@post
+            val screenPoint = map.projection.toScreenLocation(point)
+            pegman.x = (mapView.left + screenPoint.x - pegman.width / 2f)
+                .coerceIn(0f, (mapContainer.width - pegman.width).toFloat())
+            pegman.y = (mapView.top + screenPoint.y - pegman.height.toFloat())
+                .coerceIn(0f, (mapContainer.height - pegman.height).toFloat())
+            pegman.translationX = 0f
+            pegman.translationY = 0f
+            pegman.visibility = View.VISIBLE
+        }
+    }
+
+    private fun resetPegmanToCorner() {
+        pegman.post {
+            pegman.x = (mapContainer.width - pegman.width - dp(20)).coerceAtLeast(0).toFloat()
+            pegman.y = (mapContainer.height - pegman.height - dp(20)).coerceAtLeast(0).toFloat()
+            pegman.translationX = 0f
+            pegman.translationY = 0f
+            pegman.visibility = View.VISIBLE
+        }
+    }
+
+    private fun drawCoverageRoad(location: StreetViewPanoramaLocation) {
+        val map = googleMap ?: return
+        clearCoverageRoads()
+        val center = location.position ?: return
+        positionPegman(center)
+        val links = location.links ?: return
+        if (links.isEmpty()) return
+        links.forEach { link ->
+            coverageRoads += map.addPolyline(
+                PolylineOptions()
+                    .add(center, pointAlongBearing(center, link.bearing, 220.0))
+                    .color(getColor(R.color.home_accent))
+                    .width(10f)
+                    .zIndex(2f)
+                    .clickable(true)
+            )
+        }
+    }
+
+    private fun clearCoverageRoads() {
+        coverageRoads.forEach { it.remove() }
+        coverageRoads.clear()
+    }
+
+    private fun zoomMap(amount: Float) {
+        googleMap?.animateCamera(CameraUpdateFactory.zoomBy(amount))
+    }
+
+    private fun zoomPanorama(amount: Float) {
+        val currentPanorama = panorama ?: return
+        val current = currentPanorama.panoramaCamera
+        val camera = StreetViewPanoramaCamera.Builder(current)
+            .zoom((current.zoom + amount).coerceAtLeast(0f))
+            .build()
+        currentPanorama.animateTo(camera, PANORAMA_ZOOM_ANIMATION_MS)
+    }
+
+    private fun pointAlongBearing(start: LatLng, bearing: Float, distanceMeters: Double): LatLng {
+        val radius = 6_371_000.0
+        val angularDistance = distanceMeters / radius
+        val bearingRadians = Math.toRadians(bearing.toDouble())
+        val lat1 = Math.toRadians(start.latitude)
+        val lon1 = Math.toRadians(start.longitude)
+        val lat2 = Math.asin(
+            Math.sin(lat1) * Math.cos(angularDistance) +
+                Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(bearingRadians)
+        )
+        val lon2 = lon1 + Math.atan2(
+            Math.sin(bearingRadians) * Math.sin(angularDistance) * Math.cos(lat1),
+            Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2)
+        )
+        return LatLng(Math.toDegrees(lat2), Math.toDegrees(lon2))
+    }
+
+    private fun findCurrentPlace() {
+        if (!locationProvider.hasPermission()) {
+            permissionWasRequested = true
+            locationPermissionLauncher.launch(locationPermissions())
+            return
+        }
+        locationJob?.cancel()
+        locationJob = lifecycleScope.launch {
+            locationProvider.findCurrentLocation(
+                onSuccess = { location ->
+                    runOnUiThread {
+                        if (shouldUseCurrentLocation && !manualPlaceSelected) {
+                            updatePlace(
+                                EarthPlace(
+                                    getString(R.string.earth_view_current_location),
+                                    "",
+                                    location.latitude,
+                                    location.longitude
+                                )
+                            )
+                        }
+                    }
+                },
+                onFailure = { problem ->
+                    runOnUiThread {
+                        lastLocationProblem = problem
+                        showUnavailable()
+                    }
+                }
+            )
+        }
+    }
+
+    private fun requestPanorama(point: LatLng) {
+        val request = ++panoramaRequest
+        panoramaJob?.cancel()
+        panoramaHasLocation = false
+        showPreviewState()
+        panorama?.setPosition(point, PANORAMA_SEARCH_RADIUS_METERS)
+
+        // The SDK reports a null location when no panorama exists, but a
+        // network/service failure can leave the view waiting indefinitely.
+        // Always give the user a useful retry state instead of an endless
+        // "Loading nearby Street View" card.
+        panoramaJob = lifecycleScope.launch {
+            delay(PANORAMA_LOAD_TIMEOUT_MS)
+            if (request == panoramaRequest && !panoramaHasLocation) {
+                showUnavailable()
+            }
+        }
+    }
+
+    private fun toggleMapFullscreen() {
+        mapFullscreen = !mapFullscreen
+        previewContainer.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_divider).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_map_title).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        mapPlace.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        val params = mapContainer.layoutParams
+        params.height = dp(
+            if (mapFullscreen) FULLSCREEN_PANEL_HEIGHT_DP else NORMAL_MAP_HEIGHT_DP
+        )
+        mapContainer.layoutParams = params
+        mapContainer.requestLayout()
+    }
+
+    private fun togglePanoramaFullscreen() {
+        panoramaFullscreenMode = !panoramaFullscreenMode
+        findViewById<View>(R.id.street_view_map_title).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        mapPlace.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        mapContainer.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_divider).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        val params = previewContainer.layoutParams
+        params.height = dp(
+            if (panoramaFullscreenMode) FULLSCREEN_PANEL_HEIGHT_DP else NORMAL_PREVIEW_HEIGHT_DP
+        )
+        previewContainer.layoutParams = params
+        previewContainer.requestLayout()
     }
 
     private fun readInitialPlace(): EarthPlace? {
@@ -180,251 +545,62 @@ class StreetViewActivity : AppCompatActivity(), OnStreetViewPanoramaReadyCallbac
         val address = intent.getStringExtra(EXTRA_PLACE_ADDRESS)?.trim().orEmpty()
         val latitude = intent.getDoubleExtra(EXTRA_PLACE_LATITUDE, Double.NaN)
         val longitude = intent.getDoubleExtra(EXTRA_PLACE_LONGITUDE, Double.NaN)
-        return if (
-            name.isNotEmpty() &&
-            latitude in -90.0..90.0 &&
-            longitude in -180.0..180.0
-        ) {
+        return if (name.isNotEmpty() && latitude in -90.0..90.0 && longitude in -180.0..180.0) {
             EarthPlace(name, address, latitude, longitude)
-        } else {
-            null
-        }
+        } else null
     }
 
-    private fun searchPlace(query: String) {
-        val placeQuery = query.trim()
-        if (placeQuery.isEmpty()) return
-
-        hideKeyboard()
-        selectedPlace = null
-        updateStreetViewMode(false)
-        searchJob?.cancel()
-        searchResults.visibility = View.GONE
-        searchProgress.visibility = View.VISIBLE
-
-        searchJob = lifecycleScope.launch {
-            val result = runCatching {
-                withContext(Dispatchers.IO) {
-                    EarthPlaceSearch.search(placeQuery)
-                }
-            }
-            searchProgress.visibility = View.GONE
-            result.onSuccess { places ->
-                if (places.isEmpty()) {
-                    Toast.makeText(
-                        this@StreetViewActivity,
-                        getString(R.string.street_view_place_not_found, placeQuery),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    placeAdapter.submitList(places.take(MAX_SEARCH_RESULTS))
-                    searchResults.visibility = View.VISIBLE
-                    updateStreetViewMode(false)
-                }
-            }.onFailure {
-                Toast.makeText(
-                    this@StreetViewActivity,
-                    R.string.street_view_search_failed,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    private fun showPlace(place: EarthPlace) {
-        selectedPlace = place
-        searchResults.visibility = View.GONE
-        searchInput.setText(place.name)
-        searchInput.clearFocus()
-        updateLocationCard(place.name, formatAddress(place))
-        updateStreetViewMode(true)
-
-        panorama?.setPosition(
-            LatLng(place.latitude, place.longitude),
-            PANORAMA_SEARCH_RADIUS_METERS
-        )
-    }
-
-    private fun updateLocationCard(name: String, address: String) {
-        locationTitle.text = name
-        locationDescription.text = address
-        locationMeta.setText(R.string.street_view_location_meta)
-    }
-
-    private fun updateStreetViewMode(resultMode: Boolean) {
-        val compactMode = resultMode || searchResults.visibility == View.VISIBLE
-        val layoutParams = panoramaContainer.layoutParams
-        layoutParams.height = dp(
-            if (compactMode) RESULT_PANORAMA_HEIGHT_DP else DEFAULT_PANORAMA_HEIGHT_DP
-        )
-        panoramaContainer.layoutParams = layoutParams
-        defaultControls.visibility = if (compactMode) View.GONE else View.VISIBLE
-        exploreEarthButton.visibility = if (compactMode) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.street_view_location_card).visibility =
-            if (resultMode) View.VISIBLE else View.GONE
-        backToMapButton.visibility = if (resultMode) View.VISIBLE else View.GONE
-    }
-
-    private fun showStreetViewState(state: StreetViewState) {
-        streetViewState = state
-        contentScroll.visibility = View.GONE
-        statePanel.visibility = View.VISIBLE
-        stateIcon.setImageResource(
-            when (state) {
-                StreetViewState.STREET_VIEW_FAILED -> R.drawable.ic_earth_map_error
-                StreetViewState.LOCATION_UNAVAILABLE -> R.drawable.ic_my_location
-            }
-        )
-        stateTitle.setText(
-            when (state) {
-                StreetViewState.STREET_VIEW_FAILED -> R.string.street_view_load_failed_title
-                StreetViewState.LOCATION_UNAVAILABLE -> R.string.street_view_location_unavailable_title
-            }
-        )
-        stateMessage.setText(
-            when (state) {
-                StreetViewState.STREET_VIEW_FAILED -> R.string.street_view_load_failed_message
-                StreetViewState.LOCATION_UNAVAILABLE -> R.string.street_view_location_unavailable_message
-            }
-        )
-        statePrimaryButton.setText(
-            when (state) {
-                StreetViewState.STREET_VIEW_FAILED -> R.string.street_view_retry
-                StreetViewState.LOCATION_UNAVAILABLE -> R.string.street_view_try_again
-            }
-        )
-        stateSecondaryButton.setText(
-            when (state) {
-                StreetViewState.STREET_VIEW_FAILED -> R.string.street_view_choose_another_place
-                StreetViewState.LOCATION_UNAVAILABLE -> R.string.street_view_search_manually
-            }
-        )
-        statePrimaryButton.background = getDrawable(R.drawable.bg_street_view_button)
-        stateSecondaryButton.background = getDrawable(
-            if (state == StreetViewState.LOCATION_UNAVAILABLE) {
-                R.drawable.bg_earth_place_card
-            } else {
-                R.drawable.bg_earth_street_view_button
-            }
-        )
-        statePrimaryButton.setTextColor(getColor(R.color.white))
-        stateSecondaryButton.setTextColor(getColor(R.color.primary_text_color))
-    }
-
-    private fun hideStreetViewState() {
-        streetViewState = null
-        statePanel.visibility = View.GONE
-        contentScroll.visibility = View.VISIBLE
-    }
-
-    private fun retryStreetView() {
-        val state = streetViewState
-        hideStreetViewState()
-        if (state == StreetViewState.LOCATION_UNAVAILABLE) {
-            loadDefaultStreetView()
-            return
-        }
-        val place = selectedPlace
-        if (place != null) {
-            updateLocationCard(place.name, formatAddress(place))
-            updateStreetViewMode(true)
-            panorama?.setPosition(
-                LatLng(place.latitude, place.longitude),
-                PANORAMA_SEARCH_RADIUS_METERS
-            )
-        } else {
-            loadDefaultStreetView()
-        }
-    }
-
-    private fun chooseAnotherPlace() {
-        selectedPlace = null
-        searchInput.text?.clear()
-        searchResults.visibility = View.GONE
-        hideStreetViewState()
-        updateStreetViewMode(false)
-        searchInput.requestFocus()
-    }
-
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
-
-    private fun loadDefaultStreetView() {
-        val readyPanorama = panorama ?: return
-        selectedPlace = null
-        searchInput.text?.clear()
-        updateLocationCard(DEFAULT_PLACE_NAME, DEFAULT_ADDRESS)
-        updateStreetViewMode(false)
-
-        if (!hasLocationPermission()) {
-            showStreetViewState(StreetViewState.LOCATION_UNAVAILABLE)
-            return
-        }
-        locationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null && selectedPlace == null && panorama === readyPanorama) {
-                readyPanorama.setPosition(
-                    LatLng(location.latitude, location.longitude),
-                    PANORAMA_SEARCH_RADIUS_METERS
-                )
-            } else if (location == null) {
-                showStreetViewState(StreetViewState.LOCATION_UNAVAILABLE)
-            }
-        }.addOnFailureListener {
-            showStreetViewState(StreetViewState.LOCATION_UNAVAILABLE)
-        }
-    }
-
-    private fun hasLocationPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-
-    private fun resetDefaultStreetView() {
-        searchInput.clearFocus()
-        searchResults.visibility = View.GONE
-        loadDefaultStreetView()
-    }
-
-    private fun formatAddress(place: EarthPlace): String {
+    private fun formatMapPlace(place: EarthPlace): String {
         val parts = place.address.split(',').map(String::trim).filter(String::isNotEmpty)
-        return if (parts.size >= 2) parts.takeLast(2).joinToString(", ") else place.address
+        return if (parts.isNotEmpty()) "${place.name}, ${parts.takeLast(2).joinToString(", ")}" else place.name
     }
 
-    private fun hideKeyboard() {
-        (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
-            ?.hideSoftInputFromWindow(searchInput.windowToken, 0)
-    }
+    private fun locationPermissions() = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onResume() {
         super.onResume()
+        mapView.onResume()
         panoramaView.onResume()
+        if (returningFromSettings) {
+            returningFromSettings = false
+            findCurrentPlace()
+        }
     }
 
     override fun onPause() {
+        mapView.onPause()
         panoramaView.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
-        searchJob?.cancel()
+        locationJob?.cancel()
+        panoramaJob?.cancel()
+        locationProvider.stopLocationUpdates()
+        mapView.onDestroy()
         panoramaView.onDestroy()
         super.onDestroy()
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
+        mapView.onLowMemory()
         panoramaView.onLowMemory()
     }
 
-    private companion object {
-        val DEFAULT_LOCATION = LatLng(35.0037, 135.7788)
-        const val DEFAULT_PLACE_NAME = "Higashiyama, Kyoto"
-        const val DEFAULT_ADDRESS = "Kyoto, Japan"
-        const val PANORAMA_SEARCH_RADIUS_METERS = 150
-        const val DEFAULT_PANORAMA_HEIGHT_DP = 540
-        const val RESULT_PANORAMA_HEIGHT_DP = 425
-        const val MAX_SEARCH_RESULTS = 5
+    companion object {
+        private const val NORMAL_PREVIEW_HEIGHT_DP = 280
+        private const val NORMAL_MAP_HEIGHT_DP = 270
+        private const val FULLSCREEN_PANEL_HEIGHT_DP = 680
+        const val PANORAMA_SEARCH_RADIUS_METERS = 500
+        const val PANORAMA_LOAD_TIMEOUT_MS = 12_000L
+        const val PANORAMA_ZOOM_ANIMATION_MS = 220L
+        const val EXTRA_CURRENT_LOCATION_ONLY = "street_view_current_location_only"
         const val EXTRA_PLACE_NAME = "earth_view_place_name"
         const val EXTRA_PLACE_ADDRESS = "earth_view_place_address"
         const val EXTRA_PLACE_LATITUDE = "earth_view_place_latitude"

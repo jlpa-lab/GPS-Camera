@@ -464,6 +464,10 @@ class GpsVideoActivity : AppCompatActivity() {
         player.setVideoPath(file.absolutePath)
         player.setOnPreparedListener { mediaPlayer ->
             previewPlayer = mediaPlayer
+            (player as? CenteredVideoView)?.setVideoSize(
+                mediaPlayer.videoWidth,
+                mediaPlayer.videoHeight
+            )
             mediaPlayer.isLooping = false
             mediaPlayer.setVolume(if (isSoundEnabled) 1f else 0f, if (isSoundEnabled) 1f else 0f)
             mediaPlayer.start()
@@ -635,7 +639,7 @@ class GpsVideoActivity : AppCompatActivity() {
         )
         timerText.setTextColor(Color.parseColor(if (paused) "#FFD47D" else "#EEF4FC"))
         timerText.text = if (paused) {
-            getString(R.string.gps_video_paused_timer, formatDuration(recordingDurationMillis()))
+            getString(R.string.gps_video_paused_timer, formatRecordingDuration(recordingDurationMillis()))
         } else {
             formatRecordingDuration(recordingDurationMillis())
         }

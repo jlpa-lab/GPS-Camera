@@ -49,6 +49,10 @@ class CameraPhotoPreviewActivity : AppCompatActivity() {
                 putExtra(CameraActivity.EXTRA_LATITUDE, latitude)
                 putExtra(CameraActivity.EXTRA_LONGITUDE, longitude)
                 putExtra(CameraActivity.EXTRA_CAPTURED_AT, capturedAt)
+                putExtra(
+                    CameraActivity.EXTRA_RETURN_TO_GALLERY,
+                    intent.getBooleanExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, false)
+                )
             })
             finish()
         }

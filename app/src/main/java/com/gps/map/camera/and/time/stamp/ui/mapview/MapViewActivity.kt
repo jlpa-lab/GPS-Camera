@@ -12,6 +12,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.location.Geocoder
+import android.location.Location
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,8 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Size
 import android.view.View
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -28,16 +31,17 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
@@ -47,17 +51,24 @@ import com.gps.map.camera.and.time.stamp.bases.ext.isNetwork
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
 import com.gps.map.camera.and.time.stamp.ui.gallery.PhotoGalleryActivity
+import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
-import android.location.LocationManager
 import android.view.animation.LinearInterpolator
 
 class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
-    private enum class MapState {
+    private enum class UiState {
+        DEFAULT,
+        SEARCH,
+        CURRENT_LOCATION,
+        RESULTS,
+        SELECTED_PLACE,
+        LOADING,
         NO_PLACES,
         OFFLINE,
         MAP_FAILED,
@@ -88,6 +99,8 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     private lateinit var placeAddress: TextView
     private lateinit var placeAdapter: MapPlaceAdapter
     private lateinit var locationCount: TextView
+    private lateinit var recentSearchesTitle: TextView
+    private val recentSearchRows = mutableListOf<View>()
     private var googleMap: GoogleMap? = null
     private var searchJob: Job? = null
     private var photoJob: Job? = null
@@ -99,10 +112,15 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     private var activeSharePlace: EarthPlace? = null
     private var pendingCurrentPlace: EarthPlace? = null
     private var isMapLoading = false
-    private var mapState: MapState? = null
+    private var uiState: UiState = UiState.LOADING
+    private var lastSearchQuery = ""
+    private var showingCurrentLocation = false
+    private var currentLocationPlace: EarthPlace? = null
+    private var returnToCurrentLocation = false
     private var userLocationShown = false
     private val photoMarkers = mutableMapOf<Marker, PhotoLocation>()
-    private val locationClient by lazy { LocationServices.getFusedLocationProviderClient(this) }
+    private val locationProvider by lazy { GpsLocationProvider(this) }
+    private val mapLocationMarkerIcon by lazy { createMapLocationMarkerIcon() }
 
     private val mediaPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -114,14 +132,14 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.values.any { it }) {
-            if (isLocationEnabled()) {
+            if (locationProvider.isLocationEnabled()) {
                 enableLocationLayer()
                 moveToCurrentLocation()
             } else {
-                showMapState(MapState.LOCATION_TURNED_OFF)
+                showMapState(UiState.LOCATION_TURNED_OFF)
             }
         } else {
-            showMapState(MapState.LOCATION_ACCESS_NEEDED)
+            showMapState(UiState.LOCATION_ACCESS_NEEDED)
         }
     }
 
@@ -151,12 +169,23 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         placeTitle = findViewById(R.id.map_view_place_title)
         placeAddress = findViewById(R.id.map_view_place_address)
         locationCount = findViewById(R.id.map_view_location_count)
+        recentSearchesTitle = findViewById(R.id.map_view_recent_searches_title)
+        recentSearchRows += listOf(
+            findViewById(R.id.map_view_recent_station),
+            findViewById(R.id.map_view_recent_palace),
+            findViewById(R.id.map_view_recent_gion),
+            findViewById(R.id.map_view_recent_fourth),
+            findViewById(R.id.map_view_recent_fifth)
+        )
+        renderRecentSearches()
 
         searchResults.layoutManager = LinearLayoutManager(this)
         placeAdapter = MapPlaceAdapter(::moveToPlace)
         searchResults.adapter = placeAdapter
 
-        findViewById<View>(R.id.map_view_back).setOnClickListener { finish() }
+        findViewById<View>(R.id.map_view_back).setOnClickListener {
+            if (!handleUiBack()) superOnBackPressed()
+        }
         findViewById<View>(R.id.map_view_search_button).setOnClickListener {
             submitSearch()
         }
@@ -174,22 +203,35 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         searchInput.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) showSearchMode()
         }
-        findViewById<View>(R.id.map_view_recent_station).setOnClickListener {
-            selectRecentSearch(R.string.map_view_recent_station)
-        }
-        findViewById<View>(R.id.map_view_recent_palace).setOnClickListener {
-            selectRecentSearch(R.string.map_view_recent_palace)
-        }
-        findViewById<View>(R.id.map_view_recent_gion).setOnClickListener {
-            selectRecentSearch(R.string.map_view_recent_gion)
-        }
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
+            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = text?.toString()?.trim().orEmpty()
+                searchJob?.cancel()
+                if (query.isEmpty()) {
+                    placeAdapter.submitList(emptyList())
+                    searchResults.visibility = View.GONE
+                    resultsContent.visibility = View.GONE
+                    return
+                }
+                showSearchMode()
+                if (query.length < MIN_QUERY_LENGTH) return
+                searchJob = lifecycleScope.launch {
+                    delay(SEARCH_DEBOUNCE_MS)
+                    searchPlace(query)
+                }
+            }
+
+            override fun afterTextChanged(text: Editable?) = Unit
+        })
         findViewById<View>(R.id.map_view_my_location).setOnClickListener {
-            if (hasLocationPermission()) {
-                if (isLocationEnabled()) {
+            if (locationProvider.hasPermission()) {
+                if (locationProvider.isLocationEnabled()) {
                     enableLocationLayer()
                     moveToCurrentLocation()
                 } else {
-                    showMapState(MapState.LOCATION_TURNED_OFF)
+                    showMapState(UiState.LOCATION_TURNED_OFF)
                 }
             } else {
                 locationPermissionLauncher.launch(
@@ -225,10 +267,10 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
 
         mapView.onCreate(savedInstanceState)
         setMapLoading(true)
-        if (!isNetwork()) showMapState(MapState.OFFLINE)
+        if (!isNetwork()) showMapState(UiState.OFFLINE)
         mapLoadTimeoutJob = lifecycleScope.launch {
             kotlinx.coroutines.delay(MAP_LOAD_TIMEOUT_MS)
-            if (googleMap == null && mapState == null) showMapState(MapState.MAP_FAILED)
+            if (googleMap == null && uiState == UiState.LOADING) showMapState(UiState.MAP_FAILED)
         }
         mapView.getMapAsync(this)
         requestMediaPermissionIfNeeded()
@@ -241,14 +283,15 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         readyMap.uiSettings.isZoomControlsEnabled = false
         readyMap.uiSettings.isMapToolbarEnabled = false
         readyMap.uiSettings.isCompassEnabled = false
+        readyMap.uiSettings.isMyLocationButtonEnabled = false
         readyMap.setOnMarkerClickListener(this)
         updateStyleButtons()
         if (!isNetwork()) {
             setMapLoading(false)
-            showMapState(MapState.OFFLINE)
+            showMapState(UiState.OFFLINE)
             return
         }
-        if (mapState == MapState.OFFLINE) hideMapState()
+        if (uiState == UiState.OFFLINE) hideMapState()
         requestLocationPermissionIfNeeded()
         loadPhotoLocations()
         mapLoadingJob?.cancel()
@@ -259,9 +302,9 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     }
 
     private fun requestLocationPermissionIfNeeded() {
-        if (hasLocationPermission()) {
-            if (!isLocationEnabled()) {
-                showMapState(MapState.LOCATION_TURNED_OFF)
+        if (locationProvider.hasPermission()) {
+            if (!locationProvider.isLocationEnabled()) {
+                showMapState(UiState.LOCATION_TURNED_OFF)
                 return
             }
             enableLocationLayer()
@@ -350,7 +393,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             MarkerOptions()
                 .position(LatLng(photo.latitude, photo.longitude))
                 .title(photo.name)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
         ) ?: return
         photoMarkers[marker] = photo
         lifecycleScope.launch(Dispatchers.IO) {
@@ -405,19 +448,20 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     private fun searchPlace(query: String) {
         val placeQuery = query.trim()
         if (placeQuery.isEmpty()) return
-        hideKeyboard()
-        searchJob?.cancel()
+        lastSearchQuery = placeQuery
+        hideSearchMode()
         searchResults.visibility = View.GONE
         resultsContent.visibility = View.GONE
         setStylePanelMode(false)
         setMapResultsMode(false)
         setPlaceDetailsMode(false)
         hideMapState()
+        setMapLoading(true)
         searchProgress.visibility = View.VISIBLE
         searchJob = lifecycleScope.launch {
             if (!isNetwork()) {
                 searchProgress.visibility = View.GONE
-                showMapState(MapState.OFFLINE)
+                showMapState(UiState.OFFLINE)
                 return@launch
             }
             val result = runCatching {
@@ -426,32 +470,38 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             searchProgress.visibility = View.GONE
             result.onSuccess { places ->
                 if (places.isEmpty()) {
-                    showMapState(MapState.NO_PLACES)
+                    showMapState(UiState.NO_PLACES)
                 } else {
+                    saveRecentSearch(placeQuery)
                     placeAdapter.submitList(places.take(MAX_SEARCH_RESULTS))
                     searchResults.visibility = View.VISIBLE
                     resultsTitle.text = getString(R.string.map_view_places_in, placeQuery)
                     setMapResultsMode(true)
                 }
             }.onFailure {
-                showMapState(if (isNetwork()) MapState.MAP_FAILED else MapState.OFFLINE)
+                showMapState(if (isNetwork()) UiState.MAP_FAILED else UiState.OFFLINE)
             }
         }
     }
 
     private fun submitSearch() {
+        searchJob?.cancel()
+        hideKeyboard()
         hideSearchMode()
         searchPlace(searchInput.text.toString())
     }
 
     private fun showSearchMode() {
+        if (uiState == UiState.CURRENT_LOCATION) returnToCurrentLocation = true
         hideMapState()
         searchResults.visibility = View.GONE
         resultsContent.visibility = View.GONE
         setStylePanelMode(false)
         setPlaceDetailsMode(false)
+        renderRecentSearches()
         searchModePanel.visibility = View.VISIBLE
         findViewById<View>(R.id.map_view_container).visibility = View.GONE
+        uiState = UiState.SEARCH
     }
 
     private fun hideSearchMode() {
@@ -459,8 +509,8 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         findViewById<View>(R.id.map_view_container).visibility = View.VISIBLE
     }
 
-    private fun showMapState(state: MapState) {
-        mapState = state
+    private fun showMapState(state: UiState) {
+        uiState = state
         mapLoadingJob?.cancel()
         setMapLoading(false)
         searchResults.visibility = View.GONE
@@ -473,108 +523,124 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
 
         stateIcon.setImageResource(
             when (state) {
-                MapState.NO_PLACES -> R.drawable.ic_search
-                MapState.OFFLINE -> R.drawable.ic_wifi_off
-                MapState.MAP_FAILED -> R.drawable.ic_earth_map_error
-                MapState.LOCATION_TURNED_OFF -> R.drawable.ic_my_location
-                MapState.LOCATION_ACCESS_NEEDED -> R.drawable.ic_location_access
+                UiState.NO_PLACES -> R.drawable.ic_search
+                UiState.OFFLINE -> R.drawable.ic_wifi_off
+                UiState.MAP_FAILED -> R.drawable.ic_earth_map_error
+                UiState.LOCATION_TURNED_OFF -> R.drawable.ic_my_location
+                UiState.LOCATION_ACCESS_NEEDED -> R.drawable.ic_location_access
+                else -> R.drawable.ic_earth_map_error
             }
         )
         stateTitle.setText(
             when (state) {
-                MapState.NO_PLACES -> R.string.map_view_no_places_title
-                MapState.OFFLINE -> R.string.map_view_offline_title
-                MapState.MAP_FAILED -> R.string.map_view_map_failed_title
-                MapState.LOCATION_TURNED_OFF -> R.string.map_view_location_off_title
-                MapState.LOCATION_ACCESS_NEEDED -> R.string.map_view_location_access_title
+                UiState.NO_PLACES -> R.string.map_view_no_places_title
+                UiState.OFFLINE -> R.string.map_view_offline_title
+                UiState.MAP_FAILED -> R.string.map_view_map_failed_title
+                UiState.LOCATION_TURNED_OFF -> R.string.map_view_location_off_title
+                UiState.LOCATION_ACCESS_NEEDED -> R.string.map_view_location_access_title
+                else -> R.string.map_view_map_failed_title
             }
         )
         stateMessage.setText(
             when (state) {
-                MapState.NO_PLACES -> R.string.map_view_no_places_message
-                MapState.OFFLINE -> R.string.map_view_offline_message
-                MapState.MAP_FAILED -> R.string.map_view_map_failed_message
-                MapState.LOCATION_TURNED_OFF -> R.string.map_view_location_off_message
-                MapState.LOCATION_ACCESS_NEEDED -> R.string.map_view_location_access_message
+                UiState.NO_PLACES -> R.string.map_view_no_places_message
+                UiState.OFFLINE -> R.string.map_view_offline_message
+                UiState.MAP_FAILED -> R.string.map_view_map_failed_message
+                UiState.LOCATION_TURNED_OFF -> R.string.map_view_location_off_message
+                UiState.LOCATION_ACCESS_NEEDED -> R.string.map_view_location_access_message
+                else -> R.string.map_view_map_failed_message
             }
         )
         statePrimaryButton.setText(
             when (state) {
-                MapState.NO_PLACES -> R.string.map_view_search_again
-                MapState.OFFLINE, MapState.MAP_FAILED -> R.string.map_view_retry
-                MapState.LOCATION_TURNED_OFF -> R.string.map_view_turn_on_location
-                MapState.LOCATION_ACCESS_NEEDED -> R.string.map_view_open_settings
+                UiState.NO_PLACES -> R.string.map_view_search_again
+                UiState.OFFLINE, UiState.MAP_FAILED -> R.string.map_view_retry
+                UiState.LOCATION_TURNED_OFF -> R.string.map_view_turn_on_location
+                UiState.LOCATION_ACCESS_NEEDED -> R.string.map_view_open_settings
+                else -> R.string.map_view_retry
             }
         )
         stateSecondaryButton.setText(
             when (state) {
-                MapState.NO_PLACES -> R.string.map_view_explore_map
-                MapState.OFFLINE -> R.string.map_view_back_action
-                MapState.MAP_FAILED -> R.string.map_view_search_another
-                MapState.LOCATION_TURNED_OFF,
-                MapState.LOCATION_ACCESS_NEEDED -> R.string.map_view_search_manually
+                UiState.NO_PLACES -> R.string.map_view_explore_map
+                UiState.OFFLINE -> R.string.map_view_back_action
+                UiState.MAP_FAILED -> R.string.map_view_search_another
+                UiState.LOCATION_TURNED_OFF,
+                UiState.LOCATION_ACCESS_NEEDED -> R.string.map_view_search_manually
+                else -> R.string.map_view_back_action
             }
         )
         stateSecondaryButton.background = when (state) {
-            MapState.NO_PLACES -> ContextCompat.getDrawable(this, R.drawable.bg_earth_street_view_button)
-            MapState.MAP_FAILED,
-            MapState.LOCATION_TURNED_OFF,
-            MapState.LOCATION_ACCESS_NEEDED -> ContextCompat.getDrawable(this, R.drawable.bg_earth_place_card)
-            MapState.OFFLINE -> null
+            UiState.NO_PLACES -> ContextCompat.getDrawable(this, R.drawable.bg_earth_street_view_button)
+            UiState.MAP_FAILED,
+            UiState.LOCATION_TURNED_OFF,
+            UiState.LOCATION_ACCESS_NEEDED -> ContextCompat.getDrawable(this, R.drawable.bg_earth_place_card)
+            UiState.OFFLINE -> null
+            else -> null
         }
         stateSecondaryButton.setTextColor(
             ContextCompat.getColor(
                 this,
-                if (state == MapState.OFFLINE) R.color.secondary_text_color else R.color.primary_text_color
+                if (state == UiState.OFFLINE) R.color.secondary_text_color else R.color.primary_text_color
             )
         )
     }
 
     private fun hideMapState() {
-        mapState = null
+        if (uiState !in setOf(
+                UiState.DEFAULT,
+                UiState.SEARCH,
+                UiState.CURRENT_LOCATION,
+                UiState.RESULTS,
+                UiState.SELECTED_PLACE,
+                UiState.LOADING
+            )
+        ) {
+            uiState = UiState.DEFAULT
+        }
         statePanel.visibility = View.GONE
         findViewById<View>(R.id.map_view_container).visibility = View.VISIBLE
     }
 
     private fun handleMapStatePrimaryAction() {
-        when (mapState) {
-            MapState.NO_PLACES -> {
+        when (uiState) {
+            UiState.NO_PLACES -> {
                 hideMapState()
                 hideSearchMode()
                 searchPlace(searchInput.text.toString())
             }
-            MapState.OFFLINE,
-            MapState.MAP_FAILED -> retryMap()
-            MapState.LOCATION_TURNED_OFF -> openLocationSettings()
-            MapState.LOCATION_ACCESS_NEEDED -> openAppSettings()
-            null -> Unit
+            UiState.OFFLINE,
+            UiState.MAP_FAILED -> retryMap()
+            UiState.LOCATION_TURNED_OFF -> openLocationSettings()
+            UiState.LOCATION_ACCESS_NEEDED -> openAppSettings()
+            else -> Unit
         }
     }
 
     private fun handleMapStateSecondaryAction() {
-        when (mapState) {
-            MapState.NO_PLACES -> {
+        when (uiState) {
+            UiState.NO_PLACES -> {
                 hideMapState()
                 hideSearchMode()
                 setMapLoading(false)
             }
-            MapState.MAP_FAILED -> {
+            UiState.MAP_FAILED -> {
                 hideMapState()
                 showSearchMode()
             }
-            MapState.LOCATION_TURNED_OFF,
-            MapState.LOCATION_ACCESS_NEEDED -> {
+            UiState.LOCATION_TURNED_OFF,
+            UiState.LOCATION_ACCESS_NEEDED -> {
                 hideMapState()
                 showSearchMode()
             }
-            MapState.OFFLINE -> finish()
-            null -> Unit
+            UiState.OFFLINE -> finish()
+            else -> Unit
         }
     }
 
     private fun retryMap() {
         if (!isNetwork()) {
-            showMapState(MapState.OFFLINE)
+            showMapState(UiState.OFFLINE)
             return
         }
         hideMapState()
@@ -583,7 +649,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         mapLoadingJob = lifecycleScope.launch {
             kotlinx.coroutines.delay(MAP_LOADING_MIN_MS)
             if (googleMap == null) {
-                showMapState(MapState.MAP_FAILED)
+                showMapState(UiState.MAP_FAILED)
             } else {
                 setMapLoading(false)
             }
@@ -606,10 +672,18 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         val container = findViewById<View>(R.id.map_view_container)
         val layoutParams = container.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
         if (active) {
+            uiState = UiState.RESULTS
+            // A delayed map-load failure can arrive after search results have
+            // been returned. Results must own this area instead of sharing it
+            // with the full-screen error panel.
+            statePanel.visibility = View.GONE
             layoutParams.height = dp(425)
             layoutParams.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
             resultsContent.visibility = View.VISIBLE
         } else {
+            if (!isMapLoading && placeDetails.visibility != View.VISIBLE) {
+                uiState = UiState.DEFAULT
+            }
             layoutParams.height = 0
             layoutParams.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             resultsContent.visibility = View.GONE
@@ -626,6 +700,8 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         val container = findViewById<View>(R.id.map_view_container)
         val layoutParams = container.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
         if (active && place != null) {
+            uiState = if (showingCurrentLocation) UiState.CURRENT_LOCATION else UiState.SELECTED_PLACE
+            statePanel.visibility = View.GONE
             layoutParams.height = dp(392)
             layoutParams.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
             activeSharePlace = place
@@ -633,6 +709,9 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             placeAddress.text = formatPlaceAddress(place)
             placeDetails.visibility = View.VISIBLE
         } else {
+            if (!isMapLoading && resultsContent.visibility != View.VISIBLE) {
+                uiState = UiState.DEFAULT
+            }
             layoutParams.height = 0
             layoutParams.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             activeSharePlace = null
@@ -643,6 +722,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
 
     private fun setMapLoading(loading: Boolean) {
         isMapLoading = loading
+        if (loading) uiState = UiState.LOADING
         mapLoading.visibility = if (loading) View.VISIBLE else View.GONE
         if (loading) {
             startMapLoadingAnimation()
@@ -660,11 +740,13 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             val place = pendingCurrentPlace
             pendingCurrentPlace = null
             setPlaceDetailsMode(true, place)
+            if (showingCurrentLocation && place != null) resolveCurrentLocationAddress(place)
             return
         } else if (stylePanel.visibility != View.VISIBLE &&
             resultsContent.visibility != View.VISIBLE &&
             placeDetails.visibility != View.VISIBLE
         ) {
+            if (uiState == UiState.LOADING) uiState = UiState.DEFAULT
             layoutParams.height = 0
             layoutParams.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
         }
@@ -729,25 +811,85 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
 
-    private fun selectRecentSearch(stringRes: Int) {
-        searchInput.setText(getString(stringRes))
+    private fun createMapLocationMarkerIcon(): BitmapDescriptor {
+        val drawable = requireNotNull(
+            AppCompatResources.getDrawable(this, R.drawable.ic_map_location_marker)
+        )
+        val width = drawable.intrinsicWidth.coerceAtLeast(dp(32))
+        val height = drawable.intrinsicHeight.coerceAtLeast(dp(32))
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+            density = resources.displayMetrics.densityDpi
+        }
+        Canvas(bitmap).also { canvas ->
+            drawable.setBounds(0, 0, width, height)
+            drawable.draw(canvas)
+        }
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    private fun selectRecentSearch(query: String) {
+        searchInput.setText(query)
         searchInput.setSelection(searchInput.text.length)
+    }
+
+    private fun renderRecentSearches() {
+        val searches = loadRecentSearches()
+        recentSearchesTitle.visibility = if (searches.isEmpty()) View.GONE else View.VISIBLE
+
+        recentSearchRows.forEachIndexed { index, row ->
+            val query = searches.getOrNull(index)
+            row.visibility = if (query == null) View.GONE else View.VISIBLE
+            if (query != null) {
+                val label = row.findViewById<TextView>(recentSearchLabelIds[index])
+                label.text = query
+                row.setOnClickListener { selectRecentSearch(query) }
+            }
+        }
+    }
+
+    private fun loadRecentSearches(): List<String> {
+        return getSharedPreferences(RECENT_SEARCHES_PREFS, MODE_PRIVATE)
+            .getString(RECENT_SEARCHES_KEY, "")
+            .orEmpty()
+            .split(RECENT_SEARCH_SEPARATOR)
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .take(MAX_RECENT_SEARCHES)
+    }
+
+    private fun saveRecentSearch(query: String) {
+        val updated = (listOf(query) + loadRecentSearches())
+            .distinctBy { it.lowercase(Locale.ROOT) }
+            .take(MAX_RECENT_SEARCHES)
+        getSharedPreferences(RECENT_SEARCHES_PREFS, MODE_PRIVATE)
+            .edit()
+            .putString(RECENT_SEARCHES_KEY, updated.joinToString(RECENT_SEARCH_SEPARATOR))
+            .apply()
+        renderRecentSearches()
     }
 
     private fun moveToPlace(place: EarthPlace) {
         val map = googleMap ?: return
         val position = LatLng(place.latitude, place.longitude)
+        showingCurrentLocation = false
+        returnToCurrentLocation = false
         searchResults.visibility = View.GONE
         resultsContent.visibility = View.GONE
         setPlaceDetailsMode(true, place)
-        searchInput.setText(place.name)
         searchInput.clearFocus()
         searchMarker?.remove()
-        searchMarker = map.addMarker(MarkerOptions().position(position).title(place.name))
+        searchMarker = map.addMarker(
+            MarkerOptions()
+                .position(position)
+                .title(place.name)
+                .icon(mapLocationMarkerIcon)
+                .anchor(0.5f, 1f)
+        )
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, SEARCH_ZOOM))
     }
 
     private fun searchAnotherPlace() {
+        returnToCurrentLocation = true
         setMapLoading(false)
         setStylePanelMode(false)
         setPlaceDetailsMode(false)
@@ -767,11 +909,14 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             place.latitude,
             place.longitude
         )
-        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+        hideKeyboard()
+        searchInput.clearFocus()
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_SUBJECT, getString(R.string.map_view_share_subject, place.name))
             putExtra(Intent.EXTRA_TEXT, shareText)
-        }, getString(R.string.map_view_share_location)))
+        }
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.map_view_share_location)))
     }
 
     private fun formatPlaceAddress(place: EarthPlace): String {
@@ -799,41 +944,60 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
 
     private fun enableLocationLayer() {
         val map = googleMap ?: return
-        if (hasLocationPermission()) {
-            try {
-                map.isMyLocationEnabled = true
-            } catch (_: SecurityException) {
-            }
+        // Location is provided by the shared GpsLocationProvider and our own marker.
+        // Keep Google's layer off so it cannot add a second blue location control/marker.
+        map.uiSettings.isMyLocationButtonEnabled = false
+        try {
+            map.isMyLocationEnabled = false
+        } catch (_: SecurityException) {
         }
     }
 
     private fun moveToCurrentLocation() {
-        if (!hasLocationPermission()) return
-        locationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                userLocationShown = true
-                val currentPlace = EarthPlace(
-                    name = getString(R.string.map_view_current_location_title),
-                    address = getString(R.string.map_view_current_location_address),
-                    latitude = location.latitude,
-                    longitude = location.longitude
-                )
-                setPlaceDetailsMode(true, currentPlace)
-                searchMarker?.remove()
-                searchMarker = googleMap?.addMarker(
-                    MarkerOptions()
-                        .position(LatLng(location.latitude, location.longitude))
-                        .title(currentPlace.name)
-                )
-                googleMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(
-                        LatLng(location.latitude, location.longitude),
-                        CURRENT_LOCATION_ZOOM
-                    )
-                )
-                resolveCurrentLocationAddress(currentPlace)
+        if (!locationProvider.hasPermission()) return
+        locationProvider.findCurrentLocation(
+            onSuccess = { location -> runOnUiThread { showCurrentLocation(location) } },
+            onFailure = { problem -> runOnUiThread { showLocationProblem(problem) } }
+        )
+    }
+
+    private fun showCurrentLocation(location: Location) {
+        userLocationShown = true
+        showingCurrentLocation = true
+        val currentPlace = EarthPlace(
+            name = getString(R.string.map_view_current_location_title),
+            address = getString(R.string.map_view_current_location_address),
+            latitude = location.latitude,
+            longitude = location.longitude
+        )
+        currentLocationPlace = currentPlace
+        // The custom marker is the location result; Google's blue location layer stays off.
+        setPlaceDetailsMode(true, currentPlace)
+        if (!isMapLoading) resolveCurrentLocationAddress(currentPlace)
+        searchMarker?.remove()
+        searchMarker = googleMap?.addMarker(
+            MarkerOptions()
+                .position(LatLng(location.latitude, location.longitude))
+                .title(currentPlace.name)
+                .icon(mapLocationMarkerIcon)
+                .anchor(0.5f, 1f)
+        )
+        googleMap?.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(location.latitude, location.longitude),
+                CURRENT_LOCATION_ZOOM
+            )
+        )
+    }
+
+    private fun showLocationProblem(problem: GpsLocationProvider.LocationProblem) {
+        showMapState(
+            when (problem) {
+                GpsLocationProvider.LocationProblem.LOCATION_DISABLED -> UiState.LOCATION_TURNED_OFF
+                GpsLocationProvider.LocationProblem.PERMISSION_DENIED -> UiState.LOCATION_ACCESS_NEEDED
+                GpsLocationProvider.LocationProblem.FIX_UNAVAILABLE -> UiState.MAP_FAILED
             }
-        }
+        )
     }
 
     private fun resolveCurrentLocationAddress(place: EarthPlace) {
@@ -868,17 +1032,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         }
     }
 
-    private fun hasLocationPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-
-    private fun isLocationEnabled(): Boolean {
-        val manager = getSystemService(LOCATION_SERVICE) as? LocationManager ?: return false
-        return manager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-            manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
+    private fun hasLocationPermission(): Boolean = locationProvider.hasPermission()
 
     private fun updateLocationCount(count: Int) {
         locationCount.text = resources.getQuantityString(
@@ -897,13 +1051,58 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             ?.hideSoftInputFromWindow(searchInput.windowToken, 0)
     }
 
+    private fun handleUiBack(): Boolean {
+        return when (uiState) {
+            UiState.SELECTED_PLACE -> {
+                activeSharePlace = null
+                placeDetails.visibility = View.GONE
+                setMapResultsMode(true)
+                searchResults.visibility = View.VISIBLE
+                true
+            }
+            UiState.RESULTS -> {
+                setMapResultsMode(false)
+                showSearchMode()
+                true
+            }
+            UiState.SEARCH -> {
+                hideKeyboard()
+                searchModePanel.visibility = View.GONE
+                if (returnToCurrentLocation && currentLocationPlace != null) {
+                    showingCurrentLocation = true
+                    hideSearchMode()
+                    setPlaceDetailsMode(true, currentLocationPlace)
+                } else {
+                    showingCurrentLocation = false
+                    hideSearchMode()
+                    setMapResultsMode(false)
+                    uiState = UiState.DEFAULT
+                }
+                true
+            }
+            UiState.DEFAULT,
+            UiState.CURRENT_LOCATION,
+            UiState.LOADING -> false
+            else -> false
+        }
+    }
+
+    private fun superOnBackPressed() {
+        super.onBackPressed()
+    }
+
+    @Deprecated("Use OnBackInvokedDispatcher on newer Android versions")
+    override fun onBackPressed() {
+        if (!handleUiBack()) super.onBackPressed()
+    }
+
     override fun onResume() {
         super.onResume()
         mapView.onResume()
-        when (mapState) {
-            MapState.LOCATION_TURNED_OFF,
-            MapState.LOCATION_ACCESS_NEEDED -> {
-                if (hasLocationPermission() && isLocationEnabled()) {
+        when (uiState) {
+            UiState.LOCATION_TURNED_OFF,
+            UiState.LOCATION_ACCESS_NEEDED -> {
+                if (locationProvider.hasPermission() && locationProvider.isLocationEnabled()) {
                     hideMapState()
                     enableLocationLayer()
                     moveToCurrentLocation()
@@ -924,6 +1123,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         mapLoadingJob?.cancel()
         mapLoadTimeoutJob?.cancel()
         mapLoadingAnimator?.cancel()
+        locationProvider.stopLocationUpdates()
         mapView.onDestroy()
         super.onDestroy()
     }
@@ -948,6 +1148,19 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         const val MAP_LOAD_TIMEOUT_MS = 10000L
         const val LOADING_MAP_HEIGHT_DP = 548
         const val STYLE_MAP_HEIGHT_DP = 508
+        const val MIN_QUERY_LENGTH = 2
+        const val SEARCH_DEBOUNCE_MS = 400L
         const val MAX_SEARCH_RESULTS = 5
+        const val MAX_RECENT_SEARCHES = 5
+        const val RECENT_SEARCHES_PREFS = "map_view_recent_searches"
+        const val RECENT_SEARCHES_KEY = "queries"
+        const val RECENT_SEARCH_SEPARATOR = "\u001F"
+        val recentSearchLabelIds = listOf(
+            R.id.map_view_recent_station_label,
+            R.id.map_view_recent_palace_label,
+            R.id.map_view_recent_gion_label,
+            R.id.map_view_recent_fourth_label,
+            R.id.map_view_recent_fifth_label
+        )
     }
 }

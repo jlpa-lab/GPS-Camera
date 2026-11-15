@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_trending_view_description"
+    android:initialLayout="@layout/appwidget_trending_view"
+    android:minHeight="225dp"
+    android:minWidth="160dp"
+    android:previewImage="@drawable/home_live_video"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

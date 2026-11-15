@@ -2,7 +2,6 @@ package com.gps.map.camera.and.time.stamp.ui.gpscamera
 
 import android.Manifest
 import android.app.Dialog
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -10,11 +9,9 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.graphics.drawable.ColorDrawable
 import android.location.Location
 import android.util.Log
-import android.provider.MediaStore
 import android.provider.Settings
 import android.view.Gravity
 import android.view.Surface
@@ -40,6 +37,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ui.gallery.MediaStoreImageSaver
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -54,7 +52,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import java.io.File
-import java.io.FileInputStream
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -70,6 +67,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
         const val EXTRA_LATITUDE = "com.gps.map.camera.and.time.stamp.extra.LATITUDE"
         const val EXTRA_LONGITUDE = "com.gps.map.camera.and.time.stamp.extra.LONGITUDE"
         const val EXTRA_CAPTURED_AT = "com.gps.map.camera.and.time.stamp.extra.CAPTURED_AT"
+        const val EXTRA_RETURN_TO_GALLERY = "com.gps.map.camera.and.time.stamp.extra.RETURN_TO_GALLERY"
 
         private const val STATE_LENS_FACING = "lens_facing"
         private const val LOCATION_PERMISSION_REQUESTED = "location_permission_requested"
@@ -518,7 +516,9 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
                     putExtra(EXTRA_LATITUDE, latitude)
                     putExtra(EXTRA_LONGITUDE, longitude)
                     putExtra(EXTRA_CAPTURED_AT, capturedAt)
+                    putExtra(EXTRA_RETURN_TO_GALLERY, intent.getBooleanExtra(EXTRA_RETURN_TO_GALLERY, false))
                 })
+                if (intent.getBooleanExtra(EXTRA_RETURN_TO_GALLERY, false)) finish()
             }
         }
     }
@@ -539,39 +539,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun copyToMediaStore(imageFile: File): Uri {
         val imageName = "GPS_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, imageName)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/GPS Camera")
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            } else {
-                val picturesDirectory = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "GPS Camera"
-                )
-                check(picturesDirectory.exists() || picturesDirectory.mkdirs()) { "Could not create photo folder" }
-                put(MediaStore.Images.Media.DATA, File(picturesDirectory, imageName).absolutePath)
-            }
-        }
-        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        } else {
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        }
-        val destination = contentResolver.insert(collection, values) ?: error("Could not create photo entry")
-        try {
-            val output = contentResolver.openOutputStream(destination, "w") ?: error("Could not open photo output")
-            FileInputStream(imageFile).use { input -> output.use { input.copyTo(it) } }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                contentResolver.update(destination, ContentValues().apply {
-                    put(MediaStore.Images.Media.IS_PENDING, 0)
-                }, null, null)
-            }
-        } catch (error: Exception) {
-            contentResolver.delete(destination, null, null)
-            throw error
-        }
-        return destination
+        return MediaStoreImageSaver.saveFile(this, imageFile, imageName)
     }
 
     private fun captureFailed(error: Throwable? = null, stage: String? = null) {

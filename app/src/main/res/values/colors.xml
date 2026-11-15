@@ -20,6 +20,9 @@
     <color name="home_screen_top">#091321</color>
     <color name="home_screen_bottom">#173D6D</color>
     <color name="home_surface">#172638</color>
+    <!-- Figma template section color: #18263880 (RGBA) -->
+    <color name="template_section_bg">#80182638</color>
+    <color name="template_selected_tab">#214775</color>
     <color name="home_navigation">#101E2B</color>
     <color name="home_accent">#7EBCFF</color>
     <color name="home_premium">#1C3049</color>

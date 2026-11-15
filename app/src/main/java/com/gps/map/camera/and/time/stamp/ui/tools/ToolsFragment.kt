@@ -22,5 +22,14 @@ class ToolsFragment : Fragment(R.layout.fragment_tools) {
         view.findViewById<View>(R.id.tool_video).setOnClickListener {
             Routes.startGpsVideoActivity(requireActivity())
         }
+        view.findViewById<View>(R.id.tool_photo_grid).setOnClickListener {
+            Routes.startPhotoGridActivity(requireActivity())
+        }
+        view.findViewById<View>(R.id.tool_gallery).setOnClickListener {
+            Routes.startPhotoGalleryActivity(requireActivity())
+        }
+        view.findViewById<View>(R.id.tool_template).setOnClickListener {
+            Routes.startStampTemplateActivity(requireActivity())
+        }
     }
 }

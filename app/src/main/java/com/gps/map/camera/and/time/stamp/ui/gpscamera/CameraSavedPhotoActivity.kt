@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ui.gallery.GalleryCaptureType
+import com.gps.map.camera.and.time.stamp.ui.gallery.MediaShareHelper
 
 /** Final preview shown after the GPS stamp has been saved. */
 class CameraSavedPhotoActivity : AppCompatActivity() {
@@ -26,6 +28,12 @@ class CameraSavedPhotoActivity : AppCompatActivity() {
         }
         savedPhotoUri = Uri.parse(photoUriText)
         findViewById<ImageView>(R.id.saved_photo_image).setImageURI(savedPhotoUri)
+
+        if (intent.getBooleanExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, false)) {
+            setResult(RESULT_OK)
+            finish()
+            return
+        }
 
         findViewById<ImageButton>(R.id.saved_photo_back).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.saved_photo_delete).setOnClickListener { confirmDelete() }
@@ -66,9 +74,6 @@ class CameraSavedPhotoActivity : AppCompatActivity() {
         }
     }
 
-    private fun createShareIntent() = Intent(Intent.ACTION_SEND).apply {
-        type = "image/jpeg"
-        putExtra(Intent.EXTRA_STREAM, savedPhotoUri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
+    private fun createShareIntent() =
+        MediaShareHelper.createShareIntent(savedPhotoUri, GalleryCaptureType.PHOTO)
 }

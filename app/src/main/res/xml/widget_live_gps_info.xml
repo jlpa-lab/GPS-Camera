@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_live_gps_description"
+    android:initialLayout="@layout/appwidget_live_gps"
+    android:minHeight="208dp"
+    android:minWidth="250dp"
+    android:previewImage="@drawable/home_map_view"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

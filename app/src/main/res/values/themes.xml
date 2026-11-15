@@ -54,6 +54,11 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 
+    <style name="Theme.MapView" parent="Theme.EarthView">
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+
     <style name="Theme.Splash" parent="Theme.Main">
         <item name="android:windowBackground">@color/white</item>
         <item name="android:windowNoTitle">true</item>
@@ -95,7 +100,7 @@
     </style>
 
     <style name="AreaMeasurementInvalidAction" parent="AreaMeasurementPrimaryAction">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <style name="AreaMeasurementSecondaryAction">
@@ -107,18 +112,18 @@
         <item name="android:fontFamily">@font/poppins_semibold</item>
         <item name="android:gravity">center</item>
         <item name="android:textColor">@color/secondary_text_color</item>
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="AreaMeasurementBackAction">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_height">52dp</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:fontFamily">@font/poppins_semibold</item>
         <item name="android:gravity">center</item>
         <item name="android:textColor">@color/secondary_text_color</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <style name="RoutePlanModeChip">
@@ -222,5 +227,258 @@
         <item name="android:gravity">center</item>
         <item name="android:textColor">@color/primary_text_color</item>
         <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="PhotoGridChip">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_photo_grid_chip</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="PhotoGridPrimaryButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/bg_photo_grid_primary_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="PhotoGridOptionRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_photo_grid_option</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+    </style>
+
+    <style name="PhotoGridSecondaryButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/bg_earth_street_view_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="PhotoGridTextButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="GalleryFilterChip">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_photo_grid_chip</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="GalleryPrimaryButton">
+        <item name="android:background">@drawable/bg_photo_grid_primary_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="GallerySecondaryButton">
+        <item name="android:background">@drawable/bg_earth_street_view_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="GalleryTextButton">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="GalleryDeleteTextButton" parent="GalleryTextButton">
+        <item name="android:textColor">#FF8292</item>
+    </style>
+
+    <style name="GalleryDeleteButton">
+        <item name="android:background">@drawable/bg_photo_grid_primary_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="GalleryStampText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TemplateSettingsCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_template_settings_card</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+
+    <style name="TemplateSwitch">
+        <item name="android:button">@null</item>
+        <item name="android:showText">false</item>
+        <item name="android:splitTrack">false</item>
+        <item name="android:track">@drawable/bg_template_switch_track</item>
+        <item name="android:thumb">@drawable/bg_template_switch_thumb</item>
+    </style>
+
+    <style name="TemplateSectionTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="TemplateBody">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TemplateBodyStrong" parent="TemplateBody">
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+    </style>
+
+    <style name="TemplateSettingRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="TemplateSegmentRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_photo_grid_selected</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:padding">4dp</item>
+    </style>
+
+    <style name="TemplateSegment">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_template_segment</item>
+        <item name="android:clickable">true</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="TemplateOptionRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_photo_grid_option</item>
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TemplateSwatch">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:background">@drawable/bg_template_swatch</item>
+        <item name="android:clickable">true</item>
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="TemplateDateOption">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_template_date_option</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+    </style>
+
+    <style name="TemplateDateOptionTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/poppins_semibold</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/primary_text_color</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="TemplateDateOptionValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/secondary_text_color</item>
+        <item name="android:textSize">13sp</item>
     </style>
 </resources>

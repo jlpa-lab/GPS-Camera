@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/earth_background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/template_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageButton
+            android:id="@+id/template_back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/back"
+            android:padding="0dp"
+            android:src="@drawable/ic_back_nav" />
+
+        <TextView
+            android:id="@+id/template_title"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/template_save"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:text="@string/save"
+            android:textColor="@color/home_accent"
+            android:textSize="14sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/template_state_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/template_list_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/template_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="30dp" />
+        </ScrollView>
+
+        <ScrollView
+            android:id="@+id/template_settings_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/template_settings_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="16dp">
+
+                <FrameLayout
+                    android:id="@+id/template_preview_host"
+                    android:layout_width="match_parent"
+                    android:layout_height="320dp"
+                    android:background="@drawable/bg_photo_grid_panel"
+                    android:clipToOutline="true"
+                    android:outlineProvider="background" />
+
+                <LinearLayout
+                    android:id="@+id/template_address_card"
+                    style="@style/TemplateSettingsCard"
+                    android:layout_marginTop="16dp">
+                    <TextView style="@style/TemplateSectionTitle" android:text="Address" />
+                    <LinearLayout
+                        android:id="@+id/template_address_mode"
+                        style="@style/TemplateSegmentRow">
+                        <TextView android:id="@+id/template_address_auto" style="@style/TemplateSegment" android:text="Automatic" />
+                        <TextView android:id="@+id/template_address_manual" style="@style/TemplateSegment" android:text="Manual" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/template_address_detail"
+                        style="@style/TemplateSegmentRow"
+                        android:layout_marginTop="8dp">
+                        <TextView android:id="@+id/template_address_none" style="@style/TemplateSegment" android:text="None" />
+                        <TextView android:id="@+id/template_address_city" style="@style/TemplateSegment" android:text="City" />
+                        <TextView android:id="@+id/template_address_full" style="@style/TemplateSegment" android:text="Full Address" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/template_manual_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_template_manual_address"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="8dp"
+                        android:visibility="gone">
+                        <EditText
+                            android:id="@+id/template_manual_address_input"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:fontFamily="@font/poppins_regular"
+                            android:hint="Enter address"
+                            android:includeFontPadding="false"
+                            android:singleLine="true"
+                            android:textColor="@color/primary_text_color"
+                            android:textColorHint="@color/secondary_text_color"
+                            android:textSize="13sp" />
+                        <ImageView
+                            android:id="@+id/template_manual_address_map"
+                            android:layout_width="32dp"
+                            android:layout_height="44dp"
+                            android:gravity="center"
+                            android:contentDescription="Edit address"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_template_manual_address"
+                            android:tint="@color/primary_text_color" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/template_date_card"
+                    style="@style/TemplateSettingsCard">
+                    <LinearLayout style="@style/TemplateSettingRow">
+                        <TextView style="@style/TemplateBodyStrong" android:text="Date &amp; Time" />
+                        <Switch
+                            android:id="@+id/template_date_toggle"
+                            style="@style/TemplateSwitch"
+                            android:layout_width="44dp"
+                            android:layout_height="24dp" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/template_date_format"
+                        style="@style/TemplateOptionRow"
+                        android:layout_marginTop="8dp" />
+                    <LinearLayout
+                        android:id="@+id/template_date_menu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_photo_grid_option"
+                        android:orientation="vertical"
+                        android:padding="4dp"
+                        android:visibility="gone">
+                        <LinearLayout android:id="@+id/template_date_short_month" style="@style/TemplateDateOption">
+                            <TextView android:id="@+id/template_date_short_month_title" style="@style/TemplateDateOptionTitle" android:text="Short month" />
+                            <TextView android:id="@+id/template_date_short_month_value" style="@style/TemplateDateOptionValue" />
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/template_date_numeric" style="@style/TemplateDateOption">
+                            <TextView android:id="@+id/template_date_numeric_title" style="@style/TemplateDateOptionTitle" android:text="Numeric (DD/MM/YYYY)" />
+                            <TextView android:id="@+id/template_date_numeric_value" style="@style/TemplateDateOptionValue" />
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/template_date_time_first" style="@style/TemplateDateOption">
+                            <TextView android:id="@+id/template_date_time_first_title" style="@style/TemplateDateOptionTitle" android:text="Time first" />
+                            <TextView android:id="@+id/template_date_time_first_value" style="@style/TemplateDateOptionValue" />
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/template_date_weekday" style="@style/TemplateDateOption">
+                            <TextView android:id="@+id/template_date_weekday_title" style="@style/TemplateDateOptionTitle" android:text="With weekday" />
+                            <TextView android:id="@+id/template_date_weekday_value" style="@style/TemplateDateOptionValue" />
+                        </LinearLayout>
+                        <LinearLayout android:id="@+id/template_date_iso" style="@style/TemplateDateOption">
+                            <TextView android:id="@+id/template_date_iso_title" style="@style/TemplateDateOptionTitle" android:text="ISO date · 24-hour" />
+                            <TextView android:id="@+id/template_date_iso_value" style="@style/TemplateDateOptionValue" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/template_toggles_card"
+                    style="@style/TemplateSettingsCard">
+                    <LinearLayout style="@style/TemplateSettingRow"><TextView style="@style/TemplateBody" android:text="Map / Icon" /><Switch android:id="@+id/template_map_toggle" style="@style/TemplateSwitch" android:layout_width="44dp" android:layout_height="24dp" /></LinearLayout>
+                    <LinearLayout style="@style/TemplateSettingRow"><TextView style="@style/TemplateBody" android:text="Weather" /><Switch android:id="@+id/template_weather_toggle" style="@style/TemplateSwitch" android:layout_width="44dp" android:layout_height="24dp" /></LinearLayout>
+                    <LinearLayout style="@style/TemplateSettingRow"><TextView style="@style/TemplateBody" android:text="Coordinates" /><Switch android:id="@+id/template_coordinates_toggle" style="@style/TemplateSwitch" android:layout_width="44dp" android:layout_height="24dp" /></LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/template_color_card"
+                    style="@style/TemplateSettingsCard">
+                    <TextView style="@style/TemplateSectionTitle" android:text="Background Color" />
+                    <LinearLayout
+                        android:id="@+id/template_color_swatches"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:orientation="horizontal">
+                        <TextView android:id="@+id/template_color_add" style="@style/TemplateSwatch" android:text="+" />
+                        <TextView android:id="@+id/template_color_1" style="@style/TemplateSwatch" />
+                        <TextView android:id="@+id/template_color_2" style="@style/TemplateSwatch" />
+                        <TextView android:id="@+id/template_color_3" style="@style/TemplateSwatch" />
+                        <TextView android:id="@+id/template_color_4" style="@style/TemplateSwatch" />
+                        <TextView android:id="@+id/template_color_5" style="@style/TemplateSwatch" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/template_custom_color_panel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_photo_grid_option"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:visibility="gone">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="28dp"
+                            android:fontFamily="@font/poppins_semibold"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:text="Custom color"
+                            android:textColor="@color/primary_text_color"
+                            android:textSize="16sp" />
+                        <com.gps.map.camera.and.time.stamp.ui.stamptemplate.TemplateColorField
+                            android:id="@+id/template_color_field"
+                            android:layout_width="match_parent"
+                            android:layout_height="96dp"
+                            android:layout_marginTop="8dp" />
+                        <com.gps.map.camera.and.time.stamp.ui.stamptemplate.TemplateHueField
+                            android:id="@+id/template_hue_field"
+                            android:layout_width="match_parent"
+                            android:layout_height="14dp"
+                            android:layout_marginTop="8dp" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_template_manual_address"
+                            android:gravity="center_vertical"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp">
+                            <TextView
+                                android:layout_width="48dp"
+                                android:layout_height="match_parent"
+                                android:fontFamily="@font/poppins_regular"
+                                android:gravity="center_vertical"
+                                android:text="HEX"
+                                android:textColor="@color/secondary_text_color"
+                                android:textSize="13sp" />
+                            <EditText
+                                android:id="@+id/template_color_hex"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:includeFontPadding="false"
+                                android:inputType="text"
+                                android:singleLine="true"
+                                android:textColor="@color/primary_text_color"
+                                android:textSize="16sp" />
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center_vertical">
+                            <TextView
+                                android:id="@+id/template_color_cancel"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:gravity="center"
+                                android:text="Cancel"
+                                android:textColor="@color/secondary_text_color"
+                                android:textSize="14sp" />
+                            <TextView
+                                android:id="@+id/template_color_apply"
+                                android:layout_width="136dp"
+                                android:layout_height="48dp"
+                                android:background="@drawable/bg_photo_grid_primary_button"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:gravity="center"
+                                android:text="Apply color"
+                                android:textColor="@color/white"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/template_position_card"
+                    style="@style/TemplateSettingsCard">
+                    <TextView style="@style/TemplateSectionTitle" android:text="Position" />
+                    <LinearLayout
+                        android:id="@+id/template_position"
+                        style="@style/TemplateSegmentRow">
+                        <TextView android:id="@+id/template_position_top" style="@style/TemplateSegment" android:text="Top" />
+                        <TextView android:id="@+id/template_position_bottom" style="@style/TemplateSegment" android:text="Bottom" />
+                    </LinearLayout>
+                    <TextView style="@style/TemplateBodyStrong" android:layout_marginTop="12dp" android:paddingBottom="8dp" android:text="Alignment" />
+                    <LinearLayout
+                        android:id="@+id/template_alignment"
+                        style="@style/TemplateSegmentRow">
+                        <TextView android:id="@+id/template_alignment_left" style="@style/TemplateSegment" android:text="Left" />
+                        <TextView android:id="@+id/template_alignment_center" style="@style/TemplateSegment" android:text="Center" />
+                        <TextView android:id="@+id/template_alignment_right" style="@style/TemplateSegment" android:text="Right" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+</LinearLayout>

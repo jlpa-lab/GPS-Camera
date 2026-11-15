@@ -116,6 +116,28 @@ class GpsLocationProvider(context: Context) {
         }.start()
     }
 
+    /** Full display address for UI that needs more than the locality/city label. */
+    fun reverseGeocodeFull(location: Location, onResult: (String?) -> Unit) {
+        Thread {
+            val address = try {
+                if (!android.location.Geocoder.isPresent()) null else {
+                    @Suppress("DEPRECATION")
+                    android.location.Geocoder(appContext)
+                        .getFromLocation(location.latitude, location.longitude, 1)
+                        ?.firstOrNull()
+                        ?.let { result ->
+                            result.getAddressLine(0)
+                                ?: listOfNotNull(result.locality, result.adminArea, result.countryName)
+                                    .joinToString(", ")
+                        }
+                }
+            } catch (_: Exception) {
+                null
+            }
+            android.os.Handler(Looper.getMainLooper()).post { onResult(address) }
+        }.start()
+    }
+
     fun stopLocationUpdates() {
         locationCallback?.let { callback -> locationClient.removeLocationUpdates(callback) }
         locationCallback = null

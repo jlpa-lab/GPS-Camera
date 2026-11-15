@@ -24,10 +24,33 @@ object EarthPlaceSearch {
 
     @Throws(IOException::class)
     fun search(query: String): List<EarthPlace> {
-        return try {
+        var primaryError: IOException? = null
+        val primaryResults = try {
             searchNominatim(query)
-        } catch (primaryError: IOException) {
-            searchPhoton(query, primaryError)
+        } catch (error: IOException) {
+            primaryError = error
+            emptyList()
+        }
+
+        // Nominatim can legally return an empty array without an HTTP error
+        // (rate limiting and regional coverage are common causes). Treat that
+        // the same as a failed primary lookup so a valid query still gets a
+        // chance through Photon instead of becoming a false "no places" state.
+        if (primaryResults.isNotEmpty()) return primaryResults
+
+        return try {
+            searchPhoton(
+                query,
+                primaryError ?: IOException("Nominatim returned no results")
+            )
+        } catch (fallbackError: IOException) {
+            if (primaryError == null) {
+                throw fallbackError
+            }
+            throw IOException(
+                "Nominatim: ${primaryError.message}; Photon: ${fallbackError.message}",
+                fallbackError
+            )
         }
     }
 

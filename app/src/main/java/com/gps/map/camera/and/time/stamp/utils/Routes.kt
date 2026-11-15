@@ -9,6 +9,9 @@ import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewActivity
 import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.gpsvideo.GpsVideoActivity
+import com.gps.map.camera.and.time.stamp.ui.gallery.PhotoGalleryActivity
+import com.gps.map.camera.and.time.stamp.ui.photogrid.PhotoGridActivity
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampTemplateActivity
 import com.gps.map.camera.and.time.stamp.ui.livevideo.LiveVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
 import com.gps.map.camera.and.time.stamp.ui.mapview.MapViewActivity
@@ -52,6 +55,15 @@ object Routes {
 
     fun startGpsVideoActivity(fromActivity: Activity) =
         fromActivity.launch(GpsVideoActivity::class.java)
+
+    fun startPhotoGridActivity(fromActivity: Activity) =
+        fromActivity.launch(PhotoGridActivity::class.java)
+
+    fun startPhotoGalleryActivity(fromActivity: Activity) =
+        fromActivity.launch(PhotoGalleryActivity::class.java)
+
+    fun startStampTemplateActivity(fromActivity: Activity) =
+        fromActivity.launch(StampTemplateActivity::class.java)
 
     fun startLiveVideoActivity(fromActivity: Activity) =
         fromActivity.launch(LiveVideoActivity::class.java)

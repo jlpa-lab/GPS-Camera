@@ -9,7 +9,7 @@
     <LinearLayout
         android:id="@+id/map_view_header"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:background="@color/earth_background"
         android:elevation="4dp"
         android:gravity="center_vertical"
@@ -36,14 +36,14 @@
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/map_view_title"
             android:textColor="@color/primary_text_color"
-            android:textSize="24sp" />
+            android:textSize="20sp" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/map_view_search_overlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -102,7 +102,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="24dp"
         android:background="@drawable/bg_earth_map_result"
@@ -391,12 +391,14 @@
         app:layout_constraintTop_toBottomOf="@id/map_view_search_overlay">
 
         <TextView
+            android:id="@+id/map_view_recent_searches_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/map_view_recent_searches"
             android:textColor="@color/primary_text_color"
-            android:textSize="18sp" />
+            android:textSize="18sp"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/map_view_recent_station"
@@ -404,7 +406,8 @@
             android:layout_height="64dp"
             android:layout_marginTop="24dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <ImageView
                 android:layout_width="32dp"
@@ -414,6 +417,7 @@
                 android:tint="@color/home_accent" />
 
             <TextView
+                android:id="@+id/map_view_recent_station_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
@@ -429,7 +433,8 @@
             android:layout_height="64dp"
             android:layout_marginTop="20dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <ImageView
                 android:layout_width="32dp"
@@ -439,6 +444,7 @@
                 android:tint="@color/home_accent" />
 
             <TextView
+                android:id="@+id/map_view_recent_palace_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
@@ -454,7 +460,8 @@
             android:layout_height="64dp"
             android:layout_marginTop="20dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <ImageView
                 android:layout_width="32dp"
@@ -464,11 +471,64 @@
                 android:tint="@color/home_accent" />
 
             <TextView
+                android:id="@+id/map_view_recent_gion_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:fontFamily="@font/poppins_regular"
                 android:text="@string/map_view_recent_gion"
+                android:textColor="@color/primary_text_color"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/map_view_recent_fourth"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/map_view_recent_searches"
+                android:src="@drawable/ic_recent_location"
+                android:tint="@color/home_accent" />
+
+            <TextView
+                android:id="@+id/map_view_recent_fourth_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:textColor="@color/primary_text_color"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/map_view_recent_fifth"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/map_view_recent_searches"
+                android:src="@drawable/ic_recent_location"
+                android:tint="@color/home_accent" />
+
+            <TextView
+                android:id="@+id/map_view_recent_fifth_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:fontFamily="@font/poppins_regular"
                 android:textColor="@color/primary_text_color"
                 android:textSize="17sp" />
         </LinearLayout>
