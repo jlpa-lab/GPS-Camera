@@ -21,7 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.databinding.ActivityGalleryBinding
-import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
+import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -165,7 +165,6 @@ class PhotoGalleryActivity : AppCompatActivity() {
 
     private fun openCamera() {
         cameraLauncher.launch(Intent(this, CameraActivity::class.java).apply {
-            putExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, true)
         })
     }
 

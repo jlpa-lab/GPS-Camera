@@ -1,6 +1,7 @@
 package com.gps.map.camera.and.time.stamp.ui.gpscamera
 
 import android.content.ContentValues
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -11,6 +12,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
 import android.location.Geocoder
 import android.net.Uri
 import android.os.Build
@@ -21,6 +23,8 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -29,6 +33,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.exifinterface.media.ExifInterface
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
@@ -44,6 +49,7 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -71,6 +77,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var photoView: ImageView
     private lateinit var mapView: MapView
     private lateinit var mapCard: FrameLayout
+    private lateinit var mapPreview: ImageView
     private lateinit var mapFallback: TextView
     private lateinit var stampPanel: View
     private lateinit var addressText: TextView
@@ -82,12 +89,16 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var googleMap: GoogleMap? = null
     private var mapEnabled = false
+    private var mapTilesLoaded = false
     private var mapCardVisible = true
+    private var photoZoom = 1f
+    private var photoOffsetX = 0f
+    private var photoOffsetY = 0f
+    private var mapCardBoundsFraction: RectF? = null
     private var stampPositionIndex = 0
     private var latitude = Double.NaN
     private var longitude = Double.NaN
     private var capturedAt = ""
-    private var returnToGallery = false
     private var address = ""
     private var weatherSnapshot: WeatherSnapshot? = null
     private var isSaving = false
@@ -110,12 +121,16 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         latitude = intent.getDoubleExtra(CameraActivity.EXTRA_LATITUDE, Double.NaN)
         longitude = intent.getDoubleExtra(CameraActivity.EXTRA_LONGITUDE, Double.NaN)
         capturedAt = intent.getStringExtra(CameraActivity.EXTRA_CAPTURED_AT).orEmpty()
-        returnToGallery = intent.getBooleanExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, false)
 
         photoView = findViewById(R.id.editor_photo)
         photoView.setImageURI(sourcePhotoUri)
         mapView = findViewById(R.id.editor_map_view)
         mapCard = findViewById(R.id.editor_map_card)
+        mapPreview = findViewById(R.id.editor_map_image)
+        enablePinchAndDrag(photoView, photoView)
+        // Keep the gesture surface on the visible snapshot, but transform the
+        // entire card so dragging the map visibly moves it across the photo.
+        enablePinchAndDrag(mapPreview, mapCard)
         mapFallback = findViewById(R.id.editor_map_fallback)
         stampPanel = findViewById(R.id.editor_stamp_panel)
         addressText = findViewById(R.id.editor_address)
@@ -206,6 +221,28 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             mapFallback.visibility = View.VISIBLE
             mapFallback.setText(R.string.map_waiting_for_location)
         }
+        map.setOnCameraIdleListener {
+            if (mapTilesLoaded) updateMapPreview(map)
+        }
+        // A camera snapshot taken as soon as the map becomes ready often contains
+        // only the empty background. Wait until Google has rendered the map tiles.
+        map.setOnMapLoadedCallback {
+            mapTilesLoaded = true
+            updateMapPreview(map)
+        }
+    }
+
+    private fun updateMapPreview(map: GoogleMap) {
+        map.snapshot { bitmap ->
+            if (bitmap == null || isFinishing || isDestroyed) {
+                bitmap?.recycle()
+                return@snapshot
+            }
+            val previous = (mapPreview.drawable as? BitmapDrawable)?.bitmap
+            mapPreview.setImageBitmap(bitmap)
+            mapPreview.visibility = View.VISIBLE
+            if (previous != null && previous !== bitmap && !previous.isRecycled) previous.recycle()
+        }
     }
 
     private fun loadAddress() {
@@ -270,14 +307,81 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateStampPosition() {
-        val params = stampPanel.layoutParams as FrameLayout.LayoutParams
-        params.gravity = POSITION_GRAVITIES[stampPositionIndex]
-        params.width = if (stampPositionIndex < 2) FrameLayout.LayoutParams.MATCH_PARENT else dp(330)
+        val params = stampPanel.layoutParams as ConstraintLayout.LayoutParams
+        params.topToTop = ConstraintLayout.LayoutParams.UNSET
+        params.bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+        params.startToStart = ConstraintLayout.LayoutParams.UNSET
+        params.endToEnd = ConstraintLayout.LayoutParams.UNSET
+
+        params.width = if (stampPositionIndex < 2) ConstraintLayout.LayoutParams.MATCH_PARENT else dp(330)
+
+        when (stampPositionIndex) {
+            0 -> { // Bottom Left / Bottom Full Width
+                params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+            1 -> { // Bottom Right / Full Width
+                params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+            2 -> { // Top Left
+                params.topToBottom = R.id.editor_tabs
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+            3 -> { // Top Right
+                params.topToBottom = R.id.editor_tabs
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+        }
+
         params.marginStart = dp(14)
         params.marginEnd = dp(14)
         params.bottomMargin = dp(18)
-        params.topMargin = dp(182)
+        params.topMargin = dp(18)
+
         stampPanel.layoutParams = params
+    }
+
+    private fun enablePinchAndDrag(touchView: View, transformView: View) {
+        var previousX = 0f
+        var previousY = 0f
+        var dragging = false
+        val scaleDetector = ScaleGestureDetector(this,
+            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    // Match the decompiled editor: keep applying the two-finger
+                    // distance ratio without an arbitrary zoom-in/out ceiling.
+                    val newScale = transformView.scaleX * detector.scaleFactor
+                    transformView.scaleX = newScale
+                    transformView.scaleY = newScale
+                    return true
+                }
+            })
+
+        touchView.setOnTouchListener { _, event ->
+            scaleDetector.onTouchEvent(event)
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    previousX = event.rawX
+                    previousY = event.rawY
+                    dragging = true
+                }
+                MotionEvent.ACTION_MOVE -> if (dragging && !scaleDetector.isInProgress && event.pointerCount == 1) {
+                    transformView.translationX += event.rawX - previousX
+                    transformView.translationY += event.rawY - previousY
+                    previousX = event.rawX
+                    previousY = event.rawY
+                }
+                MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP -> {
+                    previousX = event.rawX
+                    previousY = event.rawY
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dragging = false
+            }
+            true
+        }
     }
 
     private fun toggleMap() {
@@ -304,6 +408,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun saveEditedPhoto() {
         if (isSaving) return
         isSaving = true
+        captureEditorTransforms()
         findViewById<TextView>(R.id.editor_save).isEnabled = false
         val currentMap = googleMap
         if (!mapCardVisible || currentMap == null) {
@@ -331,6 +436,25 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun captureEditorTransforms() {
+        if (photoView.width > 0 && photoView.height > 0) {
+            photoZoom = photoView.scaleX
+            photoOffsetX = photoView.translationX / photoView.width
+            photoOffsetY = photoView.translationY / photoView.height
+        }
+        if (mapCard.width > 0 && mapCard.height > 0 && photoView.width > 0 && photoView.height > 0) {
+            val scale = mapCard.scaleX
+            val visualLeft = mapCard.x + mapCard.width * (1f - scale) / 2f
+            val visualTop = mapCard.y + mapCard.height * (1f - scale) / 2f
+            mapCardBoundsFraction = RectF(
+                visualLeft / photoView.width,
+                visualTop / photoView.height,
+                (visualLeft + mapCard.width * scale) / photoView.width,
+                (visualTop + mapCard.height * scale) / photoView.height
+            )
+        }
+    }
+
     private fun renderAndSave(mapBitmap: Bitmap?) {
         var baseBitmap: Bitmap? = null
         var stampedBitmap: Bitmap? = null
@@ -351,20 +475,29 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             writeExif(temporaryOutput)
             failureStage = "saving the photo to the gallery"
             val finalUri = insertPhoto(temporaryOutput)
-            // Only the app-owned camera capture is disposable; never delete a gallery original.
-            if (deleteSourceAfterSave) {
-                contentResolver.delete(sourcePhotoUri, null, null)
-            }
             val savedPhotoIntent = Intent(this, CameraSavedPhotoActivity::class.java).apply {
                 putExtra(CameraActivity.EXTRA_PHOTO_URI, finalUri.toString())
                 putExtra(CameraActivity.EXTRA_LATITUDE, latitude)
                 putExtra(CameraActivity.EXTRA_LONGITUDE, longitude)
                 putExtra(CameraActivity.EXTRA_CAPTURED_AT, capturedAt)
-                putExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, returnToGallery)
             }
             runOnUiThread {
-                startActivity(savedPhotoIntent)
-                finish()
+                try {
+                    startActivity(savedPhotoIntent)
+                    // Only delete the temporary app-owned capture after the next screen opens.
+                    if (deleteSourceAfterSave) contentResolver.delete(sourcePhotoUri, null, null)
+                    finish()
+                } catch (error: ActivityNotFoundException) {
+                    Log.e(LOG_TAG, "CameraSavedPhotoActivity is missing from AndroidManifest.xml", error)
+                    isSaving = false
+                    findViewById<TextView>(R.id.editor_save).isEnabled = true
+                    Toast.makeText(this, R.string.saved_preview_activity_missing, Toast.LENGTH_LONG).show()
+                } catch (error: Exception) {
+                    Log.e(LOG_TAG, "Could not open the saved-photo screen", error)
+                    isSaving = false
+                    findViewById<TextView>(R.id.editor_save).isEnabled = true
+                    Toast.makeText(this, R.string.saved_preview_open_failed, Toast.LENGTH_LONG).show()
+                }
             }
         } catch (error: Exception) {
             Log.e(LOG_TAG, "Failed while applying the GPS photo stamp", error)
@@ -412,17 +545,71 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun drawStamp(photo: Bitmap, mapBitmap: Bitmap?): Bitmap {
-        val settings = StampCustomizationStore.read(this)
-        val resolvedWeather = weatherSnapshot ?: OpenMeteoWeather.fetchCached(latitude, longitude).also { weatherSnapshot = it }
-        val stampData = StampRenderData(
-            address = address,
-            latitude = latitude,
-            longitude = longitude,
-            capturedAt = runCatching { DateFormat.getDateTimeInstance().parse(capturedAt)?.time }
-                .getOrNull() ?: System.currentTimeMillis(),
-            weather = resolvedWeather?.stampText
-        )
-        return StampRenderer.render(photo, settings, stampData, mapBitmap?.takeIf { mapCardVisible })
+        val result = photo.copy(Bitmap.Config.ARGB_8888, true) ?: error("Could not create stamp canvas")
+        val canvas = Canvas(result)
+        if (photoZoom != 1f || photoOffsetX != 0f || photoOffsetY != 0f) {
+            val photoPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            val centerX = photo.width / 2f
+            val centerY = photo.height / 2f
+            canvas.drawColor(Color.BLACK)
+            canvas.save()
+            canvas.translate(centerX + photoOffsetX * photo.width, centerY + photoOffsetY * photo.height)
+            canvas.scale(photoZoom, photoZoom)
+            canvas.translate(-centerX, -centerY)
+            canvas.drawBitmap(photo, 0f, 0f, photoPaint)
+            canvas.restore()
+        }
+        val scale = maxOf(1f, photo.width / 1080f)
+        var textSize = 25f * scale
+        val padding = 18f * scale
+        if (mapBitmap != null && mapCardVisible) {
+            val mapWidth = photo.width * 0.38f
+            val mapHeight = mapWidth * 1.05f
+            val savedBounds = mapCardBoundsFraction
+            val mapRect = if (savedBounds != null) {
+                RectF(savedBounds.left * photo.width, savedBounds.top * photo.height,
+                    savedBounds.right * photo.width, savedBounds.bottom * photo.height)
+            } else {
+                RectF((photo.width - mapWidth) / 2f, photo.height * 0.39f,
+                    (photo.width + mapWidth) / 2f, photo.height * 0.39f + mapHeight)
+            }
+            val clip = Path().apply { addRoundRect(mapRect, 28f * scale, 28f * scale, Path.Direction.CW) }
+            canvas.save()
+            canvas.clipPath(clip)
+            canvas.drawBitmap(mapBitmap, null, mapRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            canvas.restore()
+        }
+
+        if (stampPanel.visibility == View.VISIBLE) {
+            val panelHeight = photo.height * 0.27f
+            val panelTop = photo.height - panelHeight
+            val panel = RectF(0f, panelTop, photo.width.toFloat(), photo.height.toFloat())
+            val panelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xC9080A10.toInt() }
+            canvas.drawRoundRect(panel, 30f * scale, 30f * scale, panelPaint)
+
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; }
+            val purplePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF8255F7.toInt() }
+            val chipHeight = textSize * 2.2f
+            val chipWidth = minOf(photo.width * 0.58f, textPaint.measureText(capturedAt) + padding * 2)
+            val chipRect = RectF(padding, panelTop + padding, padding + chipWidth, panelTop + padding + chipHeight)
+            canvas.drawRoundRect(chipRect, 18f * scale, 18f * scale, purplePaint)
+            canvas.drawText(capturedAt, chipRect.left + padding, chipRect.centerY() + textSize * 0.34f, textPaint)
+
+            val addressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = textSize * 0.9f }
+            val addressLines = wrapText(address, addressPaint, photo.width * 0.62f).take(3)
+            var baseline = chipRect.bottom + textSize * 1.6f
+            addressLines.forEach { line ->
+                canvas.drawText(line, padding, baseline, addressPaint)
+                baseline += textSize * 1.2f
+            }
+            val coordinateLine = if (latitude.isNaN() || longitude.isNaN()) getString(R.string.location_unavailable)
+            else String.format(Locale.getDefault(), "Lat: %.5f   Long: %.5f", latitude, longitude)
+            val coordsWidth = minOf(photo.width * 0.8f, addressPaint.measureText(coordinateLine) + padding * 2)
+            val coordsRect = RectF(padding, photo.height - textSize * 2.3f, padding + coordsWidth, photo.height - padding * 0.6f)
+            canvas.drawRoundRect(coordsRect, 24f * scale, 24f * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xAA4B4C52.toInt() })
+            canvas.drawText(coordinateLine, coordsRect.left + padding * 0.7f, coordsRect.centerY() + addressPaint.textSize * 0.32f, addressPaint)
+        }
+        return result
     }
 
     private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {

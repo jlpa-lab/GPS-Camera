@@ -102,6 +102,6 @@ class WorldViewWidgetProvider : BaseGpsWidgetProvider() {
 class TrendingViewWidgetProvider : BaseGpsWidgetProvider() {
     override val widgetLayout = R.layout.appwidget_trending_view
     override val widgetTitle = R.string.widget_trending_view
-    override val widgetImage = R.drawable.home_live_video
+    override val widgetImage = R.drawable.ic_live_video
     override val actionTarget = EarthViewActivity::class.java
 }

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.gallery.GalleryCaptureType
 import com.gps.map.camera.and.time.stamp.ui.gallery.MediaShareHelper
 
@@ -29,17 +30,11 @@ class CameraSavedPhotoActivity : AppCompatActivity() {
         savedPhotoUri = Uri.parse(photoUriText)
         findViewById<ImageView>(R.id.saved_photo_image).setImageURI(savedPhotoUri)
 
-        if (intent.getBooleanExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, false)) {
-            setResult(RESULT_OK)
-            finish()
-            return
-        }
-
         findViewById<ImageButton>(R.id.saved_photo_back).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.saved_photo_delete).setOnClickListener { confirmDelete() }
-        findViewById<TextView>(R.id.share_whatsapp).setOnClickListener { shareWithPackage("com.whatsapp") }
-        findViewById<TextView>(R.id.share_facebook).setOnClickListener { shareWithPackage("com.facebook.katana") }
-        findViewById<TextView>(R.id.share_instagram).setOnClickListener { shareWithPackage("com.instagram.android") }
+        findViewById<ImageView>(R.id.share_whatsapp).setOnClickListener { shareWithPackage("com.whatsapp") }
+        findViewById<ImageView>(R.id.share_facebook).setOnClickListener { shareWithPackage("com.facebook.katana") }
+        findViewById<ImageView>(R.id.share_instagram).setOnClickListener { shareWithPackage("com.instagram.android") }
         findViewById<TextView>(R.id.share_more).setOnClickListener { shareWithChooser() }
     }
 

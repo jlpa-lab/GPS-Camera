@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rate_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#66000000"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:id="@+id/rate_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_rate_card"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <ImageView
+            android:id="@+id/rate_close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:contentDescription="@string/common_close"
+            android:src="@drawable/ic_close" />
+
+        <ImageView
+            android:id="@+id/rate_illustration"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="5dp"
+            android:adjustViewBounds="true"
+            android:scaleType="centerInside" />
+
+        <TextView
+            android:id="@+id/rate_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:fontFamily="@font/poppins_bold"
+            android:gravity="center"
+            android:paddingTop="12dp"
+            android:textColor="@color/color_rate_title_text"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/rate_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:fontFamily="@font/poppins_regular"
+            android:gravity="center"
+            android:paddingTop="12dp"
+            android:textColor="@color/color_rate_description_text"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:id="@+id/rate_stars"
+            android:layout_width="wrap_content"
+            android:layout_height="58dp"
+            android:gravity="center"
+            android:orientation="horizontal" />
+
+        <RelativeLayout
+            android:id="@+id/rate_feedback_container"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:visibility="gone"
+            android:layout_marginTop="16dp">
+
+            <EditText
+                android:id="@+id/rate_feedback"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_track_friend"
+                android:gravity="top"
+                android:hint="@string/rate_feedback_hint"
+                android:inputType="textMultiLine"
+                android:maxLength="500"
+                android:minLines="5"
+                android:padding="12dp"
+                android:textColor="@color/color_rate_description_text"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/rate_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginEnd="12dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/poppins_regular"
+                android:gravity="end"
+                android:text="@string/rate_character_count"
+                android:textColor="#7885A0"
+                android:textSize="10sp" />
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/rate_action"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_live_share"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:text="@string/rate_submit"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/rate_later"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
+            android:padding="4dp"
+            android:text="@string/rate_maybe_later"
+            android:textColor="@color/home_blue_button_text"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</LinearLayout>
+
+
+

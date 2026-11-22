@@ -4,13 +4,13 @@
     android:id="@+id/map_view_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/earth_background">
+    android:background="@color/screen_background">
 
     <LinearLayout
         android:id="@+id/map_view_header"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/earth_background"
+        android:background="@color/screen_background"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -22,11 +22,10 @@
 
         <ImageButton
             android:id="@+id/map_view_back"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/map_view_back"
-            android:padding="2dp"
             android:src="@drawable/ic_back_nav" />
 
         <TextView
@@ -35,8 +34,8 @@
             android:layout_marginStart="12dp"
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/map_view_title"
-            android:textColor="@color/primary_text_color"
-            android:textSize="20sp" />
+            android:textColor="@color/location_primary_text"
+            android:textSize="18sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -68,7 +67,7 @@
                 android:contentDescription="@string/map_view_search"
                 android:padding="0dp"
                 android:src="@drawable/ic_search"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <EditText
                 android:id="@+id/map_view_search_input"
@@ -130,14 +129,14 @@
 
             <ImageButton
                 android:id="@+id/map_view_layers"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_map_controls"
                 android:contentDescription="@string/map_view_layers"
                 android:elevation="8dp"
                 android:padding="11dp"
                 android:src="@drawable/ic_layers"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <Space
                 android:layout_width="0dp"
@@ -146,14 +145,14 @@
 
             <ImageButton
                 android:id="@+id/map_view_my_location"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_map_controls"
                 android:contentDescription="@string/map_view_my_location"
                 android:elevation="8dp"
                 android:padding="11dp"
                 android:src="@drawable/ic_my_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
         </LinearLayout>
     </FrameLayout>
 
@@ -414,7 +413,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/map_view_recent_searches"
                 android:src="@drawable/ic_recent_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <TextView
                 android:id="@+id/map_view_recent_station_label"
@@ -441,7 +440,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/map_view_recent_searches"
                 android:src="@drawable/ic_recent_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <TextView
                 android:id="@+id/map_view_recent_palace_label"
@@ -468,7 +467,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/map_view_recent_searches"
                 android:src="@drawable/ic_recent_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <TextView
                 android:id="@+id/map_view_recent_gion_label"
@@ -495,7 +494,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/map_view_recent_searches"
                 android:src="@drawable/ic_recent_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <TextView
                 android:id="@+id/map_view_recent_fourth_label"
@@ -521,7 +520,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/map_view_recent_searches"
                 android:src="@drawable/ic_recent_location"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <TextView
                 android:id="@+id/map_view_recent_fifth_label"

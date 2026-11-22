@@ -4,13 +4,13 @@
     android:id="@+id/earth_view_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/earth_background">
+    android:background="@color/screen_background">
 
     <LinearLayout
         android:id="@+id/earth_view_header_overlay"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/earth_background"
+        android:background="@color/screen_background"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -22,11 +22,10 @@
 
         <ImageButton
             android:id="@+id/earth_view_back"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/earth_view_back"
-            android:padding="2dp"
             android:src="@drawable/ic_back_nav" />
 
         <TextView
@@ -37,18 +36,18 @@
             android:layout_weight="1"
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/earth_view_title"
-            android:textColor="@color/primary_text_color"
-            android:textSize="20sp" />
+            android:textColor="@color/location_primary_text"
+            android:textSize="18sp" />
 
         <ImageButton
             android:id="@+id/earth_view_search_icon"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginVertical="4dp"
             android:background="@drawable/bg_earth_view_control"
             android:contentDescription="@string/earth_view_search"
-            android:padding="16dp"
             android:src="@drawable/ic_search"
-            android:tint="@color/home_accent" />
+            app:tint="@color/home_accent" />
     </LinearLayout>
 
     <LinearLayout
@@ -75,14 +74,14 @@
 
             <ImageButton
                 android:id="@+id/earth_view_search_button"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_gravity="center_vertical"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/earth_view_search"
                 android:padding="0dp"
                 android:src="@drawable/ic_search"
-                android:tint="@color/home_accent" />
+                app:tint="@color/home_accent" />
 
             <EditText
                 android:id="@+id/earth_view_search_input"
@@ -98,12 +97,12 @@
                 android:padding="0dp"
                 android:textColor="@color/primary_text_color"
                 android:textColorHint="@color/secondary_text_color"
-                android:textSize="18sp" />
+                android:textSize="14sp" />
 
             <ImageButton
                 android:id="@+id/earth_view_clear_search"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center_vertical|end"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/earth_view_clear_search"
@@ -176,7 +175,7 @@
 
                 <TextView
                     android:id="@+id/earth_view_2d_button"
-                    android:layout_width="64dp"
+                    android:layout_width="50dp"
                     android:layout_height="40dp"
                     android:fontFamily="@font/poppins_semibold"
                     android:gravity="center"
@@ -186,7 +185,7 @@
 
                 <TextView
                     android:id="@+id/earth_view_3d_button"
-                    android:layout_width="64dp"
+                    android:layout_width="50dp"
                     android:layout_height="40dp"
                     android:fontFamily="@font/poppins_semibold"
                     android:gravity="center"
@@ -232,7 +231,7 @@
             android:layout_height="32dp"
             android:contentDescription="@string/earth_view_map_loading"
             android:src="@drawable/ic_earth_loading"
-            android:tint="@color/home_accent" />
+            app:tint="@color/home_accent" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -258,7 +257,7 @@
         android:gravity="center"
         android:text="@string/earth_view_street_view"
         android:textColor="@color/primary_text_color"
-        android:textSize="18sp"
+        android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/earth_map_container" />
@@ -321,8 +320,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/poppins_semibold"
-            android:textColor="@color/primary_text_color"
-            android:textSize="20sp" />
+            android:textColor="@color/location_primary_text"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/earth_view_place_address"
@@ -330,8 +329,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:fontFamily="@font/poppins_regular"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="16sp" />
+            android:textColor="@color/subtitle_text_color"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <TextView
@@ -341,14 +340,14 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_earth_result_street_view_button"
+        android:background="@drawable/bg_btn_keep_phone_tracker"
         android:clickable="true"
         android:focusable="true"
         android:fontFamily="@font/poppins_semibold"
         android:gravity="center"
         android:text="@string/earth_view_open_street_view"
-        android:textColor="@color/white"
-        android:textSize="18sp"
+        android:textColor="@color/location_primary_text"
+        android:textSize="14sp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

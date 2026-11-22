@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/earth_background"
+    android:background="@color/screen_background"
     android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/area_measurement_header"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/earth_background"
+        android:background="@color/screen_background"
         android:elevation="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -98,7 +98,7 @@
             android:id="@+id/area_measurement_map_unavailable"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/earth_background"
+            android:background="@color/screen_background"
             android:gravity="center"
             android:padding="24dp"
             android:text="@string/area_measurement_map_unavailable"

@@ -352,8 +352,8 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             ContextCompat.getDrawable(this, R.drawable.bg_earth_view_control)
         }
-        dimension2d.setTextColor(ContextCompat.getColor(this, if (show3d) R.color.secondary_text_color else R.color.earth_background))
-        dimension3d.setTextColor(ContextCompat.getColor(this, if (show3d) R.color.earth_background else R.color.secondary_text_color))
+        dimension2d.setTextColor(ContextCompat.getColor(this, if (show3d) R.color.secondary_text_color else R.color.screen_background))
+        dimension3d.setTextColor(ContextCompat.getColor(this, if (show3d) R.color.screen_background else R.color.secondary_text_color))
         if (!show3d) {
             googleMap2d?.mapType = GoogleMap.MAP_TYPE_SATELLITE
             googleMap2d?.isBuildingsEnabled = true

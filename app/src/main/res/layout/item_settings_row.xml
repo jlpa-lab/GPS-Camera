@@ -8,7 +8,7 @@
     <LinearLayout
         android:id="@+id/settings_row_content"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="52dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
@@ -19,8 +19,8 @@
 
         <ImageView
             android:id="@+id/settings_row_icon"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:contentDescription="@null"
             android:scaleType="centerInside"
             app:tint="@color/home_accent" />
@@ -32,8 +32,8 @@
             android:layout_marginStart="14dp"
             android:layout_weight="1"
             android:fontFamily="@font/poppins_regular"
-            android:textColor="@color/primary_text_color"
-            android:textSize="16sp" />
+            android:textColor="@color/location_primary_text"
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/settings_row_value"
@@ -41,18 +41,18 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:fontFamily="@font/poppins_regular"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="14sp"
+            android:textColor="@color/subtitle_text_color"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <ImageView
             android:id="@+id/settings_row_chevron"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_marginStart="10dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_arrow_right"
-            app:tint="@color/secondary_text_color" />
+            app:tint="@color/setting_tint_color" />
     </LinearLayout>
 
     <View

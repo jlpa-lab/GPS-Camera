@@ -4,7 +4,7 @@
     android:initialLayout="@layout/appwidget_trending_view"
     android:minHeight="225dp"
     android:minWidth="160dp"
-    android:previewImage="@drawable/home_live_video"
+    android:previewImage="@drawable/ic_live_video"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen" />

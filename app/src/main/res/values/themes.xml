@@ -47,8 +47,8 @@
     </style>
 
     <style name="Theme.EarthView" parent="Theme.Main">
-        <item name="android:windowBackground">@color/earth_background</item>
-        <item name="android:statusBarColor">@color/earth_background</item>
+        <item name="android:windowBackground">@color/screen_background</item>
+        <item name="android:statusBarColor">@color/screen_background</item>
         <item name="android:navigationBarColor">@color/black</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
@@ -480,5 +480,15 @@
         <item name="android:includeFontPadding">false</item>
         <item name="android:textColor">@color/secondary_text_color</item>
         <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="CameraScreenTitle">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">@font/poppins_bold</item>
+    </style>
+    <style name="CameraScreenBody">
+        <item name="android:fontFamily">@font/poppins_regular</item>
+        <item name="android:textColor">@android:color/white</item>
     </style>
 </resources>

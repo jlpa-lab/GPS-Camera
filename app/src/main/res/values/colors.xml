@@ -17,14 +17,22 @@
     <color name="primary_text_color">#F3F7FC</color>
     <color name="location_primary_text">#EEF4FC</color>
     <color name="secondary_text_color">#AFBDCE</color>
+    <color name="subtitle_text_color">#AEB3D3</color>
     <color name="home_screen_top">#091321</color>
     <color name="home_screen_bottom">#173D6D</color>
-    <color name="home_surface">#172638</color>
+    <color name="home_surface">#F0172638</color>
+    <color name="color_bg_search">#182638</color>
     <!-- Figma template section color: #18263880 (RGBA) -->
     <color name="template_section_bg">#80182638</color>
     <color name="template_selected_tab">#214775</color>
     <color name="home_navigation">#101E2B</color>
     <color name="home_accent">#7EBCFF</color>
     <color name="home_premium">#1C3049</color>
-    <color name="earth_background">#080D15</color>
+    <color name="setting_tint_color">#8C9BAE</color>
+    <color name="color_rate_title_text">#F3F7FF</color>
+    <color name="color_rate_description_text">#B7C8DB</color>
+    <color name="light_app_color">#101B2B</color>
+    <color name="home_blue_background">#2468C6</color>
+    <color name="home_blue_button_text">#A8CBF5</color>
+    <color name="color_streetview_background">#101C2B</color>
 </resources>

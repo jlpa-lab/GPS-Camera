@@ -5,9 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import com.gps.map.camera.and.time.stamp.MainActivity
 import com.gps.map.camera.and.time.stamp.app.AppConstants
+import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.language.LanguageActivity
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewActivity
-import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.gpsvideo.GpsVideoActivity
 import com.gps.map.camera.and.time.stamp.ui.gallery.PhotoGalleryActivity
 import com.gps.map.camera.and.time.stamp.ui.photogrid.PhotoGridActivity
@@ -22,7 +22,6 @@ import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.uninstall.ConfirmUninstallActivity
 import com.gps.map.camera.and.time.stamp.ui.welcome.WelcomeActivity
-import com.gps.map.camera.and.time.stamp.utils.Routes.launch
 import kotlin.jvm.java
 
 object Routes {

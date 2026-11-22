@@ -1,20 +1,20 @@
-package com.gps.map.camera.and.time.stamp.ui.gpscamera
+package com.gps.map.camera.and.time.stamp.ui.camera
 
 import android.Manifest
 import android.app.Dialog
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.graphics.drawable.ColorDrawable
-import android.location.Location
 import android.util.Log
+import android.provider.MediaStore
 import android.provider.Settings
 import android.view.Gravity
-import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -37,37 +37,31 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import com.gps.map.camera.and.time.stamp.R
-import com.gps.map.camera.and.time.stamp.ui.gallery.MediaStoreImageSaver
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraPhotoPreviewActivity
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.math.abs
 
 /** GPS capture screen. Location is optional; camera permission is required. */
-class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
+class CameraActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_PHOTO_URI = "com.gps.map.camera.and.time.stamp.extra.PHOTO_URI"
         const val EXTRA_LATITUDE = "com.gps.map.camera.and.time.stamp.extra.LATITUDE"
         const val EXTRA_LONGITUDE = "com.gps.map.camera.and.time.stamp.extra.LONGITUDE"
         const val EXTRA_CAPTURED_AT = "com.gps.map.camera.and.time.stamp.extra.CAPTURED_AT"
-        const val EXTRA_RETURN_TO_GALLERY = "com.gps.map.camera.and.time.stamp.extra.RETURN_TO_GALLERY"
+        const val EXTRA_DELETE_SOURCE_AFTER_SAVE = "com.gps.map.camera.and.time.stamp.extra.DELETE_SOURCE_AFTER_SAVE"
 
         private const val STATE_LENS_FACING = "lens_facing"
         private const val LOCATION_PERMISSION_REQUESTED = "location_permission_requested"
@@ -83,10 +77,8 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var cameraPreview: PreviewView
     private lateinit var locationStamp: TextView
-    private lateinit var mapFallbackLabel: TextView
     private lateinit var flashButton: ImageButton
-    private lateinit var captureButton: Button
-    private lateinit var mapView: MapView
+    private lateinit var captureButton: ImageButton
     private lateinit var locationClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
@@ -94,13 +86,10 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var imageCapture: ImageCapture? = null
     private var activeCamera: Camera? = null
-    private var googleMap: GoogleMap? = null
-    private var locationMarker: Marker? = null
-    private var latestLocation: Location? = null
+    private var latestLocation: android.location.Location? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var captureInProgress = false
-    private var mapLifecycleEnabled = false
     private var locationPermissionRequestedInThisInstance = false
     private var cameraStartInProgress = false
     private var storagePermissionRequestAttempted = false
@@ -143,6 +132,18 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
         else requestLocationPermissionIfAppropriate()
     }
 
+    private val galleryPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { selectedUri ->
+        selectedUri ?: return@registerForActivityResult
+        val capturedAt = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date())
+        startActivity(Intent(this, CameraPhotoPreviewActivity::class.java).apply {
+            putExtra(EXTRA_PHOTO_URI, selectedUri.toString())
+            putExtra(EXTRA_LATITUDE, latestLocation?.latitude ?: Double.NaN)
+            putExtra(EXTRA_LONGITUDE, latestLocation?.longitude ?: Double.NaN)
+            putExtra(EXTRA_CAPTURED_AT, capturedAt)
+            putExtra(EXTRA_DELETE_SOURCE_AFTER_SAVE, false)
+        })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
@@ -153,10 +154,8 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
 
         cameraPreview = findViewById(R.id.camera_preview)
         locationStamp = findViewById(R.id.location_stamp)
-        mapFallbackLabel = findViewById(R.id.map_fallback_label)
         flashButton = findViewById(R.id.flash_button)
         captureButton = findViewById(R.id.capture_button)
-        mapView = findViewById(R.id.map_view)
 
         imageExecutor = Executors.newSingleThreadExecutor()
         locationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -169,65 +168,32 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        mapLifecycleEnabled = hasMapsApiKey()
-        if (mapLifecycleEnabled) {
-            try {
-                mapView.onCreate(savedInstanceState)
-                mapView.getMapAsync(this)
-            } catch (_: RuntimeException) {
-                mapLifecycleEnabled = false
-            }
-        }
-        if (!mapLifecycleEnabled) {
-            mapView.visibility = View.GONE
-            mapFallbackLabel.visibility = View.VISIBLE
-            mapFallbackLabel.setText(R.string.map_unavailable)
-        }
-
         findViewById<ImageButton>(R.id.back_button).setOnClickListener { finish() }
+        findViewById<ImageButton>(R.id.camera_gallery_button).setOnClickListener { galleryPicker.launch("image/*") }
         findViewById<ImageButton>(R.id.switch_camera_button).setOnClickListener { switchCamera() }
         flashButton.setOnClickListener { toggleFlash() }
         captureButton.setOnClickListener { capturePhoto() }
         updateStamp()
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (mapLifecycleEnabled) mapView.onStart()
-    }
-
     override fun onResume() {
         super.onResume()
-        if (mapLifecycleEnabled) mapView.onResume()
         continueIfCameraPermissionGranted()
     }
 
     override fun onPause() {
         stopLocationUpdates()
-        if (mapLifecycleEnabled) mapView.onPause()
         super.onPause()
-    }
-
-    override fun onStop() {
-        if (mapLifecycleEnabled) mapView.onStop()
-        super.onStop()
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        if (mapLifecycleEnabled) mapView.onLowMemory()
     }
 
     override fun onDestroy() {
         stopLocationUpdates()
-        if (mapLifecycleEnabled) mapView.onDestroy()
         if (::imageExecutor.isInitialized) imageExecutor.shutdown()
         super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putInt(STATE_LENS_FACING, lensFacing)
-        if (mapLifecycleEnabled) mapView.onSaveInstanceState(outState)
         super.onSaveInstanceState(outState)
     }
 
@@ -412,7 +378,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
                 val captureUseCase = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .setTargetRotation(cameraPreview.display?.rotation ?: Surface.ROTATION_0)
+                    .setTargetRotation(cameraPreview.display?.rotation ?: android.view.Surface.ROTATION_0)
                     .build()
 
                 provider.unbindAll()
@@ -452,7 +418,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
         val turnOn = camera.cameraInfo.torchState.value != TorchState.ON
         camera.cameraControl.enableTorch(turnOn)
         flashButton.contentDescription = getString(if (turnOn) R.string.flash_on else R.string.flash_off)
-        flashButton.imageTintList = ColorStateList.valueOf(
+        flashButton.imageTintList = android.content.res.ColorStateList.valueOf(
             if (turnOn) Color.YELLOW else Color.WHITE
         )
     }
@@ -516,9 +482,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
                     putExtra(EXTRA_LATITUDE, latitude)
                     putExtra(EXTRA_LONGITUDE, longitude)
                     putExtra(EXTRA_CAPTURED_AT, capturedAt)
-                    putExtra(EXTRA_RETURN_TO_GALLERY, intent.getBooleanExtra(EXTRA_RETURN_TO_GALLERY, false))
                 })
-                if (intent.getBooleanExtra(EXTRA_RETURN_TO_GALLERY, false)) finish()
             }
         }
     }
@@ -539,7 +503,39 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun copyToMediaStore(imageFile: File): Uri {
         val imageName = "GPS_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-        return MediaStoreImageSaver.saveFile(this, imageFile, imageName)
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, imageName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/GPS Camera")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            } else {
+                val picturesDirectory = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "GPS Camera"
+                )
+                check(picturesDirectory.exists() || picturesDirectory.mkdirs()) { "Could not create photo folder" }
+                put(MediaStore.Images.Media.DATA, File(picturesDirectory, imageName).absolutePath)
+            }
+        }
+        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+        val destination = contentResolver.insert(collection, values) ?: error("Could not create photo entry")
+        try {
+            val output = contentResolver.openOutputStream(destination, "w") ?: error("Could not open photo output")
+            FileInputStream(imageFile).use { input -> output.use { input.copyTo(it) } }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentResolver.update(destination, ContentValues().apply {
+                    put(MediaStore.Images.Media.IS_PENDING, 0)
+                }, null, null)
+            }
+        } catch (error: Exception) {
+            contentResolver.delete(destination, null, null)
+            throw error
+        }
+        return destination
     }
 
     private fun captureFailed(error: Throwable? = null, stage: String? = null) {
@@ -572,19 +568,9 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     @MainThread
-    private fun showLocation(location: Location) {
+    private fun showLocation(location: android.location.Location) {
         latestLocation = location
         updateStamp()
-        val map = googleMap ?: return
-        val coordinates = LatLng(location.latitude, location.longitude)
-        if (locationMarker == null) {
-            locationMarker = map.addMarker(
-                MarkerOptions().position(coordinates).title(getString(R.string.current_position))
-            )
-        } else {
-            locationMarker?.position = coordinates
-        }
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(coordinates, 15f))
     }
 
     private fun updateStamp() {
@@ -599,26 +585,6 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
             locationStamp.text = "$decimalCoordinates\n$dmsCoordinates\n$timestamp"
         }
 
-        val mapIsReady = mapLifecycleEnabled && googleMap != null
-        mapFallbackLabel.visibility = if (mapIsReady) View.GONE else View.VISIBLE
-        mapFallbackLabel.setText(if (mapIsReady) R.string.map_waiting_for_location else R.string.map_unavailable)
-    }
-
-    override fun onMapReady(map: GoogleMap) {
-        googleMap = map
-        map.uiSettings.isMapToolbarEnabled = false
-        map.uiSettings.isZoomControlsEnabled = false
-        latestLocation?.let(::showLocation) ?: updateStamp()
-    }
-
-    private fun hasMapsApiKey(): Boolean {
-        return try {
-            val metadata = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
-            val apiKey = metadata?.getString("com.google.android.geo.API_KEY")
-            !apiKey.isNullOrBlank() && !apiKey.contains("YOUR_MAPS_API_KEY")
-        } catch (_: PackageManager.NameNotFoundException) {
-            false
-        }
     }
 
     private fun formatCoordinateDms(coordinate: Double, latitude: Boolean): String {
@@ -628,7 +594,7 @@ class CameraActivity : AppCompatActivity(), OnMapReadyCallback {
             coordinate >= 0 -> "E"
             else -> "W"
         }
-        val absolute = abs(coordinate)
+        val absolute = kotlin.math.abs(coordinate)
         val degrees = absolute.toInt()
         val minuteValue = (absolute - degrees) * 60
         val minutes = minuteValue.toInt()

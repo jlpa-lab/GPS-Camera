@@ -3,18 +3,20 @@ package com.gps.map.camera.and.time.stamp.ui.gpscamera
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 
 /** Shows the raw capture before the user proceeds to the GPS stamp editor. */
 class CameraPhotoPreviewActivity : AppCompatActivity() {
     private lateinit var photoUri: Uri
     private lateinit var photoView: ImageView
-    private lateinit var retakeButton: ImageButton
-    private lateinit var nextButton: TextView
+    private lateinit var retakeButton: Button
+    private lateinit var nextButton: Button
     private var latitude: Double = Double.NaN
     private var longitude: Double = Double.NaN
     private var capturedAt: String = ""
@@ -49,10 +51,6 @@ class CameraPhotoPreviewActivity : AppCompatActivity() {
                 putExtra(CameraActivity.EXTRA_LATITUDE, latitude)
                 putExtra(CameraActivity.EXTRA_LONGITUDE, longitude)
                 putExtra(CameraActivity.EXTRA_CAPTURED_AT, capturedAt)
-                putExtra(
-                    CameraActivity.EXTRA_RETURN_TO_GALLERY,
-                    intent.getBooleanExtra(CameraActivity.EXTRA_RETURN_TO_GALLERY, false)
-                )
             })
             finish()
         }

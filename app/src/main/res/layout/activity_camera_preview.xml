@@ -3,12 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#191A20"
+    android:background="@color/screen_background"
     android:orientation="vertical">
 
+    <!-- Toolbar order and spacing match the XML reference: back, then title. -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="56dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
@@ -16,78 +17,80 @@
 
         <ImageButton
             android:id="@+id/preview_back_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
-            android:src="@android:drawable/ic_media_previous"
-            app:tint="@color/white" />
+            android:src="@drawable/ic_back_arrow" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="12dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:paddingStart="8dp"
             android:text="@string/preview_title"
-            android:textColor="@android:color/white"
-            android:textSize="20sp" />
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="14dp"
         android:layout_weight="1"
-        android:layout_marginStart="28dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="28dp"
-        android:layout_marginBottom="18dp"
         android:background="@drawable/bg_preview_photo_card"
-        android:clipToOutline="true">
+        android:clipToOutline="true"
+        android:padding="2dp">
 
         <ImageView
             android:id="@+id/preview_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="@string/captured_photo"
-            android:scaleType="centerCrop" />
+            android:scaleType="fitCenter" />
     </FrameLayout>
 
-    <FrameLayout
+    <LinearLayout
+        android:id="@+id/uninstall_reason_buttons"
         android:layout_width="match_parent"
-        android:layout_height="76dp"
-        android:layout_marginBottom="12dp">
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/uninstall_reason_group">
 
-        <ImageButton
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/preview_retake_button"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_gravity="center_vertical|start"
-            android:layout_marginStart="28dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/retake_photo"
-            android:src="@android:drawable/ic_popup_sync"
-            app:tint="#B5B5BE" />
-        <TextView
-            android:id="@+id/preview_next_button"
-            android:layout_width="112dp"
+            android:layout_width="0dp"
             android:layout_height="48dp"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="28dp"
-            android:background="@drawable/bg_preview_next_button"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_transparent_btn_with_border"
+            android:fontFamily="@font/poppins_medium"
+            android:gravity="center"
+            android:text="@string/retake"
+            android:textAllCaps="false"
+            android:textColor="@color/app_color_text"
+            android:textSize="14sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/preview_next_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_btn_keep_phone_tracker"
+            android:fontFamily="@font/poppins_medium"
             android:gravity="center"
             android:text="@string/next"
-            android:textColor="@android:color/white"
-            android:textSize="17sp" />
-        <TextView
-            android:id="@+id/preview_done_button"
-            android:layout_width="112dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="28dp"
-            android:background="@drawable/bg_preview_next_button"
-            android:gravity="center"
-            android:text="@string/done"
-            android:textColor="@android:color/white"
-            android:textSize="17sp"
-            android:visibility="gone" />
-    </FrameLayout>
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
 </LinearLayout>
