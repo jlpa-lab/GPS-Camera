@@ -38,9 +38,14 @@ import androidx.exifinterface.media.ExifInterface
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.settings.StampTemplate
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderer
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampTemplateCatalog
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.TemplateAlignment
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.TemplatePosition
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.OpenMeteoWeather
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.WeatherSnapshot
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -80,17 +85,19 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapPreview: ImageView
     private lateinit var mapFallback: TextView
     private lateinit var stampPanel: View
+    private lateinit var mediaFrame: FrameLayout
     private lateinit var addressText: TextView
     private lateinit var coordinatesText: TextView
     private lateinit var dateText: TextView
     private lateinit var locationClientLabel: TextView
+    private lateinit var templateOverlay: StampOverlayView
     private val saveExecutor = Executors.newSingleThreadExecutor()
     private val addressExecutor = Executors.newSingleThreadExecutor()
 
     private var googleMap: GoogleMap? = null
     private var mapEnabled = false
     private var mapTilesLoaded = false
-    private var mapCardVisible = true
+    private var mapCardVisible = false
     private var photoZoom = 1f
     private var photoOffsetX = 0f
     private var photoOffsetY = 0f
@@ -101,6 +108,8 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var capturedAt = ""
     private var address = ""
     private var weatherSnapshot: WeatherSnapshot? = null
+    private var stampCustomization: StampCustomization? = null
+    private var templateVisible = true
     private var isSaving = false
     private var deleteSourceAfterSave = true
     private val savedPreferences by lazy { AppSharedPreferencesApp(applicationContext) }
@@ -124,6 +133,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
 
         photoView = findViewById(R.id.editor_photo)
         photoView.setImageURI(sourcePhotoUri)
+        mediaFrame = findViewById(R.id.editor_media_frame)
         mapView = findViewById(R.id.editor_map_view)
         mapCard = findViewById(R.id.editor_map_card)
         mapPreview = findViewById(R.id.editor_map_image)
@@ -137,6 +147,18 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         coordinatesText = findViewById(R.id.editor_coordinates)
         dateText = findViewById(R.id.editor_date)
         locationClientLabel = findViewById(R.id.editor_weather)
+
+        stampCustomization = StampCustomizationStore.read(this)
+        templateOverlay = StampOverlayView(this)
+        mediaFrame.addView(
+            templateOverlay,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        stampPanel.visibility = View.GONE
+        mapCard.visibility = View.GONE
 
         dateText.text = capturedAt
         val coordinateLabel = if (latitude.isNaN() || longitude.isNaN()) {
@@ -160,14 +182,17 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
 
         findViewById<View>(R.id.editor_back).setOnClickListener { finish() }
         findViewById<TextView>(R.id.editor_save).setOnClickListener { saveEditedPhoto() }
-        findViewById<TextView>(R.id.editor_tab_details).setOnClickListener { toggleDetails() }
+        findViewById<TextView>(R.id.editor_tab_details).setOnClickListener {
+            setSelectedTab(R.id.editor_tab_details)
+        }
         findViewById<TextView>(R.id.editor_tab_position).setOnClickListener { chooseStampPosition() }
-        findViewById<TextView>(R.id.editor_tab_map).setOnClickListener { toggleMap() }
+        findViewById<TextView>(R.id.editor_tab_map).setOnClickListener { chooseTemplate() }
         findViewById<TextView>(R.id.editor_tab_location).setOnClickListener { toggleLocationDetails() }
         findViewById<TextView>(R.id.editor_tab_photo).setOnClickListener { galleryPicker.launch("image/*") }
         loadAddress()
         loadWeather()
         updateStampPosition()
+        refreshTemplateOverlay()
     }
 
     override fun onStart() {
@@ -241,6 +266,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             val previous = (mapPreview.drawable as? BitmapDrawable)?.bitmap
             mapPreview.setImageBitmap(bitmap)
             mapPreview.visibility = View.VISIBLE
+            templateOverlay.setMapBitmap(bitmap)
             if (previous != null && previous !== bitmap && !previous.isRecycled) previous.recycle()
         }
     }
@@ -266,6 +292,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             address = displayAddress
             runOnUiThread {
                 addressText.text = displayAddress
+            refreshTemplateOverlay()
             }
         }
     }
@@ -277,13 +304,48 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             weatherSnapshot = result
             runOnUiThread {
                 locationClientLabel.text = result?.uiText ?: getString(R.string.weather_unavailable)
+                refreshTemplateOverlay()
             }
         }
     }
 
-    private fun toggleDetails() {
-        stampPanel.visibility = if (stampPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-        setSelectedTab(R.id.editor_tab_details)
+    private fun chooseTemplate() {
+        val selectedKey = stampCustomization?.templateKey ?: StampCustomizationStore.selectedTemplate(this)
+        val selectedIndex = StampTemplateCatalog.items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("Photo template")
+            .setSingleChoiceItems(
+                StampTemplateCatalog.items.map { it.name }.toTypedArray(),
+                selectedIndex
+            ) { dialog, which ->
+                val selected = StampTemplateCatalog.items[which]
+                StampCustomizationStore.selectTemplate(this, selected.key)
+                stampCustomization = StampCustomizationStore.read(this, selected.key)
+                templateVisible = true
+                templateOverlay.visibility = View.VISIBLE
+                refreshTemplateOverlay()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        setSelectedTab(R.id.editor_tab_map)
+    }
+
+    private fun refreshTemplateOverlay() {
+        if (!::templateOverlay.isInitialized) return
+        val customization = stampCustomization ?: StampCustomizationStore.read(this).also {
+            stampCustomization = it
+        }
+        templateOverlay.setCustomization(customization)
+        templateOverlay.setRenderData(
+            StampRenderData(
+                address = address.ifBlank { getString(R.string.address_loading) },
+                latitude = latitude,
+                longitude = longitude,
+                capturedAtText = capturedAt.takeIf { it.isNotBlank() },
+                weather = if (customization.showWeather) weatherSnapshot?.uiText else null
+            )
+        )
     }
 
     private fun replacePhoto(uri: Uri) {
@@ -299,6 +361,13 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             .setTitle(R.string.position)
             .setSingleChoiceItems(POSITION_LABELS, stampPositionIndex) { dialog, selected ->
                 stampPositionIndex = selected
+                val customization = stampCustomization ?: StampCustomizationStore.read(this)
+                stampCustomization = customization.copy(
+                    position = if (selected < 2) TemplatePosition.BOTTOM else TemplatePosition.TOP,
+                    alignment = if (selected == 1 || selected == 3) TemplateAlignment.RIGHT else TemplateAlignment.LEFT
+                )
+                StampCustomizationStore.save(this, stampCustomization!!)
+                refreshTemplateOverlay()
                 updateStampPosition()
                 dialog.dismiss()
             }
@@ -392,16 +461,15 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun toggleLocationDetails() {
-        val visible = addressText.visibility != View.VISIBLE
-        addressText.visibility = if (visible) View.VISIBLE else View.GONE
-        coordinatesText.visibility = if (visible) View.VISIBLE else View.GONE
-        setSelectedTab(R.id.editor_tab_location)
+        setSelectedTab(R.id.editor_tab_details)
     }
 
     private fun setSelectedTab(selectedId: Int) {
         listOf(R.id.editor_tab_details, R.id.editor_tab_position, R.id.editor_tab_map,
             R.id.editor_tab_location, R.id.editor_tab_photo).forEach { id ->
-            findViewById<TextView>(id).setTextColor(if (id == selectedId) 0xFF67A2FF.toInt() else Color.WHITE)
+            findViewById<TextView>(id).setTextColor(
+                if (id == selectedId) 0xFF67A2FF.toInt() else 0xFFAFBDCE.toInt()
+            )
         }
     }
 
@@ -560,8 +628,6 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             canvas.restore()
         }
         val scale = maxOf(1f, photo.width / 1080f)
-        var textSize = 25f * scale
-        val padding = 18f * scale
         if (mapBitmap != null && mapCardVisible) {
             val mapWidth = photo.width * 0.38f
             val mapHeight = mapWidth * 1.05f
@@ -580,34 +646,21 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             canvas.restore()
         }
 
-        if (stampPanel.visibility == View.VISIBLE) {
-            val panelHeight = photo.height * 0.27f
-            val panelTop = photo.height - panelHeight
-            val panel = RectF(0f, panelTop, photo.width.toFloat(), photo.height.toFloat())
-            val panelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xC9080A10.toInt() }
-            canvas.drawRoundRect(panel, 30f * scale, 30f * scale, panelPaint)
-
-            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; }
-            val purplePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF8255F7.toInt() }
-            val chipHeight = textSize * 2.2f
-            val chipWidth = minOf(photo.width * 0.58f, textPaint.measureText(capturedAt) + padding * 2)
-            val chipRect = RectF(padding, panelTop + padding, padding + chipWidth, panelTop + padding + chipHeight)
-            canvas.drawRoundRect(chipRect, 18f * scale, 18f * scale, purplePaint)
-            canvas.drawText(capturedAt, chipRect.left + padding, chipRect.centerY() + textSize * 0.34f, textPaint)
-
-            val addressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = textSize * 0.9f }
-            val addressLines = wrapText(address, addressPaint, photo.width * 0.62f).take(3)
-            var baseline = chipRect.bottom + textSize * 1.6f
-            addressLines.forEach { line ->
-                canvas.drawText(line, padding, baseline, addressPaint)
-                baseline += textSize * 1.2f
-            }
-            val coordinateLine = if (latitude.isNaN() || longitude.isNaN()) getString(R.string.location_unavailable)
-            else String.format(Locale.getDefault(), "Lat: %.5f   Long: %.5f", latitude, longitude)
-            val coordsWidth = minOf(photo.width * 0.8f, addressPaint.measureText(coordinateLine) + padding * 2)
-            val coordsRect = RectF(padding, photo.height - textSize * 2.3f, padding + coordsWidth, photo.height - padding * 0.6f)
-            canvas.drawRoundRect(coordsRect, 24f * scale, 24f * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xAA4B4C52.toInt() })
-            canvas.drawText(coordinateLine, coordsRect.left + padding * 0.7f, coordsRect.centerY() + addressPaint.textSize * 0.32f, addressPaint)
+        if (templateVisible) {
+            val customization = stampCustomization ?: StampCustomizationStore.read(this)
+            StampRenderer.draw(
+                canvas = canvas,
+                bounds = RectF(0f, 0f, photo.width.toFloat(), photo.height.toFloat()),
+                settings = customization,
+                data = StampRenderData(
+                    address = address.ifBlank { getString(R.string.address_loading) },
+                    latitude = latitude,
+                    longitude = longitude,
+                    capturedAtText = capturedAt.takeIf { it.isNotBlank() },
+                    weather = if (customization.showWeather) weatherSnapshot?.uiText else null
+                ),
+                map = mapBitmap
+            )
         }
         return result
     }

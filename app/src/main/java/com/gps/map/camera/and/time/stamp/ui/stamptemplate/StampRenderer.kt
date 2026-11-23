@@ -85,9 +85,17 @@ object StampRenderer {
     }
 
     private fun panelBounds(bounds: RectF, position: TemplatePosition): RectF {
+        // Keep the stamp a card, rather than stretching it over most of a
+        // camera/video surface. Width is the stable reference across the
+        // template picker, portrait camera preview, and exported media.
         val margin = bounds.width() * 0.035f
-        val top = if (position == TemplatePosition.TOP) bounds.top + bounds.height() * 0.18f else bounds.top + bounds.height() * 0.28f
-        val bottom = if (position == TemplatePosition.TOP) bounds.top + bounds.height() * 0.72f else bounds.top + bounds.height() * 0.84f
+        val cardHeight = minOf(bounds.height() * 0.34f, bounds.width() * 0.28f)
+        val top = if (position == TemplatePosition.TOP) {
+            bounds.top + margin
+        } else {
+            bounds.bottom - margin - cardHeight
+        }
+        val bottom = top + cardHeight
         return RectF(bounds.left + margin, top, bounds.right - margin, bottom)
     }
 

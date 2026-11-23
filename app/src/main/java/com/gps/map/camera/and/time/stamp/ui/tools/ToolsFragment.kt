@@ -19,6 +19,9 @@ class ToolsFragment : Fragment(R.layout.fragment_tools) {
         view.findViewById<View>(R.id.tool_location).setOnClickListener {
             Routes.startLocationActivity(requireActivity())
         }
+        view.findViewById<View>(R.id.tool_camera).setOnClickListener {
+            Routes.startCameraActivity(requireActivity())
+        }
         view.findViewById<View>(R.id.tool_video).setOnClickListener {
             Routes.startGpsVideoActivity(requireActivity())
         }

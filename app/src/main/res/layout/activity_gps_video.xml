@@ -409,6 +409,7 @@
         </LinearLayout>
 
         <FrameLayout
+            android:id="@+id/gps_video_player_frame"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="16dp"

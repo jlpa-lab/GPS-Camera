@@ -43,7 +43,20 @@ object RateAppManager {
 
     /** Atomically claims the dialog so duplicate activity resumes cannot show it twice. */
     fun beginRateDialog(context: Context, entryPoint: EntryPoint): Boolean {
-        if (AppSharedPreferencesApp(context).isRate || shownThisSession) {
+        // An explicit Settings action is a fresh user request and must still
+        // open the dialog even if an automatic prompt was dismissed earlier
+        // in this app session.
+        if (entryPoint == EntryPoint.SETTINGS) {
+            shownThisSession = true
+            automaticTriggerPending = false
+            automaticLaunchInProgress = false
+            return true
+        }
+        if (AppSharedPreferencesApp(context).isRate) {
+            automaticLaunchInProgress = false
+            return false
+        }
+        if (shownThisSession) {
             automaticLaunchInProgress = false
             return false
         }

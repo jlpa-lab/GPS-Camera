@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.graphics.drawable.ColorDrawable
+import android.location.Geocoder
 import android.util.Log
 import android.provider.MediaStore
 import android.provider.Settings
@@ -44,6 +45,11 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraPhotoPreviewActivity
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.OpenMeteoWeather
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -76,9 +82,15 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private lateinit var cameraPreview: PreviewView
+    private lateinit var cameraTitle: TextView
+    private lateinit var cameraUnavailablePanel: View
+    private lateinit var cameraUnavailableActions: View
     private lateinit var locationStamp: TextView
     private lateinit var flashButton: ImageButton
     private lateinit var captureButton: ImageButton
+    private lateinit var templateOverlay: StampOverlayView
+    private lateinit var previewFrame: android.widget.FrameLayout
+    private lateinit var cameraControls: View
     private lateinit var locationClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
@@ -87,6 +99,9 @@ class CameraActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private var activeCamera: Camera? = null
     private var latestLocation: android.location.Location? = null
+    private var locationAddress = "Location unavailable"
+    private var weatherText: String? = null
+    private var stampCustomization: StampCustomization? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var captureInProgress = false
@@ -153,9 +168,28 @@ class CameraActivity : AppCompatActivity() {
         cameraSelector = selectorFor(lensFacing)
 
         cameraPreview = findViewById(R.id.camera_preview)
+        cameraTitle = findViewById(R.id.camera_title)
+        cameraUnavailablePanel = findViewById(R.id.camera_unavailable_panel)
+        cameraUnavailableActions = findViewById(R.id.camera_unavailable_actions)
+        previewFrame = findViewById(R.id.camera_preview_frame)
         locationStamp = findViewById(R.id.location_stamp)
         flashButton = findViewById(R.id.flash_button)
         captureButton = findViewById(R.id.capture_button)
+        cameraControls = findViewById(R.id.camera_controls)
+        stampCustomization = StampCustomizationStore.read(this)
+        templateOverlay = StampOverlayView(this)
+        previewFrame.addView(
+            templateOverlay,
+            android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        locationStamp.visibility = View.GONE
+        cameraControls.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateTemplateOverlayBounds()
+        }
+        cameraControls.post { updateTemplateOverlayBounds() }
 
         imageExecutor = Executors.newSingleThreadExecutor()
         locationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -171,6 +205,10 @@ class CameraActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.back_button).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.camera_gallery_button).setOnClickListener { galleryPicker.launch("image/*") }
         findViewById<ImageButton>(R.id.switch_camera_button).setOnClickListener { switchCamera() }
+        findViewById<View>(R.id.camera_retry_button).setOnClickListener { startCamera(forceRebind = true) }
+        findViewById<View>(R.id.camera_choose_photo_button).setOnClickListener {
+            galleryPicker.launch("image/*")
+        }
         flashButton.setOnClickListener { toggleFlash() }
         captureButton.setOnClickListener { capturePhoto() }
         updateStamp()
@@ -178,6 +216,10 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (::templateOverlay.isInitialized) {
+            stampCustomization = StampCustomizationStore.read(this)
+            refreshTemplateOverlay()
+        }
         continueIfCameraPermissionGranted()
     }
 
@@ -357,6 +399,7 @@ class CameraActivity : AppCompatActivity() {
         if (cameraStartInProgress) return
         if (!forceRebind && imageCapture != null && activeCamera != null) return
         cameraStartInProgress = true
+        showCameraAvailableState()
         val providerFuture = ProcessCameraProvider.getInstance(this)
         providerFuture.addListener({
             try {
@@ -368,9 +411,11 @@ class CameraActivity : AppCompatActivity() {
                         CameraSelector.LENS_FACING_FRONT
                     }
                     cameraSelector = selectorFor(lensFacing)
+                    if (!provider.hasCamera(cameraSelector)) {
+                        showCameraUnavailableState()
+                        return@addListener
+                    }
                     updateFlashAvailability()
-                    Toast.makeText(this, R.string.camera_lens_unavailable, Toast.LENGTH_SHORT).show()
-                    return@addListener
                 }
 
                 val preview = Preview.Builder().build().also {
@@ -387,12 +432,32 @@ class CameraActivity : AppCompatActivity() {
                 activeCamera = provider.bindToLifecycle(this, cameraSelector, preview, captureUseCase)
                 imageCapture = captureUseCase
                 updateFlashAvailability()
+                showCameraAvailableState()
             } catch (_: Exception) {
-                Toast.makeText(this, R.string.camera_open_error, Toast.LENGTH_LONG).show()
+                showCameraUnavailableState()
             } finally {
                 cameraStartInProgress = false
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun showCameraUnavailableState() {
+        cameraPreview.visibility = View.GONE
+        templateOverlay.visibility = View.GONE
+        cameraUnavailablePanel.visibility = View.VISIBLE
+        cameraControls.visibility = View.GONE
+        cameraUnavailableActions.visibility = View.VISIBLE
+        cameraTitle.setText(R.string.camera_preview_title)
+        flashButton.visibility = View.INVISIBLE
+    }
+
+    private fun showCameraAvailableState() {
+        cameraPreview.visibility = View.VISIBLE
+        cameraUnavailablePanel.visibility = View.GONE
+        cameraUnavailableActions.visibility = View.GONE
+        cameraControls.visibility = View.VISIBLE
+        cameraTitle.setText(R.string.gps_camera_title)
+        if (::templateOverlay.isInitialized) templateOverlay.visibility = View.VISIBLE
     }
 
     private fun switchCamera() {
@@ -570,7 +635,25 @@ class CameraActivity : AppCompatActivity() {
     @MainThread
     private fun showLocation(location: android.location.Location) {
         latestLocation = location
+        locationAddress = "Current location"
         updateStamp()
+        imageExecutor.execute {
+            val resolved = try {
+                if (!Geocoder.isPresent()) null else {
+                    @Suppress("DEPRECATION")
+                    Geocoder(this, Locale.getDefault()).getFromLocation(location.latitude, location.longitude, 1)
+                        ?.firstOrNull()?.getAddressLine(0)
+                }
+            } catch (_: Exception) {
+                null
+            }
+            val weather = OpenMeteoWeather.fetchCached(location.latitude, location.longitude)?.uiText
+            runOnUiThread {
+                locationAddress = resolved?.takeIf { it.isNotBlank() } ?: "Current location"
+                weatherText = weather
+                refreshTemplateOverlay()
+            }
+        }
     }
 
     private fun updateStamp() {
@@ -585,7 +668,40 @@ class CameraActivity : AppCompatActivity() {
             locationStamp.text = "$decimalCoordinates\n$dmsCoordinates\n$timestamp"
         }
 
+        refreshTemplateOverlay()
     }
+
+    private fun refreshTemplateOverlay() {
+        if (!::templateOverlay.isInitialized) return
+        val customization = stampCustomization ?: StampCustomizationStore.read(this).also {
+            stampCustomization = it
+        }
+        val location = latestLocation
+        templateOverlay.setCustomization(customization)
+        templateOverlay.setRenderData(
+            StampRenderData(
+                address = locationAddress,
+                latitude = location?.latitude ?: Double.NaN,
+                longitude = location?.longitude ?: Double.NaN,
+                capturedAt = System.currentTimeMillis(),
+                weather = if (customization.showWeather) weatherText else null
+            )
+        )
+    }
+
+    private fun updateTemplateOverlayBounds() {
+        if (!::templateOverlay.isInitialized) return
+        val params = templateOverlay.layoutParams as? android.widget.FrameLayout.LayoutParams ?: return
+        if (params.leftMargin != 0 || params.topMargin != 0 || params.rightMargin != 0 || params.bottomMargin != 0) {
+            params.leftMargin = 0
+            params.topMargin = 0
+            params.rightMargin = 0
+            params.bottomMargin = 0
+            templateOverlay.layoutParams = params
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun formatCoordinateDms(coordinate: Double, latitude: Boolean): String {
         val direction = when {

@@ -16,13 +16,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.play.core.review.ReviewManagerFactory
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.bases.click
 import com.gps.map.camera.and.time.stamp.localization.LocaleManager
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.theme.ThemeManager
+import com.gps.map.camera.and.time.stamp.ui.rating.RateAppActivity
+import com.gps.map.camera.and.time.stamp.ui.rating.RateAppManager
 
 /** Settings for choices that affect the whole app. */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
@@ -226,16 +227,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun rateApp() {
-        val activity = activity ?: return
-        val manager = ReviewManagerFactory.create(activity)
-        manager.requestReviewFlow().addOnCompleteListener { result ->
-            if (result.isSuccessful) {
-                manager.launchReviewFlow(activity, result.result)
-                    .addOnCompleteListener { openPlayStore() }
-            } else {
-                openPlayStore()
-            }
-        }
+        val context = context ?: return
+        startActivity(Intent(context, RateAppActivity::class.java).apply {
+            putExtra(
+                RateAppActivity.EXTRA_ENTRY_POINT,
+                RateAppManager.EntryPoint.SETTINGS.name
+            )
+        })
     }
 
     private fun openPlayStore() {

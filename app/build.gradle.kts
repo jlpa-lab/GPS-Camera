@@ -27,6 +27,11 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
+        val youtubeApiKey = localProperties.getProperty(
+            "YOUTUBE_API_KEY",
+            ""
+        )
+        buildConfigField("String", "YOUTUBE_API_KEY", "\"${youtubeApiKey.replace("\\\"", "\\\\\"")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

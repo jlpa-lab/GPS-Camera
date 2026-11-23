@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.IntentSenderRequest
@@ -22,6 +23,9 @@ import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.databinding.ActivityGalleryBinding
 import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +38,7 @@ class PhotoGalleryActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGalleryBinding
     private lateinit var viewModel: GalleryViewModel
     private lateinit var adapter: GalleryCaptureAdapter
+    private lateinit var galleryTemplateOverlay: StampOverlayView
     private var loadedCaptures = emptyList<GalleryCapture>()
     private var offset = 0
     private var loadingPage = false
@@ -70,6 +75,18 @@ class PhotoGalleryActivity : AppCompatActivity() {
         setContentView(binding.root)
         viewModel = ViewModelProvider(this)[GalleryViewModel::class.java]
         adapter = GalleryCaptureAdapter(::openDetails)
+        galleryTemplateOverlay = StampOverlayView(this)
+        binding.galleryDetailMediaFrame.addView(
+            galleryTemplateOverlay,
+            1,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        // Keep the legacy view in the layout for binding compatibility, but
+        // render the selected template through the shared overlay instead.
+        binding.galleryStampCard.visibility = View.GONE
 
         binding.galleryGrid.layoutManager = GridLayoutManager(this, 3)
         binding.galleryGrid.adapter = adapter
@@ -116,6 +133,11 @@ class PhotoGalleryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        viewModel.selectedCapture()?.let { selected ->
+            if (viewModel.uiState.value.screen != GalleryScreen.CAPTURES &&
+                viewModel.uiState.value.screen != GalleryScreen.EMPTY
+            ) populateDetails(selected)
+        }
         if (GalleryMediaAccess.hasGalleryPermissions(this) &&
             viewModel.uiState.value.screen in setOf(GalleryScreen.CAPTURES, GalleryScreen.EMPTY)
         ) {
@@ -185,10 +207,20 @@ class PhotoGalleryActivity : AppCompatActivity() {
             val location = withContext(Dispatchers.IO) { resolveLocation(capture) }
             if (viewModel.uiState.value.selectedUri != capture.uri) return@launch
             binding.galleryDetailTitle.text = location.shortName
-            binding.galleryStampCard.visibility = if (capture.hasBakedStamp) View.GONE else View.VISIBLE
-            binding.galleryStampPlace.text = location.longName
-            binding.galleryStampCoordinates.text = location.coordinates
-            binding.galleryStampDate.text = formatDateWithTime(capture.dateAdded * 1000L)
+            val showTemplate = !capture.hasBakedStamp
+            galleryTemplateOverlay.visibility = if (showTemplate) View.VISIBLE else View.GONE
+            if (showTemplate) {
+                galleryTemplateOverlay.setCustomization(StampCustomizationStore.read(this@PhotoGalleryActivity))
+                galleryTemplateOverlay.setRenderData(
+                    StampRenderData(
+                        address = location.longName,
+                        latitude = capture.latitude ?: Double.NaN,
+                        longitude = capture.longitude ?: Double.NaN,
+                        capturedAt = capture.dateAdded * 1000L,
+                        capturedAtText = formatDateWithTime(capture.dateAdded * 1000L)
+                    )
+                )
+            }
         }
     }
 

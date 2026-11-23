@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/live_camera_fullscreen_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <ImageView
+        android:id="@+id/live_camera_fullscreen_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/live_video_preview"
+        android:scaleType="centerCrop" />
+
+    <WebView
+        android:id="@+id/live_camera_fullscreen_web_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black"
+        android:visibility="gone" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#14000000" />
+
+    <ImageView
+        android:id="@+id/live_camera_fullscreen_play"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:contentDescription="@string/live_video_play"
+        android:src="@drawable/ic_play_live"
+        android:tint="@color/white" />
+
+    <LinearLayout
+        android:id="@+id/live_camera_fullscreen_header"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="top"
+        android:background="#CC34312C"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageButton
+            android:id="@+id/live_camera_fullscreen_back"
+            android:layout_width="40dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:padding="8dp"
+            android:src="@drawable/ic_back_nav" />
+
+        <TextView
+            android:id="@+id/live_camera_fullscreen_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins_semibold"
+            android:maxLines="1"
+            android:textColor="@color/primary_text_color"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/live_camera_fullscreen_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/live_camera_fullscreen_pause"
+            style="@style/LiveCameraControl"
+            android:layout_width="118dp"
+            android:layout_weight="0"
+            android:layout_marginEnd="8dp">
+
+            <ImageView
+                android:id="@+id/live_camera_fullscreen_pause_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_pause"
+                app:tint="@color/home_accent" />
+
+            <TextView
+                android:id="@+id/live_camera_fullscreen_pause_label"
+                style="@style/LiveCameraControlLabel"
+                android:text="@string/live_camera_pause" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/live_camera_fullscreen_mute"
+            style="@style/LiveCameraControl"
+            android:layout_width="118dp"
+            android:layout_weight="0"
+            android:layout_marginEnd="8dp">
+
+            <ImageView
+                android:id="@+id/live_camera_fullscreen_mute_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_volume_off_live"
+                app:tint="@color/home_accent" />
+
+            <TextView
+                android:id="@+id/live_camera_fullscreen_mute_label"
+                style="@style/LiveCameraControlLabel"
+                android:text="@string/live_camera_unmute" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/live_camera_fullscreen_exit"
+            style="@style/LiveCameraControl"
+            android:layout_width="118dp"
+            android:layout_weight="0">
+
+            <ImageView
+                android:id="@+id/live_camera_fullscreen_exit_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_fullscreen_exit"
+                app:tint="@color/home_accent" />
+
+            <TextView
+                android:id="@+id/live_camera_fullscreen_exit_label"
+                style="@style/LiveCameraControlLabel"
+                android:text="@string/live_camera_exit_fullscreen" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

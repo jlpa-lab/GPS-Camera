@@ -52,7 +52,22 @@ object StampTemplateCatalog {
         Item("stamp_8", "Stamp 8", "Stamps")
     )
 
-    fun item(key: String): Item = items.firstOrNull { it.key == key } ?: items.first()
+    /**
+     * Older builds stored the three legacy Settings choices. Keep those values
+     * readable so an upgrade immediately uses the equivalent rich template
+     * instead of silently falling back to the first catalog item.
+     */
+    fun canonicalKey(key: String): String = when (key) {
+        "classic" -> "location_spotlight"
+        "minimal" -> "time_first"
+        "detailed" -> "travel_footer"
+        else -> key
+    }
+
+    fun item(key: String): Item {
+        val canonical = canonicalKey(key)
+        return items.firstOrNull { it.key == canonical } ?: items.first()
+    }
 }
 
 object StampCustomizationStore {
@@ -109,9 +124,10 @@ object StampCustomizationStore {
 
     fun save(context: Context, value: StampCustomization) {
         val preferences = AppSharedPreferencesApp(context.applicationContext)
-        val p = PREFIX + StampTemplateCatalog.item(value.templateKey).key + "_"
+        val templateKey = StampTemplateCatalog.item(value.templateKey).key
+        val p = PREFIX + templateKey + "_"
         preferences.editor
-            .putString(SELECTED, value.templateKey)
+            .putString(SELECTED, templateKey)
             .putString(p + "address_mode", value.addressMode.name)
             .putString(p + "address_detail", value.addressDetail.name)
             .putString(p + "manual_address", value.manualAddress)

@@ -2,9 +2,6 @@ package com.gps.map.camera.and.time.stamp.ui.gpsvideo
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.RectF
 import android.media.MediaCodec
 import android.media.MediaExtractor
@@ -17,19 +14,18 @@ import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.graphics.SurfaceTexture
 import android.view.Surface
-import com.gps.map.camera.and.time.stamp.ui.location.LocationFormatter
-import com.gps.map.camera.and.time.stamp.ui.settings.StampTemplate
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderer
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 data class VideoStampData(
     val place: String,
     val latitude: Double?,
     val longitude: Double?,
     val recordedAtMillis: Long,
-    val template: StampTemplate
+    val customization: StampCustomization,
+    val weather: String? = null
 )
 
 /** Re-encodes a recorded clip with the same GPS stamp burned into every frame. */
@@ -218,55 +214,19 @@ object VideoStampBurner {
 
     private fun createStamp(width: Int, height: Int, data: VideoStampData, presentationTimeUs: Long): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val scale = width / 720f
-        val margin = 28f * scale
-        val panelHeight = if (data.template == StampTemplate.MINIMAL) 170f else 220f
-        val panel = RectF(
-            margin,
-            height - panelHeight * scale - margin,
-            width - margin,
-            height - margin
+        val renderData = StampRenderData(
+            address = data.place,
+            latitude = data.latitude ?: Double.NaN,
+            longitude = data.longitude ?: Double.NaN,
+            capturedAt = data.recordedAtMillis + presentationTimeUs / 1_000L,
+            weather = data.weather
         )
-        canvas.drawRoundRect(panel, 22f * scale, 22f * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x9907111D.toInt() })
-
-        val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF7EBCFF.toInt()
-            style = Paint.Style.STROKE
-            strokeWidth = 5f * scale
-        }
-        val pinX = panel.left + 42f * scale
-        val pinY = panel.top + 48f * scale
-        canvas.drawCircle(pinX, pinY, 15f * scale, pinPaint)
-        val pinPath = Path().apply {
-            moveTo(pinX - 12f * scale, pinY + 8f * scale)
-            lineTo(pinX, pinY + 27f * scale)
-            lineTo(pinX + 12f * scale, pinY + 8f * scale)
-        }
-        canvas.drawPath(pinPath, pinPaint)
-
-        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = android.graphics.Typeface.create("sans", android.graphics.Typeface.BOLD)
-            textSize = 26f * scale
-        }
-        val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFFD4DEEA.toInt()
-            textSize = 23f * scale
-        }
-        val x = panel.left + 82f * scale
-        canvas.drawText(data.place, x, panel.top + 58f * scale, titlePaint)
-        val coordinates = if (data.latitude == null || data.longitude == null) {
-            "Locating…"
-        } else {
-            "${LocationFormatter.latitude(data.latitude)}  ${LocationFormatter.longitude(data.longitude)}"
-        }
-        canvas.drawText(coordinates, x, panel.top + 100f * scale, bodyPaint)
-        if (data.template != StampTemplate.MINIMAL) {
-            val time = SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.US)
-                .format(Date(data.recordedAtMillis + presentationTimeUs / 1_000L))
-            canvas.drawText(time, x, panel.top + 140f * scale, bodyPaint)
-        }
+        StampRenderer.draw(
+            canvas = Canvas(bitmap),
+            bounds = RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            settings = data.customization,
+            data = renderData
+        )
         return bitmap
     }
 

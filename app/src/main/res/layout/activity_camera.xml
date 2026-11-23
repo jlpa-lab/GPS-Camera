@@ -1,15 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/camera_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/screen_background">
 
-    <androidx.camera.view.PreviewView
-        android:id="@+id/camera_preview"
+    <FrameLayout
+        android:id="@+id/camera_preview_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:scaleType="fillCenter" />
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="76dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="156dp"
+        android:clipChildren="true">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/camera_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:scaleType="fillCenter" />
+
+        <LinearLayout
+            android:id="@+id/camera_unavailable_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_camera_unavailable"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="@string/camera_unavailable"
+                android:src="@drawable/ic_earth_map_error" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/camera_unavailable"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/poppins_regular"
+                android:gravity="center"
+                android:text="@string/camera_unavailable_message"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/top_bar"
@@ -18,18 +68,20 @@
         android:layout_gravity="top"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
         <ImageButton
             android:id="@+id/back_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
+            android:padding="12dp"
             android:src="@drawable/ic_back_arrow" />
 
         <TextView
+            android:id="@+id/camera_title"
             style="@style/CameraScreenTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -38,14 +90,15 @@
             android:paddingStart="8dp"
             android:text="@string/gps_camera_title"
             android:textColor="@color/primary_text_color"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
 
         <ImageButton
             android:id="@+id/flash_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:backgroundTint="@null"
             android:contentDescription="@string/flash_off"
+            android:padding="12dp"
             android:src="@drawable/ic_camera_flash" />
     </LinearLayout>
 
@@ -54,15 +107,54 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="112dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="156dp"
         android:background="#CC071522"
         android:fontFamily="@font/poppins_regular"
         android:padding="12dp"
         android:text="@string/location_waiting"
         android:textColor="@android:color/white"
         android:textSize="12sp" />
+
+    <LinearLayout
+        android:id="@+id/camera_unavailable_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/camera_retry_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_btn_keep_phone_tracker"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:padding="0dp"
+            android:text="@string/try_again"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/camera_choose_photo_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_transparent_btn_with_border"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:padding="0dp"
+            android:text="@string/choose_a_photo"
+            android:textAllCaps="false"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/camera_controls"
@@ -86,25 +178,24 @@
             android:textColor="@color/app_color_text"
             android:textSize="13sp" />
 
-        <LinearLayout
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_height="70dp">
 
             <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="start"
                 android:gravity="center"
                 android:orientation="vertical">
 
                 <ImageButton
                     android:id="@+id/camera_gallery_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/pick_photo_from_gallery"
+                    android:padding="10dp"
                     android:src="@drawable/ic_editor_photo" />
 
                 <TextView
@@ -121,6 +212,7 @@
                 android:id="@+id/capture_button"
                 android:layout_width="70dp"
                 android:layout_height="70dp"
+                android:layout_gravity="center"
                 android:background="@drawable/bg_camera_capture_button"
                 android:backgroundTint="@null"
                 android:contentDescription="@string/take_photo"
@@ -132,12 +224,13 @@
 
             <ImageButton
                 android:id="@+id/switch_camera_button"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end|center_vertical"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/switch_camera"
+                android:padding="12dp"
                 android:src="@drawable/ic_camera_switch" />
-        </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

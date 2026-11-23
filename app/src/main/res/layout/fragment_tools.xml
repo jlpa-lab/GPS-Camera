@@ -1,143 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_gradient"
     android:clipToPadding="false"
     android:fillViewport="true"
-    android:overScrollMode="never"
-    android:paddingTop="12dp">
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="24dp">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginBottom="14dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/poppins_semibold"
-                android:text="@string/tools_title"
-                android:textColor="@color/primary_text_color"
-                android:textSize="24sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/poppins_regular"
-                android:text="@string/tools_count"
-                android:textColor="@color/secondary_text_color"
-                android:textSize="12sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        android:paddingStart="20dp"
+        android:paddingTop="42dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
-            android:fontFamily="@font/poppins_regular"
-            android:text="@string/tools_subtitle"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="12sp" />
+            android:fontFamily="@font/poppins_bold"
+            android:text="@string/tools_title"
+            android:textColor="@color/primary_text_color"
+            android:textSize="22sp" />
 
-        <TableLayout
+        <LinearLayout
+            android:id="@+id/tools_list_panel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:shrinkColumns="*"
-            android:stretchColumns="*">
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_tools_panel"
+            android:clipToOutline="true"
+            android:orientation="vertical">
 
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-                <include
-                    android:id="@+id/tool_area_measurement"
-                    layout="@layout/view_tool_card_area"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:layout_weight="1" />
-                <include
-                    android:id="@+id/tool_camera"
-                    layout="@layout/view_tool_card_camera"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1" />
-            </TableRow>
+            <LinearLayout
+                android:id="@+id/tool_gallery"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/gallery_title"
+                    android:src="@drawable/ic_tool_gallery" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/gallery_title" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
 
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp">
-                <include
-                    android:id="@+id/tool_video"
-                    layout="@layout/view_tool_card_video"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:layout_weight="1" />
-                <include
-                    android:id="@+id/tool_gallery"
-                    layout="@layout/view_tool_card_gallery"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1" />
-            </TableRow>
+            <View style="@style/ToolsListDivider" />
 
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp">
-                <include
-                    android:id="@+id/tool_photo_grid"
-                    layout="@layout/view_tool_card_photo_grid"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:layout_weight="1" />
-                <include
-                    android:id="@+id/tool_template"
-                    layout="@layout/view_tool_card_template"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1" />
-            </TableRow>
+            <LinearLayout
+                android:id="@+id/tool_photo_grid"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/photo_grid_title"
+                    android:src="@drawable/ic_tool_photo_grid" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/photo_grid_title" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
 
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp">
-                <include
-                    android:id="@+id/tool_route_plan"
-                    layout="@layout/view_tool_card_route"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:layout_weight="1" />
-                <include
-                    android:id="@+id/tool_location"
-                    layout="@layout/view_tool_card_location"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1" />
-            </TableRow>
-        </TableLayout>
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_template"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/tools_templates"
+                    android:src="@drawable/ic_tool_template" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/tools_templates" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_camera"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/tools_gps_camera"
+                    android:src="@drawable/ic_tool_camera" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/tools_gps_camera" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_video"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/tools_gps_video"
+                    android:src="@drawable/ic_tool_video" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/tools_gps_video" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_area_measurement"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/tools_area_measurement"
+                    android:src="@drawable/ic_tool_area" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/tools_area_measurement" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_route_plan"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/route_plan_title"
+                    android:src="@drawable/ic_tool_route" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/route_plan_title" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+
+            <View style="@style/ToolsListDivider" />
+
+            <LinearLayout
+                android:id="@+id/tool_location"
+                style="@style/ToolsListRow">
+                <ImageView
+                    style="@style/ToolsListIcon"
+                    android:contentDescription="@string/location_title"
+                    android:src="@drawable/ic_tool_location" />
+                <TextView
+                    style="@style/ToolsListLabel"
+                    android:text="@string/location_title" />
+                <ImageView
+                    style="@style/ToolsListArrow"
+                    android:contentDescription="@string/open" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

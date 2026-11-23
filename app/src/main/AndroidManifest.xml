@@ -141,7 +141,15 @@
             android:name=".ui.livevideo.YoutubeVideoActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
             tools:ignore="LockedOrientationActivity"/>
+
+        <activity
+            android:name=".ui.livevideo.LiveCameraFullscreenActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.LiveCameraFullscreen"
+            tools:ignore="LockedOrientationActivity" />
 
         <activity
             android:name=".ui.gpscamera.CameraSavedPhotoActivity"

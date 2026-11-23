@@ -25,6 +25,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
+import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -47,6 +48,11 @@ import androidx.lifecycle.lifecycleScope
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.location.LocationFormatter
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.OpenMeteoWeather
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -97,6 +103,9 @@ class GpsVideoActivity : AppCompatActivity() {
     private lateinit var playButton: TextView
     private lateinit var soundButton: TextView
     private lateinit var galleryThumbnail: ImageView
+    private lateinit var previewFrame: FrameLayout
+    private lateinit var cameraStampOverlay: StampOverlayView
+    private lateinit var previewStampOverlay: StampOverlayView
 
     private val locationProvider by lazy { GpsLocationProvider(this) }
     private val preferences by lazy { AppSharedPreferencesApp(applicationContext) }
@@ -124,6 +133,8 @@ class GpsVideoActivity : AppCompatActivity() {
     private var lastSavedVideo: Uri? = null
     private var currentZoom = 1f
     private var zoomLevels = listOf(1f)
+    private var stampCustomization: StampCustomization? = null
+    private var weatherText: String? = null
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -181,6 +192,14 @@ class GpsVideoActivity : AppCompatActivity() {
         })
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::cameraStampOverlay.isInitialized) {
+            stampCustomization = StampCustomizationStore.read(this)
+            refreshTemplateOverlays()
+        }
+    }
+
     private fun bindViews() {
         cameraPreview = findViewById(R.id.gps_video_preview)
         cameraContent = findViewById(R.id.gps_video_camera_content)
@@ -214,6 +233,35 @@ class GpsVideoActivity : AppCompatActivity() {
         playButton = findViewById(R.id.gps_video_play)
         soundButton = findViewById(R.id.gps_video_sound)
         galleryThumbnail = findViewById(R.id.gps_video_gallery_thumbnail)
+
+        previewFrame = findViewById(R.id.gps_video_player_frame)
+        cameraStampOverlay = StampOverlayView(this)
+        previewStampOverlay = StampOverlayView(this)
+        (cameraContent as FrameLayout).addView(
+            cameraStampOverlay,
+            1,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        previewFrame.addView(
+            previewStampOverlay,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        findViewById<View>(R.id.gps_video_stamp_card).visibility = View.GONE
+        findViewById<View>(R.id.gps_video_preview_stamp).visibility = View.GONE
+        readyControls.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateCameraStampOverlayBounds()
+        }
+        recordingControls.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateCameraStampOverlayBounds()
+        }
+        stampCustomization = StampCustomizationStore.read(this)
+        cameraStampOverlay.post { updateCameraStampOverlayBounds() }
     }
 
     private fun bindActions() {
@@ -309,6 +357,13 @@ class GpsVideoActivity : AppCompatActivity() {
                     updateStamp()
                 }
             }
+            lifecycleScope.launch(Dispatchers.IO) {
+                val weather = OpenMeteoWeather.fetchCached(location.latitude, location.longitude)?.uiText
+                withContext(Dispatchers.Main) {
+                    weatherText = weather
+                    refreshTemplateOverlays()
+                }
+            }
         }
     }
 
@@ -334,6 +389,47 @@ class GpsVideoActivity : AppCompatActivity() {
             stampCoordinates.text = coordinates
             previewStampPlace.text = place
             previewStampCoordinates.text = coordinates
+        }
+        refreshTemplateOverlays()
+    }
+
+    private fun refreshTemplateOverlays() {
+        if (!::cameraStampOverlay.isInitialized) return
+        val customization = stampCustomization ?: StampCustomizationStore.read(this).also {
+            stampCustomization = it
+        }
+        val location = latestLocation
+        val renderData = StampRenderData(
+            address = placeName ?: getString(R.string.location_your_location),
+            latitude = location?.latitude ?: Double.NaN,
+            longitude = location?.longitude ?: Double.NaN,
+            capturedAt = if (screenState == ScreenState.PREVIEW && recordingStartedWallClock > 0L) {
+                recordingStartedWallClock
+            } else {
+                System.currentTimeMillis()
+            },
+            weather = if (customization.showWeather) weatherText else null
+        )
+        cameraStampOverlay.setCustomization(customization)
+        cameraStampOverlay.setRenderData(renderData)
+        cameraStampOverlay.visibility = if (screenState == ScreenState.READY || screenState == ScreenState.RECORDING) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        previewStampOverlay.setCustomization(customization)
+        previewStampOverlay.setRenderData(renderData)
+        previewStampOverlay.visibility = if (screenState == ScreenState.PREVIEW) View.VISIBLE else View.GONE
+    }
+
+    private fun updateCameraStampOverlayBounds() {
+        if (!::cameraStampOverlay.isInitialized) return
+        val layoutParams = cameraStampOverlay.layoutParams as? FrameLayout.LayoutParams ?: return
+        val controlsHeight = maxOf(readyControls.height, recordingControls.height)
+        val desiredBottomMargin = controlsHeight + dp(8)
+        if (layoutParams.bottomMargin != desiredBottomMargin) {
+            layoutParams.bottomMargin = desiredBottomMargin
+            cameraStampOverlay.layoutParams = layoutParams
         }
     }
 
@@ -521,9 +617,8 @@ class GpsVideoActivity : AppCompatActivity() {
                     latitude = latestLocation?.latitude,
                     longitude = latestLocation?.longitude,
                     recordedAtMillis = recordingStartedWallClock,
-                    template = com.gps.map.camera.and.time.stamp.ui.settings.StampTemplate.fromKey(
-                        preferences.defaultStamp
-                    )
+                    customization = stampCustomization ?: StampCustomizationStore.read(this@GpsVideoActivity),
+                    weather = weatherText
                 )
                 val burnedIn = VideoStampBurner.burn(file, stampedFile, stampData)
                 val saved = if (burnedIn) copyToGallery(stampedFile) else null
@@ -628,6 +723,7 @@ class GpsVideoActivity : AppCompatActivity() {
         timerPill.visibility = if (next == ScreenState.RECORDING) View.VISIBLE else View.GONE
         if (next != ScreenState.RECORDING) window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (next == ScreenState.RECORDING) updateRecordingControls()
+        updateCameraStampOverlayBounds()
         updateStamp()
     }
 
@@ -696,6 +792,8 @@ class GpsVideoActivity : AppCompatActivity() {
             }
             .show()
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

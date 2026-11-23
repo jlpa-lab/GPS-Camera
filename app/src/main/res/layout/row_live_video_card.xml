@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="12dp">
+
+    <FrameLayout
+        android:id="@+id/live_video_thumbnail_container"
+        android:layout_width="match_parent"
+        android:layout_height="116dp"
+        android:background="@drawable/bg_live_video_thumbnail"
+        android:clipToOutline="true"
+        android:foreground="?android:attr/selectableItemBackground">
+
+        <ImageView
+            android:id="@+id/live_video_thumbnail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/live_video_preview"
+            android:scaleType="centerCrop" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#24000000" />
+
+        <ImageView
+            android:id="@+id/live_video_play"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/live_video_play"
+            android:src="@drawable/ic_play_live"
+            android:tint="@color/white" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/live_video_card_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/poppins_semibold"
+        android:maxLines="1"
+        android:textColor="@color/primary_text_color"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/live_video_card_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/poppins_regular"
+        android:maxLines="1"
+        android:textColor="@color/secondary_text_color"
+        android:textSize="14sp" />
+</LinearLayout>

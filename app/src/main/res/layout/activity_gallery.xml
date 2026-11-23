@@ -135,6 +135,7 @@
                 android:paddingBottom="24dp">
 
                 <FrameLayout
+                    android:id="@+id/gallery_detail_media_frame"
                     android:layout_width="match_parent"
                     android:layout_height="320dp"
                     android:background="@drawable/bg_gallery_photo"
