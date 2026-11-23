@@ -1,11 +1,8 @@
 package com.gps.map.camera.and.time.stamp.ui.permissions
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -35,14 +32,14 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
             R.id.permission_camera,
             R.string.permissions_camera_title,
             R.string.permissions_camera_description,
-            R.drawable.ic_tool_camera,
+            R.drawable.permissions_camera,
             { arrayOf(Manifest.permission.CAMERA) }
         ),
         LOCATION(
             R.id.permission_location,
             R.string.permissions_location_title,
             R.string.permissions_location_description,
-            R.drawable.ic_tool_location,
+            R.drawable.permissions_location,
             {
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -54,7 +51,7 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
             R.id.permission_photos,
             R.string.permissions_photos_title,
             R.string.permissions_photos_description,
-            R.drawable.ic_tool_gallery,
+            R.drawable.permissions_photos,
             {
                 arrayOf(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -69,7 +66,7 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
             R.id.permission_microphone,
             R.string.permissions_microphone_title,
             R.string.permissions_microphone_description,
-            R.drawable.ic_mic,
+            R.drawable.permissions_microphone,
             { arrayOf(Manifest.permission.RECORD_AUDIO) }
         )
     }
@@ -85,11 +82,21 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         refreshPermissionRows()
+        if (fromOnboarding && allPermissionsGranted()) {
+            finishPermissionFlow()
+        } else if (!fromOnboarding && allPermissionsGranted()) {
+            finish()
+        }
     }
 
     override fun getLayoutActivity(): Int = R.layout.activity_app_permissions
 
     override fun initViews() {
+        if (allPermissionsGranted()) {
+            if (fromOnboarding) finishPermissionFlow() else finish()
+            return
+        }
+
         PermissionKind.entries.forEach { kind ->
             val rowRoot = findViewById<View>(kind.rowId)
             rowRoot.findViewById<ImageView>(R.id.permission_icon).setImageResource(kind.iconRes)
@@ -118,8 +125,8 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
     private fun onPermissionSelected(kind: PermissionKind) {
         if (isPermissionGranted(kind)) {
             // Android does not allow an app to revoke its own runtime permission.
-            // Send the user to the system page when an enabled row is tapped.
-            openAppSettings()
+            // Keep the granted state stable and never surprise the user with Settings.
+            refreshPermissionRows()
             return
         }
 
@@ -130,7 +137,9 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
         }
 
         if (requestedBefore && missing.isNotEmpty() && !canShowSystemPrompt) {
-            openAppSettings()
+            // A permanently denied permission cannot be requested again from the app.
+            // Leave the row off; feature-specific permission dialogs provide the
+            // explicit route to Android Settings when it is actually needed.
             return
         }
 
@@ -172,12 +181,4 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
         finish()
     }
 
-    private fun openAppSettings() {
-        startActivity(
-            Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:$packageName")
-            )
-        )
-    }
 }

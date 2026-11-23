@@ -1,7 +1,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_home_gradient"
+    android:background="@drawable/bg_gradient"
     android:clipToPadding="false"
     android:fillViewport="true"
     android:overScrollMode="never">
@@ -19,11 +19,11 @@
             android:id="@+id/home_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
+            android:fontFamily="@font/poppins_bold"
+            android:includeFontPadding="false"
             android:text="GPS Camera"
             android:textColor="#F6F7FF"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textSize="24sp" />
 
         <FrameLayout
             android:id="@+id/card_gps_camera"
@@ -35,6 +35,18 @@
             android:clipToOutline="true"
             android:focusable="true"
             android:foreground="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                android:src="@drawable/home_gps_camera" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_home_hero_overlay" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -55,35 +67,40 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:includeFontPadding="false"
                         android:text="GPS Camera"
-                        android:textColor="#FFFFFF"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/white"
+                        android:textSize="20sp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="140dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:fontFamily="sans-serif"
+                        android:layout_marginTop="5dp"
+                        android:fontFamily="@font/poppins_regular"
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="2dp"
+                        android:maxLines="2"
                         android:text="Capture moments with time &amp; location"
                         android:textColor="#CBD4E5"
-                        android:textSize="11sp" />
+                        android:textSize="14sp" />
 
                     <TextView
                         android:id="@+id/home_open_camera"
                         android:layout_width="wrap_content"
-                        android:layout_height="34dp"
+                        android:layout_height="40dp"
                         android:layout_marginTop="9dp"
                         android:background="@drawable/bg_open_camera"
-                        android:fontFamily="sans-serif-medium"
+                        android:drawableStart="@drawable/camera"
+                        android:drawablePadding="8dp"
+                        android:fontFamily="@font/poppins_semibold"
                         android:gravity="center"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="12dp"
+                        android:includeFontPadding="false"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="14dp"
                         android:text="Open Camera"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/white"
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -103,7 +120,6 @@
                         android:translationX="16dp"
                         android:translationY="4dp" />
 
-                    <!-- 2. Front Photo Card (Rotated Left) -->
                     <ImageView
                         android:id="@+id/iv_sample_front"
                         android:layout_width="80dp"
@@ -116,109 +132,14 @@
                         android:translationX="-16dp"
                         android:translationY="-4dp" />
 
-                    <!-- 3. Red Location Pin Graphic (Centered Over Front Card) -->
                     <ImageView
                         android:id="@+id/iv_location_pin"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
                         android:layout_gravity="center"
                         android:elevation="8dp"
-                        android:src="@drawable/ic_map_pin"
-                        android:translationX="0dp"
-                        android:translationY="-12dp" />
-
-<!--                    <LinearLayout-->
-<!--                        android:layout_width="88dp"-->
-<!--                        android:layout_height="102dp"-->
-<!--                        android:layout_gravity="center"-->
-<!--                        android:background="@drawable/bg_home_preview_card_back"-->
-<!--                        android:elevation="2dp"-->
-<!--                        android:orientation="vertical"-->
-<!--                        android:padding="6dp"-->
-<!--                        android:rotation="9"-->
-<!--                        android:translationX="18dp"-->
-<!--                        android:translationY="2dp">-->
-
-<!--                        <TextView-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="0dp"-->
-<!--                            android:layout_weight="1"-->
-<!--                            android:gravity="bottom|start"-->
-<!--                            android:text="Kyoto, Japan"-->
-<!--                            android:textColor="#FFFFFF"-->
-<!--                            android:textSize="9sp"-->
-<!--                            android:textStyle="bold" />-->
-
-<!--                        <TextView-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="wrap_content"-->
-<!--                            android:background="#990A1425"-->
-<!--                            android:padding="3dp"-->
-<!--                            android:text="35.0116° N · 135.7681° E"-->
-<!--                            android:textColor="#E7ECF5"-->
-<!--                            android:textSize="5sp" />-->
-<!--                    </LinearLayout>-->
-
-<!--                 <LinearLayout-->
-<!--                        android:layout_width="88dp"-->
-<!--                        android:layout_height="102dp"-->
-<!--                        android:layout_gravity="center"-->
-<!--                        android:background="@drawable/bg_home_preview_card_front"-->
-<!--                        android:elevation="4dp"-->
-<!--                        android:orientation="vertical"-->
-<!--                        android:padding="6dp"-->
-<!--                        android:rotation="-9"-->
-<!--                        android:translationX="-18dp"-->
-<!--                        android:translationY="-2dp">-->
-
-<!--                        <ImageView-->
-<!--                            android:id="@+id/iv_sample_back"-->
-<!--                            android:layout_width="80dp"-->
-<!--                            android:layout_height="105dp"-->
-<!--                            android:layout_gravity="center"-->
-<!--                            android:elevation="2dp"-->
-<!--                            android:rotation="8"-->
-<!--                            android:scaleType="fitCenter"-->
-<!--                            android:src="@drawable/ic_gps_sample"-->
-<!--                            android:translationX="16dp"-->
-<!--                            android:translationY="4dp" />-->
-
-<!--                        &lt;!&ndash; 2. Front Photo Card (Rotated Left) &ndash;&gt;-->
-<!--                        <ImageView-->
-<!--                            android:id="@+id/iv_sample_front"-->
-<!--                            android:layout_width="80dp"-->
-<!--                            android:layout_height="105dp"-->
-<!--                            android:layout_gravity="center"-->
-<!--                            android:elevation="4dp"-->
-<!--                            android:rotation="-8"-->
-<!--                            android:scaleType="fitCenter"-->
-<!--                            android:src="@drawable/ic_gps_sample2"-->
-<!--                            android:translationX="-16dp"-->
-<!--                            android:translationY="-4dp" />-->
-
-<!--                        &lt;!&ndash; 3. Red Location Pin Graphic (Centered Over Front Card) &ndash;&gt;-->
-<!--                        <ImageView-->
-<!--                            android:id="@+id/iv_location_pin"-->
-<!--                            android:layout_width="32dp"-->
-<!--                            android:layout_height="32dp"-->
-<!--                            android:layout_gravity="center"-->
-<!--                            android:elevation="8dp"-->
-<!--                            android:src="@drawable/ic_map_pin"-->
-<!--                            android:translationX="0dp"-->
-<!--                            android:translationY="-12dp" />-->
-<!--                    </LinearLayout>-->
-
-                    <TextView
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:layout_gravity="center"
-                        android:background="@drawable/bg_home_pin"
-                        android:elevation="8dp"
-                        android:gravity="center"
-                        android:text="●"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10sp"
-                        android:translationY="-18dp" />
+                        android:src="@drawable/home_location_pin"
+                        android:translationY="-14dp" />
                 </FrameLayout>
             </LinearLayout>
         </FrameLayout>
@@ -228,106 +149,32 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:layout_marginBottom="9dp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/poppins_semibold"
+            android:includeFontPadding="false"
             android:text="Explore"
             android:textColor="#F6F7FF"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <FrameLayout
+            <include
                 android:id="@+id/card_earth_view"
+                layout="@layout/item_home_feature_card"
                 android:layout_width="0dp"
                 android:layout_height="112dp"
                 android:layout_marginEnd="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_home_earth_gradient"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground">
-                <!--  Add the Figma vector drawable ic_earth_view to this ImageView.  -->
-                <ImageView
-                    android:id="@+id/home_icon_earth_view"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="top|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginTop="13dp"
-                    android:background="@drawable/ic_globe"
-                    android:contentDescription="Earth View icon"
-                    android:padding="9dp" />
+                android:layout_weight="1" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="13dp"
-                    android:layout_marginEnd="14dp"
-                    android:text="→"
-                    android:textColor="#9DBBFF"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginBottom="13dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Earth View"
-                    android:textColor="#F4F6FF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
-
-            <FrameLayout
+            <include
                 android:id="@+id/card_street_view"
+                layout="@layout/item_home_feature_card"
                 android:layout_width="0dp"
                 android:layout_height="112dp"
                 android:layout_marginStart="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_home_street_gradient"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground">
-                <!--  Add the Figma vector drawable ic_street_view to this ImageView.  -->
-                <ImageView
-                    android:id="@+id/home_icon_street_view"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="top|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginTop="13dp"
-                    android:background="@drawable/ic_street"
-                    android:contentDescription="Street View icon"
-                    android:padding="9dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="13dp"
-                    android:layout_marginEnd="14dp"
-                    android:text="→"
-                    android:textColor="#F3A6D8"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginBottom="13dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Street View"
-                    android:textColor="#F4F6FF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
+                android:layout_weight="1" />
         </LinearLayout>
 
         <LinearLayout
@@ -336,95 +183,21 @@
             android:layout_marginTop="10dp"
             android:orientation="horizontal">
 
-            <FrameLayout
+            <include
                 android:id="@+id/card_live_video"
+                layout="@layout/item_home_feature_card"
                 android:layout_width="0dp"
                 android:layout_height="112dp"
                 android:layout_marginEnd="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_home_live_gradient"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground">
-                <!--  Add the Figma vector drawable ic_live_video to this ImageView.  -->
-                <ImageView
-                    android:id="@+id/home_icon_live_video"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="top|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginTop="13dp"
-                    android:background="@drawable/ic_video"
-                    android:contentDescription="Live Video icon"
-                    android:padding="9dp" />
+                android:layout_weight="1" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="13dp"
-                    android:layout_marginEnd="14dp"
-                    android:text="→"
-                    android:textColor="#F4A7C8"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginBottom="13dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Live Video"
-                    android:textColor="#F4F6FF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
-
-            <FrameLayout
+            <include
                 android:id="@+id/card_map_view"
+                layout="@layout/item_home_feature_card"
                 android:layout_width="0dp"
                 android:layout_height="112dp"
                 android:layout_marginStart="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_home_map_gradient"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground">
-                <!--  Add the Figma vector drawable ic_map_view to this ImageView.  -->
-                <ImageView
-                    android:id="@+id/home_icon_map_view"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="top|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginTop="13dp"
-                    android:background="@drawable/ic_map"
-                    android:contentDescription="Map View icon"
-                    android:padding="9dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_marginTop="13dp"
-                    android:layout_marginEnd="14dp"
-                    android:text="→"
-                    android:textColor="#78D8CB"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="13dp"
-                    android:layout_marginBottom="13dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Map View"
-                    android:textColor="#F4F6FF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
+                android:layout_weight="1" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

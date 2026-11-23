@@ -37,6 +37,7 @@ import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceAdapter
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
+import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -453,11 +454,7 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun formatDistance(meters: Int): String {
-        return if (meters < 1_000) {
-            "$meters m"
-        } else {
-            String.format(Locale.getDefault(), "%.1f km", meters / 1_000.0)
-        }
+        return MeasurementFormatter.distance(this, meters.toDouble())
     }
 
     private fun openGoogleMapsDirections() {

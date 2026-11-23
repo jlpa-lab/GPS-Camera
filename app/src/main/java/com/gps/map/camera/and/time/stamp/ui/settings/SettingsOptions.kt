@@ -36,5 +36,5 @@ data class SettingsState(
     val appearance: AppearanceOption,
     val languageCode: String,
     val units: MeasurementUnit,
-    val stamp: StampTemplate
+    val stampKey: String
 )

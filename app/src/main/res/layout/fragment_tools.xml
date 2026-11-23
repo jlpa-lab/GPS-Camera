@@ -22,7 +22,8 @@
             android:fontFamily="@font/poppins_bold"
             android:text="@string/tools_title"
             android:textColor="@color/primary_text_color"
-            android:textSize="22sp" />
+            android:includeFontPadding="false"
+            android:textSize="24sp" />
 
         <LinearLayout
             android:id="@+id/tools_list_panel"

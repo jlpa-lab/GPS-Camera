@@ -337,7 +337,7 @@ class LocationActivity : AppCompatActivity(), OnMapReadyCallback {
             latitudeValue.text = LocationFormatter.latitude(result.latitude)
             longitudeValue.text = LocationFormatter.longitude(result.longitude)
             accuracyRow.visibility = if (result.accuracyMeters == null) View.GONE else View.VISIBLE
-            result.accuracyMeters?.let { accuracyValue.text = LocationFormatter.accuracy(it) }
+            result.accuracyMeters?.let { accuracyValue.text = LocationFormatter.accuracy(this, it) }
         }
     }
 

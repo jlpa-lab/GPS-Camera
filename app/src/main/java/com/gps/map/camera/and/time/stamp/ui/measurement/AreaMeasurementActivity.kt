@@ -23,6 +23,7 @@ import com.google.android.gms.maps.model.PolygonOptions
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementUnit
+import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import java.util.Locale
 import kotlin.math.abs
@@ -292,17 +293,7 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun formatDistance(meters: Double): String {
-        return if (measurementUnit() == MeasurementUnit.IMPERIAL) {
-            if (meters >= 1_609.344) {
-                String.format(Locale.getDefault(), "%.1f mi", meters / 1_609.344)
-            } else {
-                String.format(Locale.getDefault(), "%,.0f ft", meters * 3.280839895)
-            }
-        } else if (meters >= 1_000.0) {
-            String.format(Locale.getDefault(), "%.1f km", meters / 1_000.0)
-        } else {
-            String.format(Locale.getDefault(), "%.0f m", meters)
-        }
+        return MeasurementFormatter.distance(this, meters)
     }
 
     private fun measurementUnit(): MeasurementUnit =

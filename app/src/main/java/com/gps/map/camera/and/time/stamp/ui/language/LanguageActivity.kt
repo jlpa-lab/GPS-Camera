@@ -54,6 +54,10 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>() {
         Log.d("AppEvent", "LanguageActivity")
         // Firebase Remote Config is initialized once from SplashActivity.
         confirmButton = mBinding.confirmLanguage
+        if (fromSetting) {
+            // Settings opens the language utility page without an ad container.
+            mBinding.flAds.visibility = View.GONE
+        }
         populateLanguages()
 
         confirmButton.setOnClickListener {

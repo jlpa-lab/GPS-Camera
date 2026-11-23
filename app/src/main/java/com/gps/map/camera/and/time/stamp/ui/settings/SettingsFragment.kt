@@ -1,13 +1,20 @@
 package com.gps.map.camera.and.time.stamp.ui.settings
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import android.app.Dialog
 import androidx.fragment.app.Fragment
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.app.AppConstants
@@ -18,6 +25,9 @@ import com.gps.map.camera.and.time.stamp.ui.theme.ThemeManager
 import com.gps.map.camera.and.time.stamp.ui.rating.RateAppActivity
 import com.gps.map.camera.and.time.stamp.ui.rating.RateAppManager
 import com.gps.map.camera.and.time.stamp.ui.permissions.AppPermissionsActivity
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
+import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampTemplateCatalog
+import com.gps.map.camera.and.time.stamp.utils.Routes
 
 /** Settings for choices that affect the whole app. */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
@@ -41,14 +51,17 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     override fun onResume() {
         super.onResume()
-        if (::state.isInitialized) updateRows(requireView())
+        if (::state.isInitialized) {
+            state = readState()
+            updateRows(requireView())
+        }
     }
 
     private fun readState(): SettingsState = SettingsState(
         appearance = AppearanceOption.fromKey(preferences.appearanceMode),
         languageCode = LocaleManager.currentLanguage(requireContext()),
         units = MeasurementUnit.fromKey(preferences.measurementUnit),
-        stamp = StampTemplate.fromKey(preferences.defaultStamp)
+        stampKey = StampCustomizationStore.selectedTemplate(requireContext())
     )
 
     private fun bindRows(root: View) {
@@ -59,7 +72,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         bindRow(root, R.id.settings_row_units, R.drawable.ic_layers,
             R.string.settings_units, unitsLabel(state.units))
         bindRow(root, R.id.settings_row_stamp, R.drawable.ic_tool_template,
-            R.string.settings_default_stamp, stampLabel(state.stamp))
+            R.string.settings_default_stamp, stampLabel(state.stampKey))
         bindRow(root, R.id.settings_row_permissions, R.drawable.ic_location_access,
             R.string.settings_permissions, null)
         bindRow(root, R.id.settings_row_rate, R.drawable.ic_crown,
@@ -70,9 +83,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             R.string.settings_terms_of_use, null)
 
         rowContent(root, R.id.settings_row_appearance).click { showAppearanceDialog() }
-        rowContent(root, R.id.settings_row_language).click { showLanguageDialog() }
+        rowContent(root, R.id.settings_row_language).click { openLanguagePage() }
         rowContent(root, R.id.settings_row_units).click { showUnitsDialog() }
-        rowContent(root, R.id.settings_row_stamp).click { showStampDialog() }
+        rowContent(root, R.id.settings_row_stamp).click {
+            Routes.startStampTemplateActivity(requireActivity())
+        }
         rowContent(root, R.id.settings_row_permissions).click { showPermissionScreen() }
         rowContent(root, R.id.settings_row_rate).click { rateApp() }
         rowContent(root, R.id.settings_row_privacy).click {
@@ -87,7 +102,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         updateValue(root, R.id.settings_row_appearance, appearanceLabel(state.appearance))
         updateValue(root, R.id.settings_row_language, languageLabel(state.languageCode))
         updateValue(root, R.id.settings_row_units, unitsLabel(state.units))
-        updateValue(root, R.id.settings_row_stamp, stampLabel(state.stamp))
+        updateValue(root, R.id.settings_row_stamp, stampLabel(state.stampKey))
     }
 
     private fun bindRow(root: View, rowId: Int, icon: Int, title: Int, value: String?) {
@@ -113,67 +128,93 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun showAppearanceDialog() {
         val options = listOf(AppearanceOption.SYSTEM, AppearanceOption.LIGHT, AppearanceOption.DARK)
-        val labels = options.map { appearanceLabel(it) }.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_choose_appearance)
-            .setSingleChoiceItems(labels, options.indexOf(state.appearance)) { dialog, which ->
-                val selected = options[which]
-                state = state.copy(appearance = selected)
-                ThemeManager.apply(requireContext(), selected)
-                dialog.dismiss()
-                updateRows(requireView())
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        showChoiceDialog(
+            title = getString(R.string.settings_choose_appearance),
+            labels = options.map(::appearanceLabel),
+            selectedIndex = options.indexOf(state.appearance)
+        ) { dialog, which ->
+            val selected = options[which]
+            state = state.copy(appearance = selected)
+            dialog.dismiss()
+            ThemeManager.apply(requireContext(), selected)
+            updateRows(requireView())
+        }
     }
 
-    private fun showLanguageDialog() {
-        val choices = languageChoices()
-        val labels = choices.map { languageLabel(it.code) }.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_choose_language)
-            .setSingleChoiceItems(labels, choices.indexOfFirst { it.code == state.languageCode }) { dialog, which ->
-                val selected = choices[which]
-                preferences.languageCode = selected.code
-                LocaleManager.apply(requireContext(), selected.code)
-                state = state.copy(languageCode = selected.code)
-                dialog.dismiss()
-                requireActivity().recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    private fun openLanguagePage() {
+        Routes.startLanguageActivity(requireActivity(), Bundle().apply {
+            putBoolean(AppConstants.KEY_SETTING, true)
+        })
     }
 
     private fun showUnitsDialog() {
         val options = listOf(MeasurementUnit.METRIC, MeasurementUnit.IMPERIAL)
-        val labels = options.map { unitsLabel(it) }.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_choose_units)
-            .setSingleChoiceItems(labels, options.indexOf(state.units)) { dialog, which ->
-                val selected = options[which]
-                preferences.measurementUnit = selected.key
-                state = state.copy(units = selected)
-                dialog.dismiss()
-                updateRows(requireView())
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        showChoiceDialog(
+            title = getString(R.string.settings_choose_units),
+            labels = options.map(::unitsLabel),
+            selectedIndex = options.indexOf(state.units)
+        ) { dialog, which ->
+            val selected = options[which]
+            preferences.measurementUnit = selected.key
+            state = state.copy(units = selected)
+            dialog.dismiss()
+            updateRows(requireView())
+        }
     }
 
-    private fun showStampDialog() {
-        val options = listOf(StampTemplate.CLASSIC, StampTemplate.MINIMAL, StampTemplate.DETAILED)
-        val labels = options.map { stampLabel(it) }.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_choose_stamp)
-            .setSingleChoiceItems(labels, options.indexOf(state.stamp)) { dialog, which ->
-                val selected = options[which]
-                preferences.defaultStamp = selected.key
-                state = state.copy(stamp = selected)
-                dialog.dismiss()
-                updateRows(requireView())
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    private fun showChoiceDialog(
+        title: String,
+        labels: List<String>,
+        selectedIndex: Int,
+        onSelected: (Dialog, Int) -> Unit
+    ) {
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val content = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_settings_choice, null, false)
+        dialog.setContentView(content)
+        content.findViewById<TextView>(R.id.settings_choice_title).text = title
+
+        labels.forEachIndexed { index, label ->
+            val rowNumber = index + 1
+            val rowId = resources.getIdentifier(
+                "settings_choice_option_$rowNumber", "id", requireContext().packageName
+            )
+            val labelId = resources.getIdentifier(
+                "settings_choice_option_${rowNumber}_label", "id", requireContext().packageName
+            )
+            val radioId = resources.getIdentifier(
+                "settings_choice_option_${rowNumber}_radio", "id", requireContext().packageName
+            )
+            val row = content.findViewById<LinearLayout>(rowId)
+            row.visibility = View.VISIBLE
+            row.findViewById<TextView>(labelId).text = label
+            row.findViewById<RadioButton>(radioId).isChecked = index == selectedIndex
+            row.setOnClickListener { onSelected(dialog, index) }
+        }
+        for (index in labels.size + 1..3) {
+            val rowId = resources.getIdentifier(
+                "settings_choice_option_$index", "id", requireContext().packageName
+            )
+            content.findViewById<View>(rowId).visibility = View.GONE
+        }
+        content.findViewById<View>(R.id.settings_choice_cancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setOnShowListener {
+            configureDialogWindow(dialog)
+        }
+        dialog.show()
+        configureDialogWindow(dialog)
+    }
+
+    private fun configureDialogWindow(dialog: Dialog) {
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.58f)
+            setLayout(dp(320), WindowManager.LayoutParams.WRAP_CONTENT)
+        }
     }
 
     private fun showPermissionScreen() {
@@ -239,13 +280,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         if (value == MeasurementUnit.METRIC) R.string.settings_metric else R.string.settings_imperial
     )
 
-    private fun stampLabel(value: StampTemplate): String = getString(
-        when (value) {
-            StampTemplate.CLASSIC -> R.string.settings_classic
-            StampTemplate.MINIMAL -> R.string.settings_minimal
-            StampTemplate.DETAILED -> R.string.settings_detailed
-        }
-    )
+    private fun stampLabel(value: String): String = StampTemplateCatalog.item(value).name
 
     private fun languageLabel(code: String): String {
         val option = languageChoices().firstOrNull { it.code == code }
@@ -257,4 +292,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         requireContext().packageManager.getPackageInfo(requireContext().packageName, 0).versionName
             ?: ""
     }.getOrDefault("")
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

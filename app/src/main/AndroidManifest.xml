@@ -135,6 +135,7 @@
         <activity android:name=".ui.rating.RateAppActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.RateDialog"
             tools:ignore="LockedOrientationActivity"/>
 
         <activity

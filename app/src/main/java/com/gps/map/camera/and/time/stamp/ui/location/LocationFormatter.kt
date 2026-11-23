@@ -1,15 +1,17 @@
 package com.gps.map.camera.and.time.stamp.ui.location
 
+import android.content.Context
+import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 object LocationFormatter {
     fun latitude(value: Double): String = formatCoordinate(value, "N", "S")
 
     fun longitude(value: Double): String = formatCoordinate(value, "E", "W")
 
-    fun accuracy(meters: Float): String = "± ${meters.roundToInt()} m"
+    fun accuracy(context: Context, meters: Float): String =
+        MeasurementFormatter.accuracy(context, meters)
 
     fun shareCoordinates(latitude: Double, longitude: Double): String =
         String.format(Locale.US, "%.6f, %.6f", latitude, longitude)

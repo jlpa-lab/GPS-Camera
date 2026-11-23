@@ -12,7 +12,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingStart="20dp"
-        android:paddingTop="34dp"
+        android:paddingTop="42dp"
         android:paddingEnd="20dp"
         android:paddingBottom="20dp">
 
@@ -20,7 +20,8 @@
             android:id="@+id/settings_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/poppins_semibold"
+            android:fontFamily="@font/poppins_bold"
+            android:includeFontPadding="false"
             android:text="@string/settings_title"
             android:textColor="@color/primary_text_color"
             android:textSize="24sp" />

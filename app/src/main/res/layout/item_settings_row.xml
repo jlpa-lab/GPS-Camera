@@ -33,7 +33,7 @@
             android:layout_weight="1"
             android:fontFamily="@font/poppins_regular"
             android:textColor="@color/location_primary_text"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/settings_row_value"
@@ -42,7 +42,7 @@
             android:layout_marginStart="8dp"
             android:fontFamily="@font/poppins_regular"
             android:textColor="@color/subtitle_text_color"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:visibility="gone" />
 
         <ImageView
