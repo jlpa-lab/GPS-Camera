@@ -26,6 +26,7 @@ import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
+import com.gps.map.camera.and.time.stamp.utils.location.LocationDisabledDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -186,6 +187,7 @@ class PhotoGalleryActivity : AppCompatActivity() {
     }
 
     private fun openCamera() {
+        if (LocationDisabledDialog.showIfCameraAccessDisabled(this)) return
         cameraLauncher.launch(Intent(this, CameraActivity::class.java).apply {
         })
     }

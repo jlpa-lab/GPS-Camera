@@ -168,9 +168,8 @@ class OnBoardingActivity : BaseActivity<ActivityOnboardingBinding>() {
 
     private fun startNextActivity() {
         registerShortcutsAfterOnboarding()
-        appSharedPref.firstOnBoarding = false
         AdsManager.showInterOnboarding(this) {
-            Routes.startMainActivity(this)
+            Routes.startAppPermissionsActivity(this, fromOnboarding = true)
             finish()
         }
     }

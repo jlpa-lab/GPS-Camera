@@ -19,6 +19,8 @@ import com.gps.map.camera.and.time.stamp.ui.measurement.AreaMeasurementActivity
 import com.gps.map.camera.and.time.stamp.ui.location.LocationActivity
 import com.gps.map.camera.and.time.stamp.ui.route.RoutePlanActivity
 import com.gps.map.camera.and.time.stamp.ui.onboarding.OnBoardingActivity
+import com.gps.map.camera.and.time.stamp.ui.permissions.AppPermissionsActivity
+import com.gps.map.camera.and.time.stamp.utils.location.LocationDisabledDialog
 import com.gps.map.camera.and.time.stamp.ui.splash.SplashActivity
 import com.gps.map.camera.and.time.stamp.ui.uninstall.ConfirmUninstallActivity
 import com.gps.map.camera.and.time.stamp.ui.welcome.WelcomeActivity
@@ -31,29 +33,33 @@ object Routes {
         fromActivity.launch(MainActivity::class.java)
     }
     fun startOnBoardingActivity(fromActivity: Activity) = fromActivity.launch(OnBoardingActivity::class.java)
+    fun startAppPermissionsActivity(fromActivity: Activity, fromOnboarding: Boolean = false) =
+        fromActivity.launch(AppPermissionsActivity::class.java, Bundle().apply {
+            putBoolean(AppPermissionsActivity.EXTRA_FROM_ONBOARDING, fromOnboarding)
+        })
     fun startLanguageActivity(fromActivity: Activity, bundle: Bundle?) = fromActivity.launch(
         LanguageActivity::class.java, bundle)
     fun startSplashActivity(fromActivity: Activity) = fromActivity.launch(SplashActivity::class.java)
     fun startConfirmUninstallActivity(fromActivity: Activity) = fromActivity.launch(
         ConfirmUninstallActivity::class.java)
     fun startWelcomeActivity(fromActivity: Activity) = fromActivity.launch(WelcomeActivity::class.java)
-    fun startEarthViewActivity(fromActivity: Activity) = fromActivity.launch(EarthViewActivity::class.java)
-    fun startStreetViewActivity(fromActivity: Activity) = fromActivity.launch(StreetViewActivity::class.java)
-    fun startMapViewActivity(fromActivity: Activity) = fromActivity.launch(MapViewActivity::class.java)
+    fun startEarthViewActivity(fromActivity: Activity) = fromActivity.launchLocationFeature(EarthViewActivity::class.java)
+    fun startStreetViewActivity(fromActivity: Activity) = fromActivity.launchLocationFeature(StreetViewActivity::class.java)
+    fun startMapViewActivity(fromActivity: Activity) = fromActivity.launchLocationFeature(MapViewActivity::class.java)
     fun startAreaMeasurementActivity(fromActivity: Activity) =
-        fromActivity.launch(AreaMeasurementActivity::class.java)
+        fromActivity.launchLocationFeature(AreaMeasurementActivity::class.java)
 
     fun startRoutePlanActivity(fromActivity: Activity) =
-        fromActivity.launch(RoutePlanActivity::class.java)
+        fromActivity.launchLocationFeature(RoutePlanActivity::class.java)
 
     fun startLocationActivity(fromActivity: Activity) =
-        fromActivity.launch(LocationActivity::class.java)
+        fromActivity.launchLocationFeature(LocationActivity::class.java)
 
     fun startCameraActivity(fromActivity: Activity) =
-        fromActivity.launch(CameraActivity::class.java)
+        fromActivity.launchCameraFeature(CameraActivity::class.java)
 
     fun startGpsVideoActivity(fromActivity: Activity) =
-        fromActivity.launch(GpsVideoActivity::class.java)
+        fromActivity.launchCameraFeature(GpsVideoActivity::class.java)
 
     fun startPhotoGridActivity(fromActivity: Activity) =
         fromActivity.launch(PhotoGridActivity::class.java)
@@ -66,5 +72,15 @@ object Routes {
 
     fun startLiveVideoActivity(fromActivity: Activity) =
         fromActivity.launch(LiveVideoActivity::class.java)
+
+    private fun Activity.launchLocationFeature(target: Class<*>) {
+        if (LocationDisabledDialog.showIfLocationDisabled(this)) return
+        launch(target)
+    }
+
+    private fun Activity.launchCameraFeature(target: Class<*>) {
+        if (LocationDisabledDialog.showIfCameraAccessDisabled(this)) return
+        launchLocationFeature(target)
+    }
 
 }

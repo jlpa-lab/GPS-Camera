@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/permissions_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#0A1220"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="28dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="28dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/permissions_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_bold"
+                android:includeFontPadding="false"
+                android:text="@string/permissions_title"
+                android:textColor="@color/primary_text_color"
+                android:textSize="28sp" />
+
+            <TextView
+                android:id="@+id/permissions_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/poppins_regular"
+                android:includeFontPadding="false"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/permissions_subtitle"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="17sp" />
+
+            <LinearLayout
+                android:id="@+id/permissions_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="54dp"
+                android:orientation="vertical">
+
+                <include
+                    android:id="@+id/permission_camera"
+                    layout="@layout/item_app_permission" />
+
+                <include
+                    android:id="@+id/permission_location"
+                    layout="@layout/item_app_permission"
+                    android:layout_marginTop="12dp" />
+
+                <include
+                    android:id="@+id/permission_photos"
+                    layout="@layout/item_app_permission"
+                    android:layout_marginTop="12dp" />
+
+                <include
+                    android:id="@+id/permission_microphone"
+                    layout="@layout/item_app_permission"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/permissions_start"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_permissions_start"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="@string/start"
+                android:textColor="@color/permissions_start_text"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/permissions_settings_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/poppins_regular"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="@string/permissions_settings_hint"
+                android:textColor="@color/permissions_hint_text"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</layout>

@@ -35,4 +35,6 @@
     <color name="home_blue_background">#2468C6</color>
     <color name="home_blue_button_text">#A8CBF5</color>
     <color name="color_streetview_background">#101C2B</color>
+    <color name="permissions_start_text">#FFFFFF</color>
+    <color name="permissions_hint_text">#8FA6C0</color>
 </resources>

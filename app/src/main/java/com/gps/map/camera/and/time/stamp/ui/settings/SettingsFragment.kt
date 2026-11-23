@@ -1,20 +1,13 @@
 package com.gps.map.camera.and.time.stamp.ui.settings
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.app.AppConstants
@@ -24,22 +17,15 @@ import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.theme.ThemeManager
 import com.gps.map.camera.and.time.stamp.ui.rating.RateAppActivity
 import com.gps.map.camera.and.time.stamp.ui.rating.RateAppManager
+import com.gps.map.camera.and.time.stamp.ui.permissions.AppPermissionsActivity
 
 /** Settings for choices that affect the whole app. */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private data class LanguageChoice(val code: String, val labelRes: Int)
 
-    private data class PermissionChoice(val labelRes: Int, val permission: String)
-
     private lateinit var preferences: AppSharedPreferencesApp
     private lateinit var state: SettingsState
-
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        showPermissionDialog()
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -87,7 +73,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         rowContent(root, R.id.settings_row_language).click { showLanguageDialog() }
         rowContent(root, R.id.settings_row_units).click { showUnitsDialog() }
         rowContent(root, R.id.settings_row_stamp).click { showStampDialog() }
-        rowContent(root, R.id.settings_row_permissions).click { showPermissionDialog() }
+        rowContent(root, R.id.settings_row_permissions).click { showPermissionScreen() }
         rowContent(root, R.id.settings_row_rate).click { rateApp() }
         rowContent(root, R.id.settings_row_privacy).click {
             openLink(AppConstants.LINK_PRIVACY_POLICY)
@@ -190,40 +176,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             .show()
     }
 
-    private fun showPermissionDialog() {
-        if (!isAdded) return
-        val choices = permissionChoices()
-        val labels = choices.map { choice ->
-            val status = if (hasPermission(choice.permission)) {
-                getString(R.string.settings_permission_granted)
-            } else {
-                getString(R.string.settings_permission_denied)
-            }
-            "${getString(choice.labelRes)}    $status"
-        }.toTypedArray()
-
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.settings_permissions_title)
-            .setItems(labels) { _, which -> requestPermission(choices[which].permission) }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun requestPermission(permission: String) {
-        if (hasPermission(permission)) return
-
-        val requestedKey = "settings_permission_requested_$permission"
-        val requestedBefore = preferences.sharedPref.getBoolean(requestedKey, false)
-        val shouldExplain = ActivityCompat.shouldShowRequestPermissionRationale(
-            requireActivity(), permission
-        )
-        if (requestedBefore && !shouldExplain) {
-            openAppSettings()
-            return
-        }
-
-        preferences.sharedPref.edit().putBoolean(requestedKey, true).apply()
-        permissionLauncher.launch(arrayOf(permission))
+    private fun showPermissionScreen() {
+        startActivity(Intent(requireContext(), AppPermissionsActivity::class.java))
     }
 
     private fun rateApp() {
@@ -257,41 +211,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             Toast.makeText(requireContext(), R.string.settings_link_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
-
-    private fun openAppSettings() {
-        val packageId = requireContext().packageName
-        startActivity(
-            Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:$packageId")
-            )
-        )
-    }
-
-    private fun permissionChoices(): List<PermissionChoice> {
-        val choices = mutableListOf(
-            PermissionChoice(R.string.settings_permission_location, Manifest.permission.ACCESS_FINE_LOCATION),
-            PermissionChoice(R.string.settings_permission_camera, Manifest.permission.CAMERA)
-        )
-        choices += PermissionChoice(
-            R.string.settings_permission_photos,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Manifest.permission.READ_MEDIA_IMAGES
-            } else {
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            }
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            choices += PermissionChoice(
-                R.string.settings_permission_notifications,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-        }
-        return choices
-    }
-
-    private fun hasPermission(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
 
     private fun languageChoices(): List<LanguageChoice> = listOf(
         LanguageChoice("en", R.string.language_english),
