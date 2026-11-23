@@ -92,8 +92,8 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
     override fun getLayoutActivity(): Int = R.layout.activity_app_permissions
 
     override fun initViews() {
-        if (allPermissionsGranted()) {
-            if (fromOnboarding) finishPermissionFlow() else finish()
+        if (fromOnboarding && allPermissionsGranted()) {
+            finishPermissionFlow()
             return
         }
 
@@ -109,6 +109,10 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
 
         mBinding.permissionsStart.setOnClickListener {
             if (allPermissionsGranted()) finishPermissionFlow()
+        }
+        mBinding.permissionsSettingsHint.setOnClickListener {
+            Routes.startMainActivity(this)
+            finish()
         }
         refreshPermissionRows()
     }

@@ -24,7 +24,7 @@
         android:layout_marginTop="20dp"
         android:gravity="center"
         android:fontFamily="@font/poppins_bold"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/primary_text_color"
         android:textSize="18sp" />
 
     <!-- Dialog Description -->
@@ -35,7 +35,7 @@
         android:gravity="center"
         android:fontFamily="@font/poppins_regular"
         android:lineSpacingExtra="3dp"
-        android:textColor="@color/app_color_text"
+        android:textColor="@color/secondary_text_color"
         android:textSize="12sp"
         android:text="@string/no_internet_message" />
 

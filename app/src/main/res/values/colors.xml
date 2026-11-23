@@ -37,4 +37,7 @@
     <color name="color_streetview_background">#101C2B</color>
     <color name="permissions_start_text">#FFFFFF</color>
     <color name="permissions_hint_text">#8FA6C0</color>
+    <color name="dialog_surface">#172A3D</color>
+    <color name="dialog_surface_border">#304A63</color>
+    <color name="dialog_primary_button">#2D70C7</color>
 </resources>
