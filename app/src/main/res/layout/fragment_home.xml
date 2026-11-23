@@ -48,15 +48,14 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_home_hero_overlay" />
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="horizontal">
+                android:clipChildren="false">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="170dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="1.15"
                     android:gravity="center_vertical"
                     android:orientation="vertical"
                     android:paddingStart="14dp"
@@ -104,33 +103,32 @@
                 </LinearLayout>
 
                 <FrameLayout
-                    android:layout_width="0dp"
+                    android:layout_width="190dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="0.9">
+                    android:layout_gravity="end"
+                    android:clipChildren="false">
 
                     <ImageView
                         android:id="@+id/iv_sample_back"
-                        android:layout_width="80dp"
-                        android:layout_height="105dp"
+                        android:layout_width="104dp"
+                        android:layout_height="130dp"
                         android:layout_gravity="center"
                         android:elevation="2dp"
-                        android:rotation="8"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_gps_sample"
-                        android:translationX="16dp"
+                        android:translationX="28dp"
                         android:translationY="4dp" />
 
                     <ImageView
                         android:id="@+id/iv_sample_front"
-                        android:layout_width="80dp"
-                        android:layout_height="105dp"
+                        android:layout_width="104dp"
+                        android:layout_height="130dp"
                         android:layout_gravity="center"
                         android:elevation="4dp"
-                        android:rotation="-8"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_gps_sample2"
-                        android:translationX="-16dp"
-                        android:translationY="-4dp" />
+                        android:translationX="-24dp"
+                        android:translationY="-8dp" />
 
                     <ImageView
                         android:id="@+id/iv_location_pin"
@@ -141,7 +139,7 @@
                         android:src="@drawable/home_location_pin"
                         android:translationY="-14dp" />
                 </FrameLayout>
-            </LinearLayout>
+            </FrameLayout>
         </FrameLayout>
 
         <TextView
