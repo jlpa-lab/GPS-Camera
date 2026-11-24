@@ -58,6 +58,12 @@ object Routes {
     fun startCameraActivity(fromActivity: Activity) =
         fromActivity.launchCameraFeature(CameraActivity::class.java)
 
+    fun startToolsCameraActivity(fromActivity: Activity) =
+        fromActivity.launchCameraFeature(
+            CameraActivity::class.java,
+            Bundle().apply { putBoolean(CameraActivity.EXTRA_TOOLS_CAMERA, true) }
+        )
+
     fun startGpsVideoActivity(fromActivity: Activity) =
         fromActivity.launchCameraFeature(GpsVideoActivity::class.java)
 
@@ -78,9 +84,10 @@ object Routes {
         launch(target)
     }
 
-    private fun Activity.launchCameraFeature(target: Class<*>) {
+    private fun Activity.launchCameraFeature(target: Class<*>, bundle: Bundle? = null) {
         if (LocationDisabledDialog.showIfCameraAccessDisabled(this)) return
-        launchLocationFeature(target)
+        if (LocationDisabledDialog.showIfLocationDisabled(this)) return
+        launch(target, bundle)
     }
 
 }

@@ -27,6 +27,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -69,7 +70,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     companion object {
         private const val LOG_TAG = "GpsCameraEditor"
-        private val POSITION_LABELS = arrayOf("Bottom left", "Bottom right", "Top left", "Top right")
+        private val POSITION_LABELS = arrayOf("Top", "Middle", "Bottom")
         private val POSITION_GRAVITIES = intArrayOf(
             Gravity.BOTTOM or Gravity.START,
             Gravity.BOTTOM or Gravity.END,
@@ -84,6 +85,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapCard: FrameLayout
     private lateinit var mapPreview: ImageView
     private lateinit var mapFallback: TextView
+    private lateinit var changeImageOverlay: View
     private lateinit var stampPanel: View
     private lateinit var mediaFrame: FrameLayout
     private lateinit var addressText: TextView
@@ -98,6 +100,10 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapEnabled = false
     private var mapTilesLoaded = false
     private var mapCardVisible = false
+    private var swappedImages = false
+    private var useLiveMapInTemplate = true
+    private var latestMapBitmap: Bitmap? = null
+    private var stampImageUri: Uri? = null
     private var photoZoom = 1f
     private var photoOffsetX = 0f
     private var photoOffsetY = 0f
@@ -112,14 +118,22 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var templateVisible = true
     private var isSaving = false
     private var deleteSourceAfterSave = true
+    private val toolsCameraMode: Boolean
+        get() = intent.getBooleanExtra(CameraActivity.EXTRA_TOOLS_CAMERA, false)
     private val savedPreferences by lazy { AppSharedPreferencesApp(applicationContext) }
-    private val galleryPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { selectedUri ->
-        if (selectedUri != null) replacePhoto(selectedUri)
+    private val stampImagePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.getStringExtra(SmallImagePickerActivity.EXTRA_PHOTO_URI)
+                ?.let { replaceStampImage(Uri.parse(it)) }
+        }
+    }
+    private val fullscreenPreviewLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) saveEditedPhoto()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_gps_stamp_editor)
+        setContentView(if (toolsCameraMode) R.layout.activity_tools_stamp_editor else R.layout.activity_gps_stamp_editor)
 
         val photoText = intent.getStringExtra(CameraActivity.EXTRA_PHOTO_URI)
         if (photoText == null) {
@@ -131,12 +145,27 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         longitude = intent.getDoubleExtra(CameraActivity.EXTRA_LONGITUDE, Double.NaN)
         capturedAt = intent.getStringExtra(CameraActivity.EXTRA_CAPTURED_AT).orEmpty()
 
+        findViewById<TextView>(R.id.editor_title).setText(
+            if (toolsCameraMode) R.string.camera_preview_title else R.string.gps_camera_title
+        )
+        findViewById<TextView>(R.id.editor_save).setText(
+            if (toolsCameraMode) R.string.save_photo else R.string.save
+        )
+        if (toolsCameraMode) {
+            findViewById<View>(R.id.editor_tab_location).visibility = View.GONE
+            findViewById<View>(R.id.editor_tab_photo).visibility = View.GONE
+            findViewById<TextView>(R.id.editor_tab_map).setText(R.string.tab_template)
+            findViewById<View>(R.id.editor_fullscreen).visibility = View.GONE
+            findViewById<View>(R.id.editor_drag_hint).visibility = View.GONE
+        }
+
         photoView = findViewById(R.id.editor_photo)
         photoView.setImageURI(sourcePhotoUri)
         mediaFrame = findViewById(R.id.editor_media_frame)
         mapView = findViewById(R.id.editor_map_view)
         mapCard = findViewById(R.id.editor_map_card)
         mapPreview = findViewById(R.id.editor_map_image)
+        changeImageOverlay = findViewById(R.id.editor_change_image_overlay)
         enablePinchAndDrag(photoView, photoView)
         // Keep the gesture surface on the visible snapshot, but transform the
         // entire card so dragging the map visibly moves it across the photo.
@@ -158,7 +187,8 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         )
         stampPanel.visibility = View.GONE
-        mapCard.visibility = View.GONE
+        mapCardVisible = true
+        updateStandaloneMapVisibility()
 
         dateText.text = capturedAt
         val coordinateLabel = if (latitude.isNaN() || longitude.isNaN()) {
@@ -167,7 +197,12 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             String.format(Locale.getDefault(), "Lat: %.5f   Long: %.5f", latitude, longitude)
         }
         coordinatesText.text = coordinateLabel
-        addressText.text = getString(R.string.address_loading)
+        address = if (latitude.isNaN() || longitude.isNaN()) {
+            getString(R.string.location_unavailable)
+        } else {
+            String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
+        }
+        addressText.text = address
         locationClientLabel.text = getString(R.string.weather_unavailable)
 
         mapEnabled = hasMapsApiKey()
@@ -176,23 +211,33 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             mapView.getMapAsync(this)
         } else {
             mapView.visibility = View.GONE
-            mapFallback.visibility = View.VISIBLE
-            mapFallback.setText(R.string.map_unavailable)
+            mapPreview.setImageResource(R.drawable.home_map_view)
+            mapPreview.visibility = View.VISIBLE
+            mapFallback.visibility = View.GONE
         }
 
         findViewById<View>(R.id.editor_back).setOnClickListener { finish() }
         findViewById<TextView>(R.id.editor_save).setOnClickListener { saveEditedPhoto() }
+        findViewById<ImageButton>(R.id.editor_fullscreen).setOnClickListener { openFullscreenPreview() }
         findViewById<TextView>(R.id.editor_tab_details).setOnClickListener {
-            setSelectedTab(R.id.editor_tab_details)
+            showDetailsMode()
         }
-        findViewById<TextView>(R.id.editor_tab_position).setOnClickListener { chooseStampPosition() }
-        findViewById<TextView>(R.id.editor_tab_map).setOnClickListener { chooseTemplate() }
+        findViewById<TextView>(R.id.editor_tab_position).setOnClickListener {
+            if (toolsCameraMode) chooseStampPosition() else toggleSwappedImages()
+        }
+        findViewById<TextView>(R.id.editor_tab_map).setOnClickListener {
+            if (toolsCameraMode) chooseTemplate() else toggleMap()
+        }
         findViewById<TextView>(R.id.editor_tab_location).setOnClickListener { toggleLocationDetails() }
-        findViewById<TextView>(R.id.editor_tab_photo).setOnClickListener { galleryPicker.launch("image/*") }
+        findViewById<TextView>(R.id.editor_tab_photo).setOnClickListener { showChangeImageMode() }
+        changeImageOverlay.setOnClickListener {
+            launchStampImagePicker()
+        }
         loadAddress()
         loadWeather()
         updateStampPosition()
         refreshTemplateOverlay()
+        setSelectedTab(R.id.editor_tab_details)
     }
 
     override fun onStart() {
@@ -264,9 +309,12 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
                 return@snapshot
             }
             val previous = (mapPreview.drawable as? BitmapDrawable)?.bitmap
-            mapPreview.setImageBitmap(bitmap)
+            latestMapBitmap = bitmap
+            if (useLiveMapInTemplate && !swappedImages) mapPreview.setImageBitmap(bitmap)
             mapPreview.visibility = View.VISIBLE
-            templateOverlay.setMapBitmap(bitmap)
+            if (useLiveMapInTemplate && !swappedImages) {
+                templateOverlay.setFloatingImageBitmap(bitmap)
+            }
             if (previous != null && previous !== bitmap && !previous.isRecycled) previous.recycle()
         }
     }
@@ -310,6 +358,8 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun chooseTemplate() {
+        templateVisible = true
+        templateOverlay.visibility = View.VISIBLE
         val selectedKey = stampCustomization?.templateKey ?: StampCustomizationStore.selectedTemplate(this)
         val selectedIndex = StampTemplateCatalog.items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
         AlertDialog.Builder(this)
@@ -350,21 +400,50 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun replacePhoto(uri: Uri) {
         sourcePhotoUri = uri
+        stampImageUri = null
+        swappedImages = false
         deleteSourceAfterSave = false
         photoView.setImageURI(uri)
-        // Keep the capture's GPS/time stamp. A selected gallery photo replaces only the image.
+        changeImageOverlay.visibility = View.GONE
+        // Keep the capture's GPS/time stamp and selected template. The picker
+        // replaces only the photo itself.
+        showCurrentLocationMapPreview()
+        updateStandaloneMapVisibility()
         setSelectedTab(R.id.editor_tab_photo)
     }
 
+    private fun replaceStampImage(uri: Uri) {
+        stampImageUri = uri
+        swappedImages = false
+        useLiveMapInTemplate = false
+        photoView.setImageURI(sourcePhotoUri)
+        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
+        mapCardVisible = true
+        updateStandaloneMapVisibility()
+        showStampImagePreview()
+        loadTemplateFloatingImage(uri)
+        changeImageOverlay.visibility = View.GONE
+        findViewById<TextView>(R.id.editor_drag_hint).apply {
+            text = getString(R.string.small_image_updated)
+            setTextColor(0xFF9BE2C8.toInt())
+        }
+        setSelectedTab(R.id.editor_tab_details)
+    }
+
     private fun chooseStampPosition() {
+        templateVisible = true
+        templateOverlay.visibility = View.VISIBLE
         AlertDialog.Builder(this)
             .setTitle(R.string.position)
             .setSingleChoiceItems(POSITION_LABELS, stampPositionIndex) { dialog, selected ->
                 stampPositionIndex = selected
                 val customization = stampCustomization ?: StampCustomizationStore.read(this)
                 stampCustomization = customization.copy(
-                    position = if (selected < 2) TemplatePosition.BOTTOM else TemplatePosition.TOP,
-                    alignment = if (selected == 1 || selected == 3) TemplateAlignment.RIGHT else TemplateAlignment.LEFT
+                    position = when (selected) {
+                        0 -> TemplatePosition.TOP
+                        1 -> TemplatePosition.MIDDLE
+                        else -> TemplatePosition.BOTTOM
+                    }
                 )
                 StampCustomizationStore.save(this, stampCustomization!!)
                 refreshTemplateOverlay()
@@ -382,25 +461,23 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         params.startToStart = ConstraintLayout.LayoutParams.UNSET
         params.endToEnd = ConstraintLayout.LayoutParams.UNSET
 
-        params.width = if (stampPositionIndex < 2) ConstraintLayout.LayoutParams.MATCH_PARENT else dp(330)
+        params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
 
         when (stampPositionIndex) {
-            0 -> { // Bottom Left / Bottom Full Width
+            0 -> { // Top
+                params.topToBottom = R.id.editor_tabs
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+            1 -> { // Middle
+                params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
                 params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
                 params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
                 params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             }
-            1 -> { // Bottom Right / Full Width
+            else -> { // Bottom
                 params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
                 params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-            2 -> { // Top Left
-                params.topToBottom = R.id.editor_tabs
-                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-            }
-            3 -> { // Top Right
-                params.topToBottom = R.id.editor_tabs
                 params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             }
         }
@@ -454,22 +531,251 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun toggleMap() {
-        mapCardVisible = !mapCardVisible
-        mapCard.visibility = if (mapCardVisible) View.VISIBLE else View.GONE
-        mapFallback.visibility = if (!mapEnabled && mapCardVisible) View.VISIBLE else View.GONE
+        changeImageOverlay.visibility = View.GONE
+        mapCardVisible = true
+        swappedImages = false
+        useLiveMapInTemplate = true
+        photoView.setImageURI(sourcePhotoUri)
+        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
+        updateStandaloneMapVisibility()
+        mapFallback.visibility = View.GONE
+        showCurrentLocationMapPreview()
+        updateTemplateFloatingImage()
         setSelectedTab(R.id.editor_tab_map)
     }
 
+    private fun toggleSwappedImages() {
+        changeImageOverlay.visibility = View.GONE
+        swappedImages = !swappedImages
+        if (swappedImages) {
+            latestMapBitmap?.let(photoView::setImageBitmap)
+                ?: photoView.setImageResource(R.drawable.home_map_view)
+            mapView.visibility = View.GONE
+            mapFallback.visibility = View.GONE
+            mapPreview.setImageURI(stampImageUri ?: sourcePhotoUri)
+            mapPreview.visibility = View.VISIBLE
+            updateTemplateFloatingImage()
+        } else {
+            photoView.setImageURI(sourcePhotoUri)
+            if (mapEnabled) {
+                mapView.visibility = View.VISIBLE
+                if (stampImageUri != null) mapPreview.setImageURI(stampImageUri)
+                else latestMapBitmap?.let(mapPreview::setImageBitmap)
+            } else {
+                mapView.visibility = View.GONE
+                if (stampImageUri != null) mapPreview.setImageURI(stampImageUri)
+                else mapPreview.setImageResource(R.drawable.home_map_view)
+            }
+            mapPreview.visibility = View.VISIBLE
+            updateTemplateFloatingImage()
+        }
+        setSelectedTab(R.id.editor_tab_position)
+    }
+
+    private fun showChangeImageMode() {
+        swappedImages = false
+        photoView.setImageURI(sourcePhotoUri)
+        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
+        mapCardVisible = true
+        updateStandaloneMapVisibility()
+        showStampImagePreview()
+        if (mapCard.visibility == View.VISIBLE) {
+            changeImageOverlay.visibility = View.VISIBLE
+        } else {
+            launchStampImagePicker()
+        }
+        setSelectedTab(R.id.editor_tab_photo)
+    }
+
+    private fun openFullscreenPreview() {
+        val file = createEditorPreviewFile() ?: return
+        fullscreenPreviewLauncher.launch(
+            Intent(this, CameraFullscreenPreviewActivity::class.java).apply {
+                putExtra(CameraFullscreenPreviewActivity.EXTRA_PREVIEW_PATH, file.absolutePath)
+            }
+        )
+    }
+
+    private fun createEditorPreviewFile(): File? {
+        if (mediaFrame.width <= 0 || mediaFrame.height <= 0) return null
+        val fullscreenButton = findViewById<View>(R.id.editor_fullscreen)
+        val fullscreenVisibility = fullscreenButton.visibility
+        val changeImageVisibility = changeImageOverlay.visibility
+        val previewBitmap = Bitmap.createBitmap(
+            mediaFrame.width,
+            mediaFrame.height,
+            Bitmap.Config.ARGB_8888
+        )
+        try {
+            fullscreenButton.visibility = View.GONE
+            changeImageOverlay.visibility = View.GONE
+            val canvas = Canvas(previewBitmap)
+            mediaFrame.draw(canvas)
+            if (mapCardVisible && mapCard.visibility == View.VISIBLE && mapCard.alpha > 0f) {
+                canvas.save()
+                canvas.translate(mapCard.x - mediaFrame.x, mapCard.y - mediaFrame.y)
+                mapCard.draw(canvas)
+                canvas.restore()
+            }
+        } finally {
+            fullscreenButton.visibility = fullscreenVisibility
+            changeImageOverlay.visibility = changeImageVisibility
+        }
+
+        val file = File(cacheDir, "gps-editor-preview-${System.currentTimeMillis()}.png")
+        return try {
+            FileOutputStream(file).use { output ->
+                check(previewBitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+            }
+            file
+        } catch (error: Exception) {
+            Log.e(LOG_TAG, "Could not create editor preview", error)
+            file.delete()
+            null
+        } finally {
+            previewBitmap.recycle()
+        }
+    }
+
     private fun toggleLocationDetails() {
+        changeImageOverlay.visibility = View.GONE
+        swappedImages = false
+        useLiveMapInTemplate = true
+        photoView.setImageURI(sourcePhotoUri)
+        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
+        mapCardVisible = true
+        updateStandaloneMapVisibility()
+        mapFallback.visibility = View.GONE
+        showCurrentLocationMapPreview()
+        updateTemplateFloatingImage()
+        setSelectedTab(R.id.editor_tab_location)
+    }
+
+    private fun showDetailsMode() {
+        templateVisible = false
+        templateOverlay.visibility = View.GONE
+        changeImageOverlay.visibility = View.GONE
+        swappedImages = false
+        photoView.setImageURI(sourcePhotoUri)
+        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
+        mapCardVisible = true
+        updateStandaloneMapVisibility()
+        mapFallback.visibility = View.GONE
+        showStampImagePreview()
+        updateTemplateFloatingImage()
         setSelectedTab(R.id.editor_tab_details)
+    }
+
+    private fun showCurrentLocationMapPreview() {
+        latestMapBitmap?.let(mapPreview::setImageBitmap)
+            ?: mapPreview.setImageResource(R.drawable.home_map_view)
+        mapPreview.visibility = View.VISIBLE
+    }
+
+    private fun showStampImagePreview() {
+        if (stampImageUri != null) {
+            mapPreview.setImageURI(stampImageUri)
+            mapPreview.visibility = View.VISIBLE
+        } else {
+            showCurrentLocationMapPreview()
+        }
+    }
+
+    private fun launchStampImagePicker() {
+        stampImagePicker.launch(Intent(this, SmallImagePickerActivity::class.java))
+    }
+
+    private fun updateTemplateFloatingImage() {
+        when {
+            swappedImages -> loadTemplateFloatingImage(sourcePhotoUri)
+            !useLiveMapInTemplate && stampImageUri != null -> loadTemplateFloatingImage(stampImageUri!!)
+            else -> templateOverlay.setFloatingImageBitmap(latestMapBitmap)
+        }
+    }
+
+    private fun loadTemplateFloatingImage(uri: Uri) {
+        addressExecutor.execute {
+            val bitmap = runCatching { decodePhotoWithOrientation(uri) }.getOrNull()
+            runOnUiThread {
+                if (isFinishing || isDestroyed) {
+                    bitmap?.recycle()
+                } else {
+                    templateOverlay.setFloatingImageBitmap(bitmap)
+                }
+            }
+        }
+    }
+
+    /**
+     * Templates that contain a map icon render the map inside the shared stamp
+     * overlay. Keep the legacy floating map card only for templates without a
+     * template map so the editor and exported image never show two maps.
+     */
+    private fun updateStandaloneMapVisibility() {
+        val usesTemplateMap = stampCustomization?.showMapIcon == true
+        val showStandaloneMap = mapCardVisible && !toolsCameraMode && !usesTemplateMap
+        // Keep the MapView attached so Google can render a real snapshot for
+        // the template slot, but make it transparent whenever the template is
+        // the visible floating map so there is never a duplicate card.
+        mapCard.visibility = View.VISIBLE
+        mapCard.alpha = if (showStandaloneMap) 1f else 0f
+        mapCard.isClickable = showStandaloneMap
+        mapPreview.isClickable = showStandaloneMap
     }
 
     private fun setSelectedTab(selectedId: Int) {
         listOf(R.id.editor_tab_details, R.id.editor_tab_position, R.id.editor_tab_map,
             R.id.editor_tab_location, R.id.editor_tab_photo).forEach { id ->
-            findViewById<TextView>(id).setTextColor(
+            val tab = findViewById<TextView>(id)
+            tab.setTextColor(
                 if (id == selectedId) 0xFF67A2FF.toInt() else 0xFFAFBDCE.toInt()
             )
+            if (toolsCameraMode) {
+                // Tools GPS uses the three text actions as pickers. The old
+                // icon strip was misaligned and made the Place row look like
+                // a fourth tab, so keep the controls text-only in this mode.
+                tab.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+            } else if (id == R.id.editor_tab_position) {
+                tab.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    if (id == selectedId) R.drawable.ic_editor_position_selected
+                    else R.drawable.ic_editor_position,
+                    0,
+                    0
+                )
+            } else if (id == R.id.editor_tab_details) {
+                tab.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    if (id == selectedId) R.drawable.ic_editor_detail_selected
+                    else R.drawable.icon_container_detail,
+                    0,
+                    0
+                )
+            } else if (id == R.id.editor_tab_photo) {
+                tab.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    if (id == selectedId) R.drawable.ic_editor_photo_selected
+                    else R.drawable.ic_editor_photo2,
+                    0,
+                    0
+                )
+            } else if (id == R.id.editor_tab_map) {
+                tab.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    if (id == selectedId) R.drawable.ic_editor_map_selected
+                    else R.drawable.ic_editor_map,
+                    0,
+                    0
+                )
+            } else if (id == R.id.editor_tab_location) {
+                tab.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    if (id == selectedId) R.drawable.ic_editor_location_selected
+                    else R.drawable.ic_editor_location,
+                    0,
+                    0
+                )
+            }
         }
     }
 
@@ -478,8 +784,13 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         isSaving = true
         captureEditorTransforms()
         findViewById<TextView>(R.id.editor_save).isEnabled = false
+        createEditorPreviewFile()?.let { previewFile ->
+            startActivity(Intent(this, CameraSavingActivity::class.java).apply {
+                putExtra(CameraSavingActivity.EXTRA_PREVIEW_PATH, previewFile.absolutePath)
+            })
+        }
         val currentMap = googleMap
-        if (!mapCardVisible || currentMap == null) {
+        if (currentMap == null) {
             saveExecutor.execute { renderAndSave(null) }
             return
         }
@@ -529,9 +840,16 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         var temporaryOutput: File? = null
         var failureStage = "reading the selected photo"
         try {
-            baseBitmap = decodePhotoWithOrientation(sourcePhotoUri) ?: error("Could not read the captured photo")
+            val liveMapBitmap = mapBitmap ?: latestMapBitmap
+            baseBitmap = if (swappedImages) {
+                val swappedSource = liveMapBitmap
+                    ?: BitmapFactory.decodeResource(resources, R.drawable.home_map_view)
+                swappedSource?.copy(Bitmap.Config.ARGB_8888, true)
+            } else {
+                decodePhotoWithOrientation(sourcePhotoUri)
+            } ?: error("Could not read the editor image")
             failureStage = "drawing the GPS stamp"
-            stampedBitmap = drawStamp(baseBitmap, mapBitmap)
+            stampedBitmap = drawStamp(baseBitmap, liveMapBitmap)
             failureStage = "encoding the stamped photo"
             temporaryOutput = File(cacheDir, "gps-stamped-${System.currentTimeMillis()}.jpg")
             FileOutputStream(temporaryOutput).use { output ->
@@ -551,6 +869,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             runOnUiThread {
                 try {
+                    CameraSavingActivity.finishSaving()
                     startActivity(savedPhotoIntent)
                     // Only delete the temporary app-owned capture after the next screen opens.
                     if (deleteSourceAfterSave) contentResolver.delete(sourcePhotoUri, null, null)
@@ -570,6 +889,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         } catch (error: Exception) {
             Log.e(LOG_TAG, "Failed while applying the GPS photo stamp", error)
             runOnUiThread {
+                CameraSavingActivity.finishSaving()
                 isSaving = false
                 findViewById<TextView>(R.id.editor_save).isEnabled = true
                 Toast.makeText(this, getString(R.string.photo_save_error_detail, failureStage, error.localizedMessage ?: error.javaClass.simpleName), Toast.LENGTH_LONG).show()
@@ -628,7 +948,12 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             canvas.restore()
         }
         val scale = maxOf(1f, photo.width / 1080f)
-        if (mapBitmap != null && mapCardVisible) {
+        val floatingBitmap = when {
+            swappedImages -> decodePhotoWithOrientation(sourcePhotoUri)
+            !useLiveMapInTemplate && stampImageUri != null -> decodePhotoWithOrientation(stampImageUri!!)
+            else -> mapBitmap ?: latestMapBitmap
+        }
+        if (floatingBitmap != null && mapCardVisible && mapCard.visibility == View.VISIBLE && mapCard.alpha > 0f) {
             val mapWidth = photo.width * 0.38f
             val mapHeight = mapWidth * 1.05f
             val savedBounds = mapCardBoundsFraction
@@ -642,10 +967,9 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             val clip = Path().apply { addRoundRect(mapRect, 28f * scale, 28f * scale, Path.Direction.CW) }
             canvas.save()
             canvas.clipPath(clip)
-            canvas.drawBitmap(mapBitmap, null, mapRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+            canvas.drawBitmap(floatingBitmap, null, mapRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
             canvas.restore()
         }
-
         if (templateVisible) {
             val customization = stampCustomization ?: StampCustomizationStore.read(this)
             StampRenderer.draw(
@@ -653,14 +977,26 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
                 bounds = RectF(0f, 0f, photo.width.toFloat(), photo.height.toFloat()),
                 settings = customization,
                 data = StampRenderData(
-                    address = address.ifBlank { getString(R.string.address_loading) },
+                    address = address
+                        .takeIf { it.isNotBlank() && it != getString(R.string.address_loading) }
+                        ?: if (!latitude.isNaN() && !longitude.isNaN()) {
+                            String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
+                        } else {
+                            getString(R.string.location_unavailable)
+                        },
                     latitude = latitude,
                     longitude = longitude,
                     capturedAtText = capturedAt.takeIf { it.isNotBlank() },
                     weather = if (customization.showWeather) weatherSnapshot?.uiText else null
                 ),
-                map = mapBitmap
+                // The template's map/image slot is the same floating image
+                // used by Swap and Change Image. Do not force it back to the
+                // live map when the user selected a replacement image.
+                map = floatingBitmap ?: mapBitmap
             )
+        }
+        if (floatingBitmap != null && floatingBitmap !== mapBitmap && !floatingBitmap.isRecycled) {
+            floatingBitmap.recycle()
         }
         return result
     }

@@ -7,6 +7,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.content.Context
+import androidx.core.content.res.ResourcesCompat
+import com.gps.map.camera.and.time.stamp.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,6 +33,19 @@ object StampRenderer {
     private const val RED = 0xFFE85B5B.toInt()
     private const val YELLOW = 0xFFFFD35A.toInt()
 
+    // The Figma reference uses Poppins throughout the stamp, with 376 px as
+    // its design width. Keep a system fallback for callers that render before
+    // an Activity/View has had a chance to configure the app fonts.
+    @Volatile private var regularTypeface: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+    @Volatile private var semiboldTypeface: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
+
+    fun configure(context: Context) {
+        regularTypeface = ResourcesCompat.getFont(context, R.font.poppins_regular)
+            ?: Typeface.create("sans-serif", Typeface.NORMAL)
+        semiboldTypeface = ResourcesCompat.getFont(context, R.font.poppins_semibold)
+            ?: Typeface.create("sans-serif", Typeface.BOLD)
+    }
+
     fun render(photo: Bitmap, settings: StampCustomization, data: StampRenderData, map: Bitmap? = null): Bitmap {
         val result = photo.copy(Bitmap.Config.ARGB_8888, true)
         draw(Canvas(result), RectF(0f, 0f, photo.width.toFloat(), photo.height.toFloat()), settings, data, map)
@@ -37,17 +53,28 @@ object StampRenderer {
     }
 
     fun draw(canvas: Canvas, bounds: RectF, settings: StampCustomization, data: StampRenderData, map: Bitmap? = null) {
-        val scale = (bounds.width() / 384f).coerceAtLeast(0.75f)
+        val layout = layoutFor(settings.templateKey)
+        val designHeight = designHeightFor(layout)
+        // Keep the export proportional to the preview even when the source is
+        // a very wide video frame or a high-resolution photo. Width-only
+        // scaling made the taller templates grow until their text and map
+        // content were visually larger than the media frame.
+        val scale = minOf(
+            bounds.width() / 376f,
+            bounds.height() * MAX_PANEL_HEIGHT_FRACTION / designHeight
+        ).coerceAtLeast(0.75f)
         val address = displayAddress(settings, data.address)
         val addressLines = splitAddress(address)
         val coordinates = if (settings.showCoordinates) formatCoordinates(data.latitude, data.longitude) else null
         val date = if (settings.showDateTime) data.capturedAtText?.takeIf { it.isNotBlank() }
             ?: formatDate(data.capturedAt, settings.dateFormat) else null
         val weather = data.weather?.takeIf { it.isNotBlank() }
-        val panel = panelBounds(bounds, settings.position)
+        val panel = panelBounds(bounds, settings.position, layout, scale)
 
         canvas.drawRoundRect(panel, 12f * scale, 12f * scale, paint(settings.backgroundColor))
         templateBorder(canvas, panel, scale, settings.templateKey)
+        canvas.save()
+        canvas.clipRect(panel)
         when (settings.templateKey) {
             "location_spotlight" -> drawLocationSpotlight(canvas, panel, scale, settings, addressLines, coordinates, date, weather, map)
             "time_first" -> drawTimeFirst(canvas, panel, scale, settings, addressLines, coordinates, date, weather, map)
@@ -71,6 +98,7 @@ object StampRenderer {
             else -> drawLayoutEight(canvas, panel, scale, settings, addressLines, coordinates, date, weather, map)
             }
         }
+        canvas.restore()
     }
 
     private fun layoutFor(key: String): Int = when (key) {
@@ -84,17 +112,36 @@ object StampRenderer {
         else -> 8
     }
 
-    private fun panelBounds(bounds: RectF, position: TemplatePosition): RectF {
-        // Keep the stamp a card, rather than stretching it over most of a
-        // camera/video surface. Width is the stable reference across the
-        // template picker, portrait camera preview, and exported media.
-        val margin = bounds.width() * 0.035f
-        val cardHeight = minOf(bounds.height() * 0.34f, bounds.width() * 0.28f)
-        val top = if (position == TemplatePosition.TOP) {
-            bounds.top + margin
-        } else {
-            bounds.bottom - margin - cardHeight
-        }
+    private const val MAX_PANEL_HEIGHT_FRACTION = 0.30f
+
+    private fun designHeightFor(layout: Int): Float = when (layout) {
+        1 -> 151f // 83 + 10 + 34 + 24 panel padding
+        2 -> 164f
+        3 -> 170f
+        4 -> 220f
+        5 -> 168f // 100 + 10 + 34 + 24 panel padding
+        6 -> 166f
+        7 -> 193f // 70 + 10 + 45 + 10 + 34 + 24 panel padding
+        else -> 220f
+    }
+
+    private fun panelBounds(bounds: RectF, position: TemplatePosition, layout: Int, scale: Float): RectF {
+        // Figma reference: a 352 x variable-height panel inside a 376 px
+        // image, inset 12 px from both sides. The old renderer capped every
+        // template at 0.28w, which made the lower rows collide or disappear
+        // in the preview/export. Preserve the reference proportions per
+        // layout and only clamp to the available media bounds.
+        val margin = bounds.width() * (12f / 376f)
+        val designHeight = designHeightFor(layout)
+        val cardHeight = minOf(
+            bounds.height() * MAX_PANEL_HEIGHT_FRACTION,
+            designHeight * scale
+        )
+        val top = when (position) {
+            TemplatePosition.TOP -> bounds.top + margin
+            TemplatePosition.MIDDLE -> bounds.centerY() - cardHeight / 2f
+            TemplatePosition.BOTTOM -> bounds.bottom - margin - cardHeight
+        }.coerceIn(bounds.top + margin, bounds.bottom - margin - cardHeight)
         val bottom = top + cardHeight
         return RectF(bounds.left + margin, top, bounds.right - margin, bottom)
     }
@@ -116,12 +163,10 @@ object StampRenderer {
     }
 
     private fun drawTimeFirst(c: Canvas, p: RectF, s: Float, set: StampCustomization, a: List<String>, co: String?, d: String?, w: String?, map: Bitmap?) {
-        val pad = p.width() * .035f
-        if (set.showMapIcon) drawMap(c, RectF(p.left + pad, p.top + p.height() * .10f, p.left + p.width() * .20f, p.top + p.height() * .50f), map, s, false)
-        if (d != null) drawLargeDate(c, d, p.left + p.width() * .24f, p.top + p.height() * .25f, s, 0xFFFFD34F.toInt())
-        if (set.showWeather && w != null) drawWeather(c, RectF(p.right - p.width() * .25f, p.top + p.height() * .10f, p.right - pad, p.top + p.height() * .45f), w, s)
-        drawAddressColor(c, a, p.left + pad, p.top + p.height() * .63f, p.width() * .60f, s, 0xFFFFD34F.toInt())
-        drawCoordinates(c, co, RectF(p.left + pad, p.bottom - p.height() * .22f, p.right - pad, p.bottom - pad), s)
+        // Keep the legacy key mapped to the Figma Layout 5 geometry. The old
+        // renderer used a 23 px headline here, which became oversized on
+        // exported photos and pushed the address out of the card.
+        drawLayoutFive(c, p, s, set, a, co, d, w)
     }
 
     private fun drawCenteredDestination(c: Canvas, p: RectF, s: Float, set: StampCustomization, a: List<String>, co: String?, d: String?, w: String?, map: Bitmap?) {
@@ -205,17 +250,20 @@ object StampRenderer {
         val title = textPaint(color, 15f * s, true).apply { textAlign = align }
         val body = textPaint(Color.WHITE, 12f * s, false).apply { textAlign = align }
         val anchor = when (alignment) { TemplateAlignment.LEFT -> x; TemplateAlignment.CENTER -> x + width / 2f; TemplateAlignment.RIGHT -> x + width }
-        val titleLines = wrap(lines.first(), title, width).take(2)
-        titleLines.forEachIndexed { i, line -> c.drawText(line, anchor, baseline + i * 18f * s, title) }
-        val bodyLines = lines.drop(1).flatMap { wrap(it, body, width) }.take(2)
-        val bodyBaseline = baseline + titleLines.size * 18f * s
-        bodyLines.forEachIndexed { i, line -> c.drawText(line, anchor, bodyBaseline + i * 15f * s, body) }
+        val titleLine = ellipsize(lines.first(), title, width)
+        c.drawText(titleLine, anchor, baseline, title)
+        val bodyText = lines.drop(1).joinToString(", ")
+        if (bodyText.isNotBlank()) {
+            c.drawText(ellipsize(bodyText, body, width), anchor, baseline + 18f * s, body)
+        }
     }
 
     private fun drawLargeDate(c: Canvas, value: String, x: Float, baseline: Float, s: Float, color: Int) {
         val parts = value.split(" · ")
-        c.drawText(parts.firstOrNull() ?: value, x, baseline, textPaint(color, 23f * s, true))
-        if (parts.size > 1) c.drawText(parts.drop(1).joinToString(" · "), x, baseline + 17f * s, textPaint(Color.WHITE, 11f * s, false))
+        val title = textPaint(color, 23f * s, true)
+        val detail = textPaint(Color.WHITE, 11f * s, false)
+        c.drawText(ellipsize(parts.firstOrNull() ?: value, title, 170f * s), x, baseline, title)
+        if (parts.size > 1) c.drawText(ellipsize(parts.drop(1).joinToString(" · "), detail, 170f * s), x, baseline + 17f * s, detail)
     }
 
     private fun drawCenteredText(c: Canvas, value: String, x: Float, baseline: Float, s: Float, color: Int) {
@@ -312,7 +360,7 @@ object StampRenderer {
     private fun drawDatePill(c: Canvas, r: RectF, value: String, s: Float, color: Int = BLUE) {
         c.drawRoundRect(r, 7f * s, 7f * s, paint(color))
         val p = textPaint(Color.WHITE, 13f * s, false)
-        c.drawText(wrap(value, p, r.width() - 10f * s).firstOrNull() ?: value, r.left + 8f * s, r.centerY() + p.textSize * .35f, p)
+        c.drawText(ellipsize(value, p, r.width() - 16f * s), r.left + 8f * s, r.centerY() + p.textSize * .35f, p)
     }
 
     private fun dateColor(set: StampCustomization): Int = when (set.templateKey) {
@@ -355,8 +403,8 @@ object StampRenderer {
             condition.contains("cloud") || condition.contains("overcast") || condition.contains("fog") -> drawCloud(c, r.left + 18f * s, r.top + 21f * s, 7f * s, false)
             else -> drawSun(c, r.left + 18f * s, r.top + 20f * s, 6f * s)
         }
-        c.drawText(lines.firstOrNull() ?: value, r.left + 31f * s, r.top + 24f * s, p)
-        if (lines.size > 1) c.drawText(lines[1], r.left + 8f * s, r.top + 48f * s, p)
+        c.drawText(ellipsize(lines.firstOrNull() ?: value, p, r.width() - 39f * s), r.left + 31f * s, r.top + 24f * s, p)
+        if (lines.size > 1) c.drawText(ellipsize(lines[1], p, r.width() - 16f * s), r.left + 8f * s, r.top + 48f * s, p)
     }
 
     private fun drawCloud(c: Canvas, x: Float, y: Float, radius: Float, drops: Boolean) {
@@ -410,24 +458,25 @@ object StampRenderer {
         val title = textPaint(Color.WHITE, 15f * s, true).apply { textAlign = align }
         val body = textPaint(Color.WHITE, 12f * s, false).apply { textAlign = align }
         val anchor = when (alignment) { TemplateAlignment.LEFT -> x; TemplateAlignment.CENTER -> x + width / 2f; TemplateAlignment.RIGHT -> x + width }
-        val titleLines = wrap(lines.first(), title, width).take(2)
-        titleLines.forEachIndexed { i, line -> c.drawText(line, anchor, baseline + i * 18f * s, title) }
-        val bodyLines = lines.drop(1).flatMap { wrap(it, body, width) }.take(2)
-        val bodyBaseline = baseline + titleLines.size * 18f * s
-        bodyLines.forEachIndexed { i, line -> c.drawText(line, anchor, bodyBaseline + i * 15f * s, body) }
+        c.drawText(ellipsize(lines.first(), title, width), anchor, baseline, title)
+        val bodyText = lines.drop(1).joinToString(", ")
+        if (bodyText.isNotBlank()) {
+            c.drawText(ellipsize(bodyText, body, width), anchor, baseline + 18f * s, body)
+        }
     }
 
     private fun drawCoordinates(c: Canvas, value: String?, r: RectF, s: Float) {
         if (value == null) return
         drawDarkBox(c, r, s)
-        c.drawText(value, r.left + 8f * s, r.centerY() + 4f * s, textPaint(Color.WHITE, 11f * s, false))
+        val p = textPaint(Color.WHITE, 11f * s, false)
+        c.drawText(ellipsize(value, p, r.width() - 16f * s), r.left + 8f * s, r.centerY() + 4f * s, p)
     }
 
     private fun drawDateLines(c: Canvas, r: RectF, date: String, s: Float) {
         val parts = date.split(" · ")
         val p = textPaint(Color.WHITE, 13f * s, false)
-        c.drawText(parts.firstOrNull() ?: date, r.left + 10f * s, r.top + 24f * s, p)
-        c.drawText(parts.drop(1).joinToString(" · "), r.left + 10f * s, r.top + 47f * s, p)
+        c.drawText(ellipsize(parts.firstOrNull() ?: date, p, r.width() - 20f * s), r.left + 10f * s, r.top + 24f * s, p)
+        c.drawText(ellipsize(parts.drop(1).joinToString(" · "), p, r.width() - 20f * s), r.left + 10f * s, r.top + 47f * s, p)
     }
 
     private fun drawDarkBox(c: Canvas, r: RectF, s: Float) = c.drawRoundRect(r, 8f * s, 8f * s, paint(PANEL))
@@ -485,7 +534,9 @@ object StampRenderer {
     }
 
     private fun textPaint(color: Int, size: Float, bold: Boolean) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color; textSize = size; typeface = Typeface.create("sans", if (bold) Typeface.BOLD else Typeface.NORMAL)
+        this.color = color
+        textSize = size
+        typeface = if (bold) semiboldTypeface else regularTypeface
     }
 
     private fun paint(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
@@ -508,5 +559,16 @@ object StampRenderer {
         }
         if (current.isNotBlank()) lines += current
         return lines
+    }
+
+    /** Returns one line that never exceeds its destination rect. */
+    private fun ellipsize(text: String, paint: Paint, width: Float): String {
+        val clean = text.replace(Regex("\\s+"), " ").trim()
+        if (clean.isEmpty() || width <= 0f || paint.measureText(clean) <= width) return clean
+        val ellipsis = "…"
+        if (paint.measureText(ellipsis) > width) return ""
+        var end = clean.length
+        while (end > 0 && paint.measureText(clean.substring(0, end).trimEnd() + ellipsis) > width) end--
+        return clean.substring(0, end).trimEnd() + ellipsis
     }
 }

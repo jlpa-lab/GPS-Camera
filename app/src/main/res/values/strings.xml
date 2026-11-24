@@ -153,6 +153,7 @@
     <string name="permissions_microphone_description">Record video sound.</string>
     <string name="permissions_settings_hint">Manage access anytime in Settings.</string>
     <string name="permissions_toggle_description">Enable permission</string>
+    <string name="permissions_manage_access_message">Android controls this permission. Turn it on or off from the app settings page.</string>
     <string name="settings_open_settings">Open app settings</string>
     <string name="settings_rate_unavailable">The Play Store is not available.</string>
     <string name="settings_link_unavailable">Could not open this link.</string>
@@ -537,9 +538,11 @@
     <string name="tab_position">Position</string>
     <string name="tab_map">Map</string>
     <string name="tab_template">Template</string>
+    <string name="tab_swap">Swap</string>
     <string name="place">Place</string>
     <string name="tab_location">Location</string>
     <string name="tab_photo">Photo</string>
+    <string name="tab_change_image">Change Image</string>
     <string name="address_loading">Finding address…</string>
     <string name="weather_unavailable">Weather\nunavailable</string>
     <string name="details">Details</string>
@@ -549,6 +552,7 @@
     <string name="add_gps_stamp">Add GPS stamp</string>
     <string name="retake">Retake</string>
     <string name="save_photo">Save photo</string>
+    <string name="editor_drag_stamp_info">Drag image to the Stamp Info area</string>
     <string name="live_videos_title">Live Video</string>
     <string name="search_live_cameras">Search city or camera</string>
     <string name="live_video_tab_popular">Popular</string>
@@ -568,6 +572,8 @@
     <string name="live_camera_play">Play</string>
     <string name="live_camera_mute">Mute</string>
     <string name="live_camera_unmute">Unmute</string>
+    <string name="live_camera_muted">Muted</string>
+    <string name="live_camera_unmuted">Unmuted</string>
     <string name="live_camera_fullscreen">Full screen</string>
     <string name="live_camera_exit_fullscreen">Exit full screen</string>
     <string name="live_camera_explore">Explore more cameras</string>

@@ -402,6 +402,7 @@ class StampTemplateActivity : AppCompatActivity() {
         private val bitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.home_gps_camera)
         private var settings = StampCustomization(StampTemplateCatalog.items.first().key)
         private var renderData = StampRenderData("Location unavailable", Double.NaN, Double.NaN)
+        init { StampRenderer.configure(context) }
         fun setCustomization(value: StampCustomization) { settings = value; invalidate() }
         fun setRenderData(value: StampRenderData) { renderData = value; invalidate() }
         override fun onDraw(canvas: Canvas) {

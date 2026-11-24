@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/editor_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_background">
+
+    <LinearLayout
+        android:id="@+id/editor_header"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/editor_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:padding="12dp"
+            android:src="@drawable/ic_back_arrow" />
+
+        <TextView
+            android:id="@+id/editor_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/poppins_semibold"
+            android:paddingStart="8dp"
+            android:text="@string/camera_preview_title"
+            android:textColor="@color/primary_text_color"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/editor_media_frame"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_preview_photo_card"
+        android:clipToOutline="true"
+        app:layout_constraintBottom_toTopOf="@id/editor_tabs"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_header">
+
+        <ImageView
+            android:id="@+id/editor_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/captured_photo"
+            android:scaleType="centerCrop" />
+
+        <ImageButton
+            android:id="@+id/editor_fullscreen"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:background="@drawable/bg_map_controls"
+            android:contentDescription="@string/live_camera_fullscreen"
+            android:padding="12dp"
+            android:src="@drawable/ic_fullscreen"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_tabs"
+        android:layout_width="0dp"
+        android:layout_height="76dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        app:layout_constraintBottom_toTopOf="@id/editor_details_card"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_media_frame">
+
+        <TextView
+            android:id="@+id/editor_tab_details"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/icon_container_detail"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_details"
+            android:textColor="@color/app_color_text"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_position"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_position"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_position"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_map"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_map"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_template"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_location"
+            style="@style/StampEditorTab"
+            android:visibility="gone"
+            android:text="@string/tab_location" />
+
+        <TextView
+            android:id="@+id/editor_tab_photo"
+            style="@style/StampEditorTab"
+            android:visibility="gone"
+            android:text="@string/tab_change_image" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_details_card"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_tools_panel"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        app:layout_constraintBottom_toTopOf="@id/editor_save"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_tabs">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/poppins_regular"
+            android:text="@string/place"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/editor_address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_semibold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/app_color_text"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/editor_save"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_preview_primary"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="@font/poppins_semibold"
+        android:gravity="center"
+        android:text="@string/save_photo"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_details_card" />
+
+    <TextView
+        android:id="@+id/editor_drag_hint"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/editor_map_card"
+        android:layout_width="84dp"
+        android:layout_height="100dp"
+        android:visibility="gone">
+
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/editor_map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ImageView
+            android:id="@+id/editor_map_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/editor_map_fallback"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/map_unavailable"
+            android:textColor="@color/primary_text_color"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/editor_change_image_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#4D4D4D"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/tab_change_image"
+                android:src="@drawable/ic_change_image" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_stamp_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/editor_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/editor_coordinates"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/editor_weather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

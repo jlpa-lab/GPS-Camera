@@ -1,56 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/screen_background"
-    android:orientation="vertical"
-    android:paddingBottom="12dp">
+    android:background="@color/screen_background">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/saved_photo_header"
+        android:layout_width="0dp"
         android:layout_height="56dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingEnd="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/saved_photo_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/back"
-            android:src="@drawable/ic_back_arrow" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:paddingStart="12dp"
-            android:text="@string/preview_title"
-            android:textColor="@color/primary_text_color"
-            android:textSize="18sp" />
-
-        <ImageButton
-            android:id="@+id/saved_photo_delete"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/delete_photo"
-            android:src="@android:drawable/ic_menu_delete"
-            app:tint="@color/app_color_text" />
+            android:contentDescription="@string/back"
+            android:padding="12dp"
+            android:src="@drawable/ic_back_arrow" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/photo_saved_title"
+            android:textColor="@color/primary_text_color"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <FrameLayout
-        android:layout_width="match_parent"
+        android:id="@+id/saved_photo_frame"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="18dp"
-        android:background="#000000">
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bg_preview_photo_card"
+        android:clipToOutline="true"
+        app:layout_constraintBottom_toTopOf="@id/saved_photo_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/saved_photo_header">
 
         <ImageView
             android:id="@+id/saved_photo_image"
@@ -60,92 +59,61 @@
             android:scaleType="fitCenter" />
     </FrameLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/saved_photo_message"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="28dp"
+        android:fontFamily="@font/poppins_semibold"
+        android:text="@string/saved_to_gallery"
+        android:textColor="@color/primary_text_color"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@id/saved_photo_actions"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/saved_photo_actions"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingEnd="18dp">
-
-        <ImageView
-            android:id="@+id/share_whatsapp"
-            style="@style/SavedPhotoShareButton"
-            android:contentDescription="@string/share_whatsapp"
-            android:scaleType="center"
-            android:src="@drawable/ic_share_whatsapp" />
-
-        <ImageView
-            android:id="@+id/share_facebook"
-            style="@style/SavedPhotoShareButton"
-            android:contentDescription="@string/share_facebook"
-            android:scaleType="center"
-            android:src="@drawable/ic_share_facebook" />
-
-        <ImageView
-            android:id="@+id/share_instagram"
-            style="@style/SavedPhotoShareButton"
-            android:contentDescription="@string/share_instagram"
-            android:scaleType="center"
-            android:src="@drawable/ic_share_instagram" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <TextView
-            android:id="@+id/share_more"
-            style="@style/SavedPhotoShareButton"
-            android:contentDescription="@string/share_more"
+            android:id="@+id/saved_photo_share"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_preview_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
             android:gravity="center"
-            android:text="•••" />
-    </LinearLayout>
+            android:text="@string/share_photo"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
 
-<!--    <LinearLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:gravity="center"-->
-<!--        android:orientation="horizontal"-->
-<!--        android:paddingStart="18dp"-->
-<!--        android:paddingEnd="18dp">-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/share_whatsapp"-->
-<!--            style="@style/SavedPhotoShareButton"-->
-<!--            android:contentDescription="@string/share_whatsapp"-->
-<!--            android:drawableTop="@drawable/ic_share_whatsapp"-->
-<!--            android:text="" />-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/share_facebook"-->
-<!--            style="@style/SavedPhotoShareButton"-->
-<!--            android:contentDescription="@string/share_facebook"-->
-<!--            android:drawableTop="@drawable/ic_share_facebook"-->
-<!--            android:text="" />-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/share_instagram"-->
-<!--            style="@style/SavedPhotoShareButton"-->
-<!--            android:contentDescription="@string/share_instagram"-->
-<!--            android:drawableTop="@drawable/ic_share_instagram"-->
-<!--            android:text="" />-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/share_more"-->
-<!--            style="@style/SavedPhotoShareButton"-->
-<!--            android:contentDescription="@string/share_more"-->
-<!--            android:text="•••" />-->
-<!--    </LinearLayout>-->
-
-    <FrameLayout
-        android:id="@+id/saved_photo_ad_placeholder"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_marginTop="8dp"
-        android:background="#24252C"
-        android:contentDescription="@string/ad_placeholder">
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/ad_placeholder"
-            android:textColor="#85858D"
-            android:textSize="12sp" />
-    </FrameLayout>
-</LinearLayout>
+            android:id="@+id/saved_photo_take_another"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_preview_outline"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:text="@string/take_another"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="16sp" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

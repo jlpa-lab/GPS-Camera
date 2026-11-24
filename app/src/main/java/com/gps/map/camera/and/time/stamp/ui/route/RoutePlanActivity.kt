@@ -10,17 +10,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -35,7 +31,6 @@ import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
-import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceAdapter
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
@@ -56,8 +51,8 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var inputContent: View
     private lateinit var previewContent: View
     private lateinit var noRouteContent: View
-    private lateinit var fromValue: TextView
-    private lateinit var toValue: TextView
+    private lateinit var fromValue: EditText
+    private lateinit var toValue: EditText
     private lateinit var locationStatus: TextView
     private lateinit var locationSettings: TextView
     private lateinit var findRouteButton: TextView
@@ -80,6 +75,9 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
     private var fromLocation: LatLng? = null
     private var fromPlace: EarthPlace? = null
     private var destination: EarthPlace? = null
+    private var fromQuery = ""
+    private var destinationQuery = ""
+    private var updatingFields = false
     private var routeDetails: RouteDetails? = null
     private var routeJob: Job? = null
     private var searchJob: Job? = null
@@ -142,14 +140,26 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
             RouteTravelMode.WALK to findViewById(R.id.route_plan_mode_walk),
             RouteTravelMode.CYCLE to findViewById(R.id.route_plan_mode_cycle)
         )
+        fromValue.addTextChangedListener(fieldWatcher { text ->
+            fromQuery = text
+            if (!updatingFields && text != getString(R.string.route_plan_your_location)) {
+                fromPlace = null
+                fromLocation = null
+                routeDetails = null
+            }
+        })
+        toValue.addTextChangedListener(fieldWatcher { text ->
+            destinationQuery = text
+            if (!updatingFields && text != getString(R.string.route_plan_select_destination)) {
+                destination = null
+                routeDetails = null
+            }
+        })
     }
 
     private fun bindActions() {
         findViewById<View>(R.id.route_plan_back).setOnClickListener { finish() }
-        findViewById<View>(R.id.route_plan_from_row).setOnClickListener { showPlaceSearch(selectsOrigin = true) }
-        findViewById<View>(R.id.route_plan_to_row).setOnClickListener { showPlaceSearch(selectsOrigin = false) }
         findRouteButton.setOnClickListener { findRoute() }
-        searchDestinationButton.setOnClickListener { showPlaceSearch(selectsOrigin = false) }
         locationSettings.setOnClickListener { openLocationSettings() }
         viewDirectionsButton.setOnClickListener { openGoogleMapsDirections() }
         editRouteButton.setOnClickListener { showInputState() }
@@ -253,18 +263,50 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun findRoute() {
-        val origin = fromLocation
-        val target = destination
-        if (origin == null) {
+        if (isLoading) return
+        val typedFrom = fromQuery.trim()
+        val typedDestination = destinationQuery.trim()
+        if (typedFrom.isBlank() && fromLocation == null) {
             requestLocationAccess()
             return
         }
-        if (target == null || isLoading) return
 
         routeJob?.cancel()
         isLoading = true
         updateScreen()
         routeJob = lifecycleScope.launch {
+            val origin = if (typedFrom.isBlank() || typedFrom == getString(R.string.route_plan_your_location)) {
+                fromLocation
+            } else {
+                withContext(Dispatchers.IO) {
+                    runCatching { EarthPlaceSearch.search(typedFrom).firstOrNull() }.getOrNull()
+                }?.also { place ->
+                    fromPlace = place
+                    fromLocation = LatLng(place.latitude, place.longitude)
+                    fromQuery = place.name
+                }?.let { fromLocation }
+            }
+            val target = if (typedDestination.isBlank() ||
+                typedDestination == getString(R.string.route_plan_select_destination)
+            ) {
+                destination
+            } else if (destination?.name.equals(typedDestination, ignoreCase = true)) {
+                destination
+            } else {
+                withContext(Dispatchers.IO) {
+                    runCatching { EarthPlaceSearch.search(typedDestination).firstOrNull() }.getOrNull()
+                }?.also { place ->
+                    destination = place
+                    destinationQuery = place.name
+                }
+            }
+            if (origin == null || target == null) {
+                isLoading = false
+                screenState = ScreenState.INPUT
+                updateScreen()
+                Toast.makeText(this@RoutePlanActivity, R.string.route_plan_search_no_results, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
             val result = withTimeoutOrNull(ROUTE_TIMEOUT_MS) {
                 withContext(Dispatchers.IO) {
                     directionsClient.findRoute(origin, LatLng(target.latitude, target.longitude), selectedMode)
@@ -291,74 +333,12 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         updateScreen()
     }
 
-    private fun showPlaceSearch(selectsOrigin: Boolean) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_route_destination_search, null)
-        val searchTitle = dialogView.findViewById<TextView>(R.id.route_place_search_title)
-        val searchInput = dialogView.findViewById<EditText>(R.id.route_destination_search_input)
-        val searchButton = dialogView.findViewById<TextView>(R.id.route_destination_search_button)
-        val searchProgress = dialogView.findViewById<ProgressBar>(R.id.route_destination_search_progress)
-        val searchResults = dialogView.findViewById<RecyclerView>(R.id.route_destination_search_results)
-        val searchMessage = dialogView.findViewById<TextView>(R.id.route_destination_search_message)
-        lateinit var dialog: AlertDialog
-        searchTitle.setText(
-            if (selectsOrigin) {
-                R.string.route_plan_search_origin
-            } else {
-                R.string.route_plan_search_destination
-            }
-        )
-        val adapter = EarthPlaceAdapter { place ->
-            if (selectsOrigin) {
-                fromPlace = place
-                fromLocation = LatLng(place.latitude, place.longitude)
-            } else {
-                destination = place
-            }
-            routeDetails = null
-            searchJob?.cancel()
-            dialog.dismiss()
-            updateScreen()
+    private fun fieldWatcher(onChanged: (String) -> Unit) = object : android.text.TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        override fun afterTextChanged(s: android.text.Editable?) {
+            onChanged(s?.toString()?.trim().orEmpty())
         }
-        searchResults.layoutManager = LinearLayoutManager(this)
-        searchResults.adapter = adapter
-
-        dialog = AlertDialog.Builder(this).setView(dialogView).create()
-        searchButton.setOnClickListener {
-            val query = searchInput.text.toString().trim()
-            if (query.length < 2) {
-                searchMessage.setText(R.string.route_plan_search_enter_destination)
-                searchMessage.visibility = View.VISIBLE
-                return@setOnClickListener
-            }
-            searchJob?.cancel()
-            searchProgress.visibility = View.VISIBLE
-            searchButton.isEnabled = false
-            searchMessage.visibility = View.GONE
-            searchJob = lifecycleScope.launch {
-                val places = withContext(Dispatchers.IO) {
-                    runCatching { EarthPlaceSearch.search(query) }.getOrDefault(emptyList())
-                }
-                if (!isActive) return@launch
-                searchProgress.visibility = View.GONE
-                searchButton.isEnabled = true
-                adapter.submitList(places)
-                if (places.isEmpty()) {
-                    searchMessage.setText(R.string.route_plan_search_no_results)
-                    searchMessage.visibility = View.VISIBLE
-                }
-            }
-        }
-        searchInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                searchButton.performClick()
-                true
-            } else false
-        }
-        dialog.setOnDismissListener { searchJob?.cancel() }
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        searchInput.requestFocus()
-        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
     }
 
     private fun drawRoute() {
@@ -409,8 +389,18 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
         loadingProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
 
-        fromValue.text = fromPlace?.name ?: getString(R.string.route_plan_your_location)
-        toValue.text = destination?.name ?: getString(R.string.route_plan_select_destination)
+        updatingFields = true
+        if (fromQuery.isBlank()) {
+            fromValue.setText(fromPlace?.name ?: getString(R.string.route_plan_your_location))
+        } else if (fromValue.text.toString() != fromQuery) {
+            fromValue.setText(fromQuery)
+        }
+        if (destinationQuery.isBlank()) {
+            toValue.setText(destination?.name ?: getString(R.string.route_plan_select_destination))
+        } else if (toValue.text.toString() != destinationQuery) {
+            toValue.setText(destinationQuery)
+        }
+        updatingFields = false
         findRouteButton.isEnabled = fromLocation != null && destination != null && !isLoading
         searchDestinationButton.isEnabled = !isLoading
         viewDirectionsButton.isEnabled = !isLoading

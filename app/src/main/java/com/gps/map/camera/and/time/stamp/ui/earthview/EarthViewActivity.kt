@@ -779,7 +779,10 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
 
-    private fun showPlaceOnGlobe(place: EarthPlace) {
+    private fun showPlaceOnGlobe(
+        place: EarthPlace,
+        rangeMeters: Double = SEARCH_RANGE_METERS
+    ) {
         selectedPlace = place
         markerLayer.clearRenderables()
 
@@ -805,7 +808,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
             LookAt(
                 Position.fromDegrees(place.latitude, place.longitude, 0.0),
                 AltitudeMode.CLAMP_TO_GROUND,
-                SEARCH_RANGE_METERS,
+                rangeMeters,
                 Angle.fromDegrees(0.0),
                 Angle.fromDegrees(0.0),
                 Angle.fromDegrees(0.0)
@@ -880,7 +883,10 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
             onSuccess = { location ->
                 runOnUiThread {
                     if (earthState == null && !searchMode && !resultMode) {
-                        showPlaceOnGlobe(currentLocationPlace(location.latitude, location.longitude))
+                        showPlaceOnGlobe(
+                            currentLocationPlace(location.latitude, location.longitude),
+                            DEFAULT_GLOBE_RANGE_METERS
+                        )
                     }
                 }
             },

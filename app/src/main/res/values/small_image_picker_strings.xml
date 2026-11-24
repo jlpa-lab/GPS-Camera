@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="choose_photo">Choose Photo</string>
+    <string name="small_image_updated">Small image updated</string>
+    <string name="photo_preview_title">Photo Preview</string>
+    <string name="saving_photo_title">Saving Photo</string>
+    <string name="saving_photo_message">Saving your photo…</string>
+    <string name="photo_saved_title">Photo Saved</string>
+    <string name="saved_to_gallery">Saved to your gallery</string>
+    <string name="take_another">Take another</string>
+</resources>

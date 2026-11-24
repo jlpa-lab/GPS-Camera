@@ -28,14 +28,90 @@
             android:src="@drawable/ic_back_arrow" />
 
         <TextView
+            android:id="@+id/editor_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/poppins_semibold"
             android:paddingStart="8dp"
-            android:text="@string/camera_preview_title"
+            android:text="@string/gps_camera_title"
             android:textColor="@color/primary_text_color"
             android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/editor_save"
+            android:layout_width="70dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_preview_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/poppins_semibold"
+            android:gravity="center"
+            android:text="@string/save"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/editor_tabs"
+        android:layout_width="0dp"
+        android:layout_height="76dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_header">
+
+        <TextView
+            android:id="@+id/editor_tab_details"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/icon_container_detail"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_details"
+            android:textColor="@color/app_color_text"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_position"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_position"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_swap"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_map"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_map"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_map"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_location"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_location"
+            android:drawablePadding="6dp"
+            android:text="@string/tab_location"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/editor_tab_photo"
+            style="@style/StampEditorTab"
+            android:drawableTop="@drawable/ic_editor_photo2"
+            android:drawablePadding="6dp"
+            android:ellipsize="none"
+            android:gravity="center"
+            android:maxLines="2"
+            android:text="@string/tab_change_image"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <FrameLayout
@@ -43,14 +119,16 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_preview_photo_card"
         android:clipToOutline="true"
-        app:layout_constraintBottom_toTopOf="@id/editor_tabs"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editor_header">
+        app:layout_constraintTop_toBottomOf="@id/editor_tabs"
+        app:layout_constraintBottom_toTopOf="@id/editor_drag_hint">
 
         <ImageView
             android:id="@+id/editor_photo"
@@ -58,70 +136,40 @@
             android:layout_height="match_parent"
             android:contentDescription="@string/captured_photo"
             android:scaleType="centerCrop" />
+
+        <ImageButton
+            android:id="@+id/editor_fullscreen"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:background="@drawable/bg_map_controls"
+            android:contentDescription="@string/live_camera_fullscreen"
+            android:padding="12dp"
+            android:src="@drawable/ic_fullscreen" />
     </FrameLayout>
 
-    <LinearLayout
-        android:id="@+id/editor_tabs"
+    <TextView
+        android:id="@+id/editor_drag_hint"
         android:layout_width="0dp"
-        android:layout_height="44dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="20dp"
-        android:gravity="center"
-        android:orientation="horizontal"
+        android:layout_marginBottom="48dp"
+        android:fontFamily="@font/poppins_regular"
+        android:includeFontPadding="false"
+        android:text="@string/editor_drag_stamp_info"
+        android:textColor="@color/secondary_text_color"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editor_media_frame">
-
-        <TextView
-            android:id="@+id/editor_tab_details"
-            style="@style/StampEditorTab"
-            android:drawableTop="@null"
-            android:text="@string/tab_details"
-            android:textColor="@color/app_color_text"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/editor_tab_position"
-            style="@style/StampEditorTab"
-            android:drawableTop="@null"
-            android:text="@string/tab_position"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/editor_tab_map"
-            style="@style/StampEditorTab"
-            android:drawableTop="@null"
-            android:text="@string/tab_template"
-            android:textColor="@color/secondary_text_color"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/editor_tab_location"
-            style="@style/StampEditorTab"
-            android:text="@string/tab_location"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/editor_tab_photo"
-            style="@style/StampEditorTab"
-            android:text="@string/tab_photo"
-            android:visibility="gone" />
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
     <LinearLayout
         android:id="@+id/editor_details_card"
         android:layout_width="0dp"
         android:layout_height="44dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginEnd="20dp"
-        android:background="@drawable/bg_home_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/editor_tabs">
@@ -129,51 +177,25 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/poppins_regular"
-            android:text="@string/place"
-            android:textColor="@color/primary_text_color"
-            android:textSize="16sp" />
+            android:text="@string/place" />
 
         <TextView
             android:id="@+id/editor_address"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:fontFamily="@font/poppins_semibold"
-            android:gravity="end"
-            android:maxLines="1"
-            android:textColor="@color/app_color_text"
-            android:textSize="16sp" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/editor_save"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="24dp"
-        android:background="@drawable/bg_btn_keep_phone_tracker"
-        android:fontFamily="@font/poppins_semibold"
-        android:gravity="center"
-        android:text="@string/save_photo"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editor_details_card" />
-
-    <!-- Hidden compatibility surfaces used by the existing map/export code. -->
     <FrameLayout
         android:id="@+id/editor_map_card"
-        android:layout_width="210dp"
-        android:layout_height="236dp"
+        android:layout_width="84dp"
+        android:layout_height="100dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bg_preview_photo_card"
+        android:clipToOutline="true"
         android:visibility="gone"
-        app:layout_constraintStart_toStartOf="@id/editor_media_frame"
-        app:layout_constraintTop_toTopOf="@id/editor_media_frame">
+        app:layout_constraintBottom_toBottomOf="@id/editor_media_frame"
+        app:layout_constraintEnd_toEndOf="@id/editor_media_frame">
 
         <com.google.android.gms.maps.MapView
             android:id="@+id/editor_map_view"
@@ -184,6 +206,7 @@
             android:id="@+id/editor_map_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:scaleType="centerCrop"
             android:visibility="gone" />
 
         <TextView
@@ -192,7 +215,42 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="@string/map_unavailable"
+            android:textColor="@color/primary_text_color"
+            android:textSize="10sp"
             android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/editor_change_image_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#4D4D4D"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:contentDescription="@string/tab_change_image"
+                    android:src="@drawable/ic_change_image" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:text="@string/tab_change_image"
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
     </FrameLayout>
 
     <LinearLayout

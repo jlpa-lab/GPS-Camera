@@ -125,11 +125,13 @@
             android:name=".ui.gpscamera.CameraPhotoPreviewActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
             tools:ignore="LockedOrientationActivity"/>
 
         <activity android:name=".ui.camera.CameraActivity"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@style/Theme.EarthView"
             tools:ignore="LockedOrientationActivity"/>
 
         <activity android:name=".ui.rating.RateAppActivity"
@@ -166,6 +168,25 @@
             android:name=".ui.gpscamera.CameraStampEditorActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
+            tools:ignore="LockedOrientationActivity"/>
+        <activity
+            android:name=".ui.gpscamera.SmallImagePickerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
+            tools:ignore="LockedOrientationActivity"/>
+        <activity
+            android:name=".ui.gpscamera.CameraFullscreenPreviewActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
+            tools:ignore="LockedOrientationActivity"/>
+        <activity
+            android:name=".ui.gpscamera.CameraSavingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.EarthView"
             tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".ui.uninstall.ReasonActivity"
             android:screenOrientation="portrait"

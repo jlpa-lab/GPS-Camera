@@ -25,12 +25,18 @@ import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.StreetViewPanoramaCamera
+import com.google.android.gms.maps.model.RoundCap
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlin.math.abs
 
 /** Lets the user drop Pegman on a real map before opening Street View. */
@@ -59,6 +65,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private var googleMap: GoogleMap? = null
     private val coverageRoads = mutableListOf<Polyline>()
+    private var lastPanoramaLocation: StreetViewPanoramaLocation? = null
+    private var selectedMapPoint: LatLng? = null
     private var shouldUseCurrentLocation = false
     private var manualPlaceSelected = false
     private var panorama: StreetViewPanorama? = null
@@ -75,6 +83,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private var pegmanMoved = false
     private var locationJob: Job? = null
     private var panoramaJob: Job? = null
+    private var metadataJob: Job? = null
     private var panoramaRequest = 0
     private val locationProvider by lazy { GpsLocationProvider(this) }
 
@@ -195,11 +204,24 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         map.setOnMapClickListener(::selectMapPoint)
         map.setOnPolylineClickListener { road ->
             // Blue coverage roads are real interaction targets, not decoration.
-            // Resolve the panorama at the road end when the user taps one.
+            // Resolve a point close to the linked panorama. Keeping the visual
+            // segment short prevents its end from landing outside the lookup
+            // radius on curved streets.
             road.points.lastOrNull()?.let(::selectMapPoint)
         }
+        map.setOnCameraIdleListener {
+            // Pegman is a map marker in the reference flow, not a screen
+            // sticker. Reproject it whenever the user pans or zooms.
+            selectedMapPoint?.let(::positionPegman)
+        }
+        map.setOnMapLoadedCallback {
+            selectedMapPoint?.let(::positionPegman)
+        }
         enableMyLocationLayer()
-        selectedPlace?.let { drawPlace(it) } ?: resetPegmanToCorner()
+        selectedPlace?.let { drawPlace(it) } ?: run {
+            resetPegmanToCorner()
+            lastPanoramaLocation?.let(::drawCoverageRoad)
+        }
     }
 
     private fun enableMyLocationLayer() {
@@ -220,9 +242,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         readyPanorama.isPanningGesturesEnabled = true
         readyPanorama.isStreetNamesEnabled = true
         readyPanorama.setOnStreetViewPanoramaChangeListener { location ->
+            lastPanoramaLocation = location
             if (location == null) {
+                // The SDK can emit a transient null while it changes from the
+                // previous panorama to the newly requested one. Do not turn
+                // that intermediate callback into a false "no coverage"
+                // result; requestPanorama() owns the timeout and final state.
                 panoramaHasLocation = false
-                if (state == ScreenState.PANORAMA) showUnavailable()
             } else {
                 panoramaHasLocation = true
                 panoramaJob?.cancel()
@@ -306,13 +332,19 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    private fun openStreetView(point: LatLng? = null) {
+    private fun openStreetView(
+        point: LatLng? = null,
+        exactMapSelection: Boolean = false
+    ) {
         val place = selectedPlace
         if (place == null) {
             showUnavailable()
             return
         }
-        requestPanorama(point ?: LatLng(place.latitude, place.longitude))
+        requestPanorama(
+            point ?: LatLng(place.latitude, place.longitude),
+            if (exactMapSelection) MAP_CLICK_SEARCH_RADIUS_METERS else PANORAMA_SEARCH_RADIUS_METERS
+        )
     }
 
     private fun showUnavailable() {
@@ -341,19 +373,18 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun drawPlace(place: EarthPlace) {
+        val point = LatLng(place.latitude, place.longitude)
         googleMap?.let { map ->
-            val point = LatLng(place.latitude, place.longitude)
             map.clear()
             clearCoverageRoads()
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 16f))
+            selectedMapPoint = point
             positionPegman(point)
         }
-        // Request the nearest panorama immediately so coverage roads are
-        // visible before the user opens Street View.
-        panorama?.setPosition(
-            LatLng(place.latitude, place.longitude),
-            PANORAMA_SEARCH_RADIUS_METERS
-        )
+        // Resolve the nearest panorama through the same request/timeout path
+        // used by map taps. This also covers the case where the location fix
+        // arrives after the panorama view has already initialized.
+        requestPanorama(point, PANORAMA_SEARCH_RADIUS_METERS)
     }
 
     private fun selectMapPoint(point: LatLng) {
@@ -366,18 +397,23 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             point.longitude
         )
         selectedPlace = current.copy(latitude = point.latitude, longitude = point.longitude)
+        selectedMapPoint = point
         mapPlace.text = formatMapPlace(selectedPlace!!)
         clearCoverageRoads()
         positionPegman(point)
         // A normal map tap is the quick path: resolve the nearest panorama and
         // show it immediately. Pegman remains available for another road.
-        openStreetView(point)
+        openStreetView(point, exactMapSelection = true)
     }
 
     private fun pegmanDropPoint(): LatLng? {
         val map = googleMap ?: return null
-        val x = (pegman.x + pegman.translationX + pegman.width / 2f - mapView.left).toInt()
-        val y = (pegman.y + pegman.translationY + pegman.height - mapView.top).toInt()
+        val pegmanLocation = IntArray(2)
+        val mapLocation = IntArray(2)
+        pegman.getLocationOnScreen(pegmanLocation)
+        mapView.getLocationOnScreen(mapLocation)
+        val x = pegmanLocation[0] - mapLocation[0] + pegman.width / 2
+        val y = pegmanLocation[1] - mapLocation[1] + pegman.height
         return map.projection.fromScreenLocation(Point(x, y))
     }
 
@@ -386,9 +422,15 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         pegman.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             val screenPoint = map.projection.toScreenLocation(point)
-            pegman.x = (mapView.left + screenPoint.x - pegman.width / 2f)
+            val mapLocation = IntArray(2)
+            val containerLocation = IntArray(2)
+            mapView.getLocationOnScreen(mapLocation)
+            mapContainer.getLocationOnScreen(containerLocation)
+            val containerX = mapLocation[0] - containerLocation[0] + screenPoint.x
+            val containerY = mapLocation[1] - containerLocation[1] + screenPoint.y
+            pegman.x = (containerX - pegman.width / 2f)
                 .coerceIn(0f, (mapContainer.width - pegman.width).toFloat())
-            pegman.y = (mapView.top + screenPoint.y - pegman.height.toFloat())
+            pegman.y = (containerY - pegman.height.toFloat())
                 .coerceIn(0f, (mapContainer.height - pegman.height).toFloat())
             pegman.translationX = 0f
             pegman.translationY = 0f
@@ -410,15 +452,22 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         val map = googleMap ?: return
         clearCoverageRoads()
         val center = location.position ?: return
+        selectedMapPoint = center
         positionPegman(center)
-        val links = location.links ?: return
+        val links = location.links.orEmpty()
         if (links.isEmpty()) return
         links.forEach { link ->
             coverageRoads += map.addPolyline(
                 PolylineOptions()
-                    .add(center, pointAlongBearing(center, link.bearing, 220.0))
+                    .add(
+                        center,
+                        pointAlongBearing(center, link.bearing, COVERAGE_ROAD_LENGTH_METERS)
+                    )
                     .color(getColor(R.color.home_accent))
-                    .width(10f)
+                    .width(8f)
+                    .geodesic(true)
+                    .startCap(RoundCap())
+                    .endCap(RoundCap())
                     .zIndex(2f)
                     .clickable(true)
             )
@@ -493,12 +542,32 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    private fun requestPanorama(point: LatLng) {
+    private fun requestPanorama(point: LatLng, radiusMeters: Int = PANORAMA_SEARCH_RADIUS_METERS) {
         val request = ++panoramaRequest
         panoramaJob?.cancel()
+        metadataJob?.cancel()
         panoramaHasLocation = false
         showPreviewState()
-        panorama?.setPosition(point, PANORAMA_SEARCH_RADIUS_METERS)
+        panorama?.setPosition(point, radiusMeters)
+
+        // The Android panorama SDK can take a long time to resolve a LatLng,
+        // especially after a map tap. Resolve the same point through Google's
+        // Street View metadata endpoint as a fallback, then hand the returned
+        // pano id back to the SDK. This makes map taps and Pegman drops behave
+        // like the Google Maps flow instead of getting stuck on the hint card.
+        metadataJob = lifecycleScope.launch {
+            delay(STREET_VIEW_METADATA_FALLBACK_DELAY_MS)
+            if (request != panoramaRequest || panoramaHasLocation) return@launch
+            val metadata = withContext(Dispatchers.IO) { findStreetViewMetadata(point, radiusMeters) }
+            if (request == panoramaRequest && !panoramaHasLocation && metadata != null) {
+                selectedMapPoint = metadata.position
+                googleMap?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(metadata.position, MAP_PANORAMA_ZOOM)
+                )
+                positionPegman(metadata.position)
+                panorama?.setPosition(metadata.panoId)
+            }
+        }
 
         // The SDK reports a null location when no panorama exists, but a
         // network/service failure can leave the view waiting indefinitely.
@@ -509,6 +578,38 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             if (request == panoramaRequest && !panoramaHasLocation) {
                 showUnavailable()
             }
+        }
+    }
+
+    private fun findStreetViewMetadata(point: LatLng, radiusMeters: Int): StreetViewMetadata? {
+        val apiKey = runCatching {
+            packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
+                .metaData?.getString("com.google.android.geo.API_KEY")
+        }.getOrNull()?.takeIf { !it.isNullOrBlank() } ?: return null
+        val endpoint = URL(
+            "https://maps.googleapis.com/maps/api/streetview/metadata" +
+                "?location=${point.latitude},${point.longitude}" +
+                "&radius=$radiusMeters&key=$apiKey"
+        )
+        val connection = (endpoint.openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = STREET_VIEW_METADATA_TIMEOUT_MS.toInt()
+            readTimeout = STREET_VIEW_METADATA_TIMEOUT_MS.toInt()
+        }
+        return try {
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
+            val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+            if (json.optString("status") != "OK") return null
+            val location = json.optJSONObject("location") ?: return null
+            val panoId = json.optString("pano_id").takeIf { it.isNotBlank() } ?: return null
+            StreetViewMetadata(
+                panoId,
+                LatLng(location.optDouble("lat"), location.optDouble("lng"))
+            )
+        } catch (_: Exception) {
+            null
+        } finally {
+            connection.disconnect()
         }
     }
 
@@ -581,6 +682,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     override fun onDestroy() {
         locationJob?.cancel()
         panoramaJob?.cancel()
+        metadataJob?.cancel()
         locationProvider.stopLocationUpdates()
         mapView.onDestroy()
         panoramaView.onDestroy()
@@ -597,7 +699,12 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         private const val NORMAL_PREVIEW_HEIGHT_DP = 280
         private const val NORMAL_MAP_HEIGHT_DP = 270
         private const val FULLSCREEN_PANEL_HEIGHT_DP = 680
+        private const val MAP_PANORAMA_ZOOM = 16f
         const val PANORAMA_SEARCH_RADIUS_METERS = 500
+        const val MAP_CLICK_SEARCH_RADIUS_METERS = 500
+        private const val COVERAGE_ROAD_LENGTH_METERS = 220.0
+        private const val STREET_VIEW_METADATA_FALLBACK_DELAY_MS = 1_500L
+        private const val STREET_VIEW_METADATA_TIMEOUT_MS = 5_000L
         const val PANORAMA_LOAD_TIMEOUT_MS = 12_000L
         const val PANORAMA_ZOOM_ANIMATION_MS = 220L
         const val EXTRA_CURRENT_LOCATION_ONLY = "street_view_current_location_only"
@@ -606,4 +713,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         const val EXTRA_PLACE_LATITUDE = "earth_view_place_latitude"
         const val EXTRA_PLACE_LONGITUDE = "earth_view_place_longitude"
     }
+
+    private data class StreetViewMetadata(
+        val panoId: String,
+        val position: LatLng
+    )
 }

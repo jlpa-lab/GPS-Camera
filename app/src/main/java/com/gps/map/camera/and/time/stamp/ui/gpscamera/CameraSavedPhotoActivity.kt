@@ -7,7 +7,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
@@ -31,33 +30,10 @@ class CameraSavedPhotoActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.saved_photo_image).setImageURI(savedPhotoUri)
 
         findViewById<ImageButton>(R.id.saved_photo_back).setOnClickListener { finish() }
-        findViewById<ImageButton>(R.id.saved_photo_delete).setOnClickListener { confirmDelete() }
-        findViewById<ImageView>(R.id.share_whatsapp).setOnClickListener { shareWithPackage("com.whatsapp") }
-        findViewById<ImageView>(R.id.share_facebook).setOnClickListener { shareWithPackage("com.facebook.katana") }
-        findViewById<ImageView>(R.id.share_instagram).setOnClickListener { shareWithPackage("com.instagram.android") }
-        findViewById<TextView>(R.id.share_more).setOnClickListener { shareWithChooser() }
-    }
-
-    private fun confirmDelete() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.delete_photo_title)
-            .setMessage(R.string.delete_photo_message)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.delete) { _, _ ->
-                val deletedRows = contentResolver.delete(savedPhotoUri, null, null)
-                if (deletedRows > 0) finish()
-                else Toast.makeText(this, R.string.photo_delete_failed, Toast.LENGTH_SHORT).show()
-            }
-            .show()
-    }
-
-    private fun shareWithPackage(packageName: String) {
-        val shareIntent = createShareIntent()
-        try {
-            shareIntent.setPackage(packageName)
-            startActivity(shareIntent)
-        } catch (_: Exception) {
-            shareWithChooser()
+        findViewById<TextView>(R.id.saved_photo_share).setOnClickListener { shareWithChooser() }
+        findViewById<TextView>(R.id.saved_photo_take_another).setOnClickListener {
+            startActivity(Intent(this, CameraActivity::class.java))
+            finish()
         }
     }
 

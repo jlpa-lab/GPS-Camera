@@ -22,6 +22,7 @@ class StampOverlayView(context: Context) : View(context) {
     private var mapBitmap: Bitmap? = null
 
     init {
+        StampRenderer.configure(context)
         setWillNotDraw(false)
         isClickable = false
         isFocusable = false
@@ -39,6 +40,12 @@ class StampOverlayView(context: Context) : View(context) {
     }
 
     fun setMapBitmap(value: Bitmap?) {
+        mapBitmap = value
+        invalidate()
+    }
+
+    /** Sets the image used by the template's floating map/image slot. */
+    fun setFloatingImageBitmap(value: Bitmap?) {
         mapBitmap = value
         invalidate()
     }

@@ -7,7 +7,7 @@ import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 enum class TemplateAddressMode { AUTOMATIC, MANUAL }
 enum class TemplateAddressDetail { NONE, CITY, FULL }
 enum class TemplateDateFormat { SHORT_MONTH, NUMERIC, TIME_FIRST, WEEKDAY, ISO }
-enum class TemplatePosition { TOP, BOTTOM }
+enum class TemplatePosition { TOP, MIDDLE, BOTTOM }
 enum class TemplateAlignment { LEFT, CENTER, RIGHT }
 
 data class StampCustomization(

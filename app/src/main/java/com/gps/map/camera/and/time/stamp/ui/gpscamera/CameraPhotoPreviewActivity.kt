@@ -20,10 +20,12 @@ class CameraPhotoPreviewActivity : AppCompatActivity() {
     private var latitude: Double = Double.NaN
     private var longitude: Double = Double.NaN
     private var capturedAt: String = ""
+    private var toolsCameraMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera_preview)
+        toolsCameraMode = intent.getBooleanExtra(CameraActivity.EXTRA_TOOLS_CAMERA, false)
+        setContentView(if (toolsCameraMode) R.layout.activity_tools_camera_preview else R.layout.activity_camera_preview)
 
         val photoUriText = intent.getStringExtra(CameraActivity.EXTRA_PHOTO_URI)
         if (photoUriText == null) {
@@ -39,6 +41,10 @@ class CameraPhotoPreviewActivity : AppCompatActivity() {
         photoView.setImageURI(photoUri)
         retakeButton = findViewById(R.id.preview_retake_button)
         nextButton = findViewById(R.id.preview_next_button)
+        findViewById<TextView>(R.id.preview_title).setText(
+            if (toolsCameraMode) R.string.camera_preview_title else R.string.preview_title
+        )
+        if (toolsCameraMode) nextButton.setText(R.string.add_gps_stamp)
 
         findViewById<ImageButton>(R.id.preview_back_button).setOnClickListener { finish() }
         retakeButton.setOnClickListener {
@@ -51,6 +57,7 @@ class CameraPhotoPreviewActivity : AppCompatActivity() {
                 putExtra(CameraActivity.EXTRA_LATITUDE, latitude)
                 putExtra(CameraActivity.EXTRA_LONGITUDE, longitude)
                 putExtra(CameraActivity.EXTRA_CAPTURED_AT, capturedAt)
+                putExtra(CameraActivity.EXTRA_TOOLS_CAMERA, toolsCameraMode)
             })
             finish()
         }

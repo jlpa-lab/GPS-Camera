@@ -1,6 +1,5 @@
 package com.gps.map.camera.and.time.stamp.ui.rating
 
-import android.content.res.ColorStateList
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -79,14 +78,9 @@ class RateAppActivity : AppCompatActivity() {
         renderStars();
         action.text = "Rate us";
         action.isEnabled = rating > 0
-        action.backgroundTintList = ColorStateList.valueOf(
-            Color.parseColor(
-                if (rating > 0) "#00A548" else "#BBBBBB"
-            )
-        )
         action.setOnClickListener { if (rating > 0) showResult() }
         later.visibility = View.VISIBLE
-        later.setTextColor(Color.rgb(190, 190, 190))
+        later.setTextColor(Color.parseColor("#A8CBF5"))
     }
 
     private fun showResult() {
@@ -98,14 +92,9 @@ class RateAppActivity : AppCompatActivity() {
         renderStars();
         action.text = if (rating >= 4) "Rate on Google Play" else "Give feedback"; action.isEnabled = true
         action.isEnabled = rating > 0
-        action.backgroundTintList = ColorStateList.valueOf(
-            Color.parseColor(
-                if (rating > 0) "#00A548" else "#BBBBBB"
-            )
-        )
         action.setOnClickListener { if (rating >= 4) openPlay() else showFeedback() }
         later.visibility = View.VISIBLE
-        later.setTextColor(Color.rgb(0, 164, 76))
+        later.setTextColor(Color.parseColor("#A8CBF5"))
     }
 
     private fun showFeedback() {
@@ -177,11 +166,7 @@ class RateAppActivity : AppCompatActivity() {
                 text = if (index < rating) "★" else "☆"; textSize = 38f; gravity =
                 Gravity.CENTER
                 setTextColor(
-                    if (index < rating) Color.rgb(255, 174, 0) else Color.rgb(
-                        184,
-                        217,
-                        189
-                    )
+                    if (index < rating) Color.parseColor("#FFD34E") else Color.parseColor("#A8CBF5")
                 )
                 setOnClickListener {
                     rating = index + 1

@@ -717,10 +717,15 @@ class GpsVideoActivity : AppCompatActivity() {
         previewContent.visibility = if (next == ScreenState.PREVIEW) View.VISIBLE else View.GONE
         failedContent.visibility = if (next == ScreenState.SAVE_FAILED) View.VISIBLE else View.GONE
         readyTopBar.visibility = if (next == ScreenState.READY) View.VISIBLE else View.GONE
-        recordingTopBar.visibility = if (next == ScreenState.RECORDING) View.VISIBLE else View.GONE
+        // Keep recording chrome on top of the live camera feed. The elapsed-time
+        // indicator is the only recording status shown while the camera is active.
+        recordingTopBar.visibility = View.GONE
         readyControls.visibility = if (next == ScreenState.READY) View.VISIBLE else View.GONE
         recordingControls.visibility = if (next == ScreenState.RECORDING) View.VISIBLE else View.GONE
         timerPill.visibility = if (next == ScreenState.RECORDING) View.VISIBLE else View.GONE
+        if (next == ScreenState.RECORDING) {
+            timerPill.bringToFront()
+        }
         if (next != ScreenState.RECORDING) window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (next == ScreenState.RECORDING) updateRecordingControls()
         updateCameraStampOverlayBounds()

@@ -1,12 +1,16 @@
 package com.gps.map.camera.and.time.stamp.ui.permissions
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -78,6 +82,8 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
         getSharedPreferences("app_permissions", MODE_PRIVATE)
     }
 
+    private var syncingPermissionSwitches = false
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
@@ -102,8 +108,20 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
             rowRoot.findViewById<ImageView>(R.id.permission_icon).setImageResource(kind.iconRes)
             rowRoot.findViewById<TextView>(R.id.permission_name).setText(kind.titleRes)
             rowRoot.findViewById<TextView>(R.id.permission_description).setText(kind.descriptionRes)
-            rowRoot.findViewById<View>(R.id.permission_card).setOnClickListener {
-                onPermissionSelected(kind)
+            rowRoot.findViewById<View>(R.id.permission_card).setOnClickListener { onPermissionSelected(kind) }
+            rowRoot.findViewById<SwitchCompat>(R.id.permission_switch).setOnCheckedChangeListener { button, checked ->
+                if (syncingPermissionSwitches) return@setOnCheckedChangeListener
+
+                if (checked) {
+                    onPermissionSelected(kind)
+                } else {
+                    // Runtime permissions cannot be revoked by the app. Restore the
+                    // switch immediately and provide the platform settings path.
+                    syncingPermissionSwitches = true
+                    button.isChecked = isPermissionGranted(kind)
+                    syncingPermissionSwitches = false
+                    if (isPermissionGranted(kind)) showPermissionSettingsDialog(kind)
+                }
             }
         }
 
@@ -129,8 +147,9 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
     private fun onPermissionSelected(kind: PermissionKind) {
         if (isPermissionGranted(kind)) {
             // Android does not allow an app to revoke its own runtime permission.
-            // Keep the granted state stable and never surprise the user with Settings.
+            // Explain the platform behavior instead of leaving a tap with no result.
             refreshPermissionRows()
+            showPermissionSettingsDialog(kind)
             return
         }
 
@@ -142,8 +161,8 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
 
         if (requestedBefore && missing.isNotEmpty() && !canShowSystemPrompt) {
             // A permanently denied permission cannot be requested again from the app.
-            // Leave the row off; feature-specific permission dialogs provide the
-            // explicit route to Android Settings when it is actually needed.
+            // Give the user a direct, visible recovery path.
+            showPermissionSettingsDialog(kind)
             return
         }
 
@@ -152,10 +171,15 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
     }
 
     private fun refreshPermissionRows() {
-        PermissionKind.entries.forEach { kind ->
-            findViewById<View>(kind.rowId)
-                .findViewById<SwitchCompat>(R.id.permission_switch)
-                .isChecked = isPermissionGranted(kind)
+        syncingPermissionSwitches = true
+        try {
+            PermissionKind.entries.forEach { kind ->
+                findViewById<View>(kind.rowId)
+                    .findViewById<SwitchCompat>(R.id.permission_switch)
+                    .isChecked = isPermissionGranted(kind)
+            }
+        } finally {
+            syncingPermissionSwitches = false
         }
         val ready = allPermissionsGranted()
         mBinding.permissionsStart.isEnabled = ready
@@ -176,6 +200,22 @@ class AppPermissionsActivity : BaseActivity<ActivityAppPermissionsBinding>() {
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun showPermissionSettingsDialog(kind: PermissionKind) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(kind.titleRes))
+            .setMessage(R.string.permissions_manage_access_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.open_settings) { _, _ ->
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                )
+            }
+            .show()
+    }
 
     private fun finishPermissionFlow() {
         if (fromOnboarding) {

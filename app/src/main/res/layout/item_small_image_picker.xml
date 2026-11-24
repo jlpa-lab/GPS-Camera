@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="214dp"
+    android:layout_margin="6dp"
+    android:background="@drawable/bg_small_image_picker_card"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/small_image_picker_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/choose_photo"
+        android:scaleType="centerCrop" />
+</FrameLayout>

@@ -11,10 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="76dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="156dp"
+        android:layout_marginTop="68dp"
+        android:layout_marginBottom="149dp"
         android:clipChildren="true">
 
         <androidx.camera.view.PreviewView
@@ -64,7 +62,7 @@
     <LinearLayout
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="68dp"
         android:layout_gravity="top"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -96,7 +94,7 @@
             android:id="@+id/flash_button"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:backgroundTint="@null"
+            android:background="@android:color/transparent"
             android:contentDescription="@string/flash_off"
             android:padding="12dp"
             android:src="@drawable/ic_camera_flash" />
@@ -166,14 +164,14 @@
         android:paddingStart="20dp"
         android:paddingTop="12dp"
         android:paddingEnd="20dp"
-        android:paddingBottom="12dp">
+        android:paddingBottom="36dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@font/poppins_semibold"
             android:gravity="center"
-            android:paddingBottom="6dp"
+            android:paddingBottom="12dp"
             android:text="@string/photo"
             android:textColor="@color/app_color_text"
             android:textSize="13sp" />
@@ -183,6 +181,7 @@
             android:layout_height="70dp">
 
             <LinearLayout
+                android:id="@+id/camera_gallery_slot"
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="start"
@@ -193,10 +192,13 @@
                     android:id="@+id/camera_gallery_button"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clipToOutline="true"
                     android:contentDescription="@string/pick_photo_from_gallery"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_editor_photo" />
+                    android:background="@drawable/bg_camera_gallery_thumbnail"
+                    android:outlineProvider="background"
+                    android:padding="0dp"
+                    android:scaleType="centerCrop"
+                    android:src="@null" />
 
                 <TextView
                     android:layout_width="wrap_content"

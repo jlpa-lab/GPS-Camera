@@ -210,7 +210,7 @@ class YoutubeVideoActivity : AppCompatActivity() {
         pauseIcon.setImageResource(if (showPause) R.drawable.ic_pause else R.drawable.ic_play_live)
         pauseLabel.setText(if (showPause) R.string.live_camera_pause else R.string.live_camera_play)
         muteIcon.setImageResource(if (isMuted) R.drawable.ic_volume_off_live else R.drawable.ic_volume_on_live)
-        muteLabel.setText(if (isMuted) R.string.live_camera_unmute else R.string.live_camera_mute)
+        muteLabel.setText(if (isMuted) R.string.live_camera_muted else R.string.live_camera_unmuted)
     }
 
     private fun checkStreamAvailability(attempt: Int = 0) {

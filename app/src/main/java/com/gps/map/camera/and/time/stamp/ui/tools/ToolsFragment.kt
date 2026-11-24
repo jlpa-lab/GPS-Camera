@@ -20,7 +20,7 @@ class ToolsFragment : Fragment(R.layout.fragment_tools) {
             Routes.startLocationActivity(requireActivity())
         }
         view.findViewById<View>(R.id.tool_camera).setOnClickListener {
-            Routes.startCameraActivity(requireActivity())
+            Routes.startToolsCameraActivity(requireActivity())
         }
         view.findViewById<View>(R.id.tool_video).setOnClickListener {
             Routes.startGpsVideoActivity(requireActivity())

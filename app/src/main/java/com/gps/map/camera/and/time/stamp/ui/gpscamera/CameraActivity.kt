@@ -3,6 +3,7 @@ package com.gps.map.camera.and.time.stamp.ui.camera
 import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
+import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -50,6 +51,7 @@ import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampOverlayView
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampRenderData
+import com.gps.map.camera.and.time.stamp.utils.location.LocationDisabledDialog
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -68,6 +70,7 @@ class CameraActivity : AppCompatActivity() {
         const val EXTRA_LONGITUDE = "com.gps.map.camera.and.time.stamp.extra.LONGITUDE"
         const val EXTRA_CAPTURED_AT = "com.gps.map.camera.and.time.stamp.extra.CAPTURED_AT"
         const val EXTRA_DELETE_SOURCE_AFTER_SAVE = "com.gps.map.camera.and.time.stamp.extra.DELETE_SOURCE_AFTER_SAVE"
+        const val EXTRA_TOOLS_CAMERA = "com.gps.map.camera.and.time.stamp.extra.TOOLS_CAMERA"
 
         private const val STATE_LENS_FACING = "lens_facing"
         private const val LOCATION_PERMISSION_REQUESTED = "location_permission_requested"
@@ -111,6 +114,8 @@ class CameraActivity : AppCompatActivity() {
     private var permissionRequestInProgress = false
     private var cameraPermissionSheet: Dialog? = null
     private var cameraPermissionSwitch: SwitchCompat? = null
+    private val toolsCameraMode: Boolean
+        get() = intent.getBooleanExtra(EXTRA_TOOLS_CAMERA, false)
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -156,12 +161,13 @@ class CameraActivity : AppCompatActivity() {
             putExtra(EXTRA_LONGITUDE, latestLocation?.longitude ?: Double.NaN)
             putExtra(EXTRA_CAPTURED_AT, capturedAt)
             putExtra(EXTRA_DELETE_SOURCE_AFTER_SAVE, false)
+            putExtra(EXTRA_TOOLS_CAMERA, toolsCameraMode)
         })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera)
+        setContentView(if (toolsCameraMode) R.layout.activity_tools_camera else R.layout.activity_camera)
 
         lensFacing = savedInstanceState?.getInt(STATE_LENS_FACING, CameraSelector.LENS_FACING_BACK)
             ?: CameraSelector.LENS_FACING_BACK
@@ -211,6 +217,7 @@ class CameraActivity : AppCompatActivity() {
         }
         flashButton.setOnClickListener { toggleFlash() }
         captureButton.setOnClickListener { capturePhoto() }
+        updateGalleryShortcutVisibility()
         updateStamp()
     }
 
@@ -220,7 +227,47 @@ class CameraActivity : AppCompatActivity() {
             stampCustomization = StampCustomizationStore.read(this)
             refreshTemplateOverlay()
         }
+        updateGalleryShortcutVisibility()
         continueIfCameraPermissionGranted()
+    }
+
+    private fun updateGalleryShortcutVisibility() {
+        val gallerySlot = findViewById<View>(R.id.camera_gallery_slot)
+        val galleryButton = findViewById<ImageButton>(R.id.camera_gallery_button)
+        val mediaUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+        val selection: String
+        val selectionArgs: Array<String>
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            selection = "${MediaStore.Images.Media.RELATIVE_PATH} = ?"
+            selectionArgs = arrayOf("${Environment.DIRECTORY_PICTURES}/GPS Camera/")
+        } else {
+            selection = "${MediaStore.Images.Media.DATA} LIKE ?"
+            selectionArgs = arrayOf("%/${Environment.DIRECTORY_PICTURES}/GPS Camera/%")
+        }
+        val latestGalleryImage = runCatching {
+            contentResolver.query(
+                mediaUri,
+                arrayOf(MediaStore.Images.Media._ID),
+                selection,
+                selectionArgs,
+                "${MediaStore.Images.Media.DATE_ADDED} DESC"
+            )?.use { cursor ->
+                if (!cursor.moveToFirst()) return@use null
+                ContentUris.withAppendedId(mediaUri, cursor.getLong(0))
+            }
+        }.getOrNull()
+
+        if (latestGalleryImage == null) {
+            galleryButton.setImageDrawable(null)
+            gallerySlot.visibility = View.GONE
+        } else {
+            galleryButton.setImageURI(latestGalleryImage)
+            gallerySlot.visibility = View.VISIBLE
+        }
     }
 
     override fun onPause() {
@@ -260,8 +307,16 @@ class CameraActivity : AppCompatActivity() {
             return
         }
         startCamera()
-        if (hasLocationPermission()) startLocationUpdates()
-        else requestLocationPermissionIfAppropriate()
+        if (hasLocationPermission()) {
+            if (LocationDisabledDialog.isLocationEnabled(this)) {
+                startLocationUpdates()
+            } else {
+                updateStamp()
+                LocationDisabledDialog.showIfLocationDisabled(this)
+            }
+        } else {
+            requestLocationPermissionIfAppropriate()
+        }
     }
 
     private fun showCameraPermissionSheet() {
@@ -547,6 +602,7 @@ class CameraActivity : AppCompatActivity() {
                     putExtra(EXTRA_LATITUDE, latitude)
                     putExtra(EXTRA_LONGITUDE, longitude)
                     putExtra(EXTRA_CAPTURED_AT, capturedAt)
+                    putExtra(EXTRA_TOOLS_CAMERA, toolsCameraMode)
                 })
             }
         }
@@ -615,7 +671,10 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun startLocationUpdates() {
-        if (!hasLocationPermission()) return
+        if (!hasLocationPermission() || !LocationDisabledDialog.isLocationEnabled(this)) {
+            updateStamp()
+            return
+        }
         try {
             locationClient.lastLocation.addOnSuccessListener { location -> location?.let(::showLocation) }
             locationClient.requestLocationUpdates(locationRequest, locationCallback, mainLooper)

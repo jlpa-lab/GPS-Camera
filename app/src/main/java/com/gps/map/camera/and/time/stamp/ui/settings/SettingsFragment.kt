@@ -65,21 +65,21 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     )
 
     private fun bindRows(root: View) {
-        bindRow(root, R.id.settings_row_appearance, R.drawable.ic_settings,
+        bindRow(root, R.id.settings_row_appearance, R.drawable.ic_settings_appearance,
             R.string.settings_appearance, appearanceLabel(state.appearance))
         bindRow(root, R.id.settings_row_language, R.drawable.ic_globe,
             R.string.settings_language, languageLabel(state.languageCode))
-        bindRow(root, R.id.settings_row_units, R.drawable.ic_layers,
+        bindRow(root, R.id.settings_row_units, R.drawable.ic_settings_units,
             R.string.settings_units, unitsLabel(state.units))
-        bindRow(root, R.id.settings_row_stamp, R.drawable.ic_tool_template,
+        bindRow(root, R.id.settings_row_stamp, R.drawable.ic_settings_stamp,
             R.string.settings_default_stamp, stampLabel(state.stampKey))
-        bindRow(root, R.id.settings_row_permissions, R.drawable.ic_location_access,
+        bindRow(root, R.id.settings_row_permissions, R.drawable.ic_settings_permissions,
             R.string.settings_permissions, null)
-        bindRow(root, R.id.settings_row_rate, R.drawable.ic_crown,
+        bindRow(root, R.id.settings_row_rate, R.drawable.ic_settings_rate,
             R.string.settings_rate_app, null)
-        bindRow(root, R.id.settings_row_privacy, R.drawable.ic_location_pin_white,
+        bindRow(root, R.id.settings_row_privacy, R.drawable.ic_settings_privacy,
             R.string.settings_privacy_policy, null)
-        bindRow(root, R.id.settings_row_terms, R.drawable.ic_recent_location,
+        bindRow(root, R.id.settings_row_terms, R.drawable.ic_settings_terms,
             R.string.settings_terms_of_use, null)
 
         rowContent(root, R.id.settings_row_appearance).click { showAppearanceDialog() }

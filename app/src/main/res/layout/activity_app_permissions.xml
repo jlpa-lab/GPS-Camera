@@ -28,7 +28,7 @@
                 android:includeFontPadding="false"
                 android:text="@string/permissions_title"
                 android:textColor="@color/primary_text_color"
-                android:textSize="28sp" />
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/permissions_subtitle"
@@ -40,7 +40,7 @@
                 android:lineSpacingExtra="4dp"
                 android:text="@string/permissions_subtitle"
                 android:textColor="@color/secondary_text_color"
-                android:textSize="17sp" />
+                android:textSize="16sp" />
 
             <LinearLayout
                 android:id="@+id/permissions_list"
@@ -81,7 +81,7 @@
             <TextView
                 android:id="@+id/permissions_start"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="44dp"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_permissions_start"
                 android:clickable="true"
