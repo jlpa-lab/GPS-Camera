@@ -39,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_gravity="top"
-        android:background="#CC34312C"
+        android:background="@color/screen_background"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"

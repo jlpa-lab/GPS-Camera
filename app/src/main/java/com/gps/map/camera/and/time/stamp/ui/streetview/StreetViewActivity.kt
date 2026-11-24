@@ -29,7 +29,6 @@ import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.StreetViewSource
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation
-import com.google.android.gms.maps.model.StreetViewPanoramaCamera
 import com.google.android.gms.maps.model.RoundCap
 import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
@@ -66,10 +65,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var panoramaFullscreen: TextView
     private lateinit var mapPlace: TextView
     private lateinit var pegman: ImageView
+    private lateinit var mapLocationPegman: ImageView
     private lateinit var mapZoomIn: TextView
     private lateinit var mapZoomOut: TextView
-    private lateinit var panoramaZoomIn: TextView
-    private lateinit var panoramaZoomOut: TextView
 
     private var googleMap: GoogleMap? = null
     private val coverageRoads = mutableListOf<Polyline>()
@@ -148,10 +146,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         panoramaFullscreen = findViewById(R.id.street_view_panorama_fullscreen)
         mapPlace = findViewById(R.id.street_view_map_place)
         pegman = findViewById(R.id.street_view_pegman)
+        mapLocationPegman = findViewById(R.id.street_view_map_location_pegman)
         mapZoomIn = findViewById(R.id.street_view_map_zoom_in)
         mapZoomOut = findViewById(R.id.street_view_map_zoom_out)
-        panoramaZoomIn = findViewById(R.id.street_view_panorama_zoom_in)
-        panoramaZoomOut = findViewById(R.id.street_view_panorama_zoom_out)
 
         previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
         previewContainer.clipToOutline = true
@@ -298,8 +295,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         pegman.setOnTouchListener(::onPegmanTouch)
         mapZoomIn.setOnClickListener { zoomMap(1f) }
         mapZoomOut.setOnClickListener { zoomMap(-1f) }
-        panoramaZoomIn.setOnClickListener { zoomPanorama(0.5f) }
-        panoramaZoomOut.setOnClickListener { zoomPanorama(-0.5f) }
     }
 
     override fun onMapReady(map: GoogleMap) {
@@ -323,10 +318,12 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         map.setOnCameraIdleListener {
             // Pegman is a map marker in the reference flow, not a screen
             // sticker. Reproject it whenever the user pans or zooms.
-            selectedMapPoint?.let(::positionPegman)
+            selectedMapPoint?.let(::positionMapLocationPegman)
+            positionMapPegmanBottomRight()
         }
         map.setOnMapLoadedCallback {
-            selectedMapPoint?.let(::positionPegman)
+            selectedMapPoint?.let(::positionMapLocationPegman)
+            positionMapPegmanBottomRight()
             lastPanoramaLocation?.let(::drawCoverageRoad)
         }
         enableMyLocationLayer()
@@ -385,6 +382,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private fun onPegmanTouch(view: View, event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                view.parent?.requestDisallowInterceptTouchEvent(true)
                 view.tag = floatArrayOf(view.translationX, view.translationY)
                 downRawX = event.rawX
                 downRawY = event.rawY
@@ -400,6 +398,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 return true
             }
             MotionEvent.ACTION_UP -> {
+                view.parent?.requestDisallowInterceptTouchEvent(false)
                 val wasMoved = pegmanMoved
                 val droppedPoint = if (wasMoved) pegmanDropPoint() else null
                 view.animate().translationX(0f).translationY(0f).setDuration(160).start()
@@ -411,6 +410,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
+                view.parent?.requestDisallowInterceptTouchEvent(false)
                 view.animate().translationX(0f).translationY(0f).setDuration(160).start()
                 return true
             }
@@ -437,8 +437,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         panoramaView.visibility = if (panoramaHasLocation) View.VISIBLE else View.GONE
         panoramaLocation.visibility = if (hasPreview) View.VISIBLE else View.GONE
         panoramaFullscreen.visibility = if (hasPreview) View.VISIBLE else View.GONE
-        panoramaZoomIn.visibility = if (hasPreview) View.VISIBLE else View.GONE
-        panoramaZoomOut.visibility = if (hasPreview) View.VISIBLE else View.GONE
         tryAnotherRoad.visibility = View.GONE
         findViewById<TextView>(R.id.street_view_section_title)
             .setText(R.string.street_view_title)
@@ -472,6 +470,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         panoramaJob?.cancel()
         dragHint.visibility = View.VISIBLE
         panoramaView.visibility = View.GONE
+        mapLocationPegman.visibility = View.GONE
         panoramaLocation.visibility = View.GONE
         panoramaFullscreen.visibility = View.GONE
         hintIcon.setImageResource(R.drawable.ic_earth_map_error)
@@ -498,7 +497,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             clearCoverageRoads()
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 16f))
             selectedMapPoint = point
-            positionPegman(point)
+            positionMapLocationPegman(point)
+            positionMapPegmanBottomRight()
         }
         syncCoverageWebMap(point)
         // Resolve the nearest panorama through the same request/timeout path
@@ -522,7 +522,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         syncCoverageWebMap(point)
         mapPlace.text = formatMapPlace(selectedPlace!!)
         clearCoverageRoads()
-        positionPegman(point)
+        positionMapLocationPegman(point)
+        positionMapPegmanBottomRight()
         // A normal map tap is the quick path: resolve the nearest panorama and
         // show it immediately. Pegman remains available for another road.
         openStreetView(point, exactMapSelection = true)
@@ -539,9 +540,21 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         return map.projection.fromScreenLocation(Point(x, y))
     }
 
-    private fun positionPegman(point: LatLng) {
-        val map = googleMap ?: return
+    private fun positionMapPegmanBottomRight() {
         pegman.post {
+            if (mapContainer.width == 0 || mapContainer.height == 0) return@post
+            pegman.x = (mapContainer.width - pegman.width - dp(14)).coerceAtLeast(0).toFloat()
+            pegman.y = (mapContainer.height - pegman.height - dp(14)).coerceAtLeast(0).toFloat()
+            pegman.translationX = 0f
+            pegman.translationY = 0f
+            pegman.visibility = View.VISIBLE
+            pegman.bringToFront()
+        }
+    }
+
+    private fun positionMapLocationPegman(point: LatLng) {
+        val map = googleMap ?: return
+        mapLocationPegman.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             val screenPoint = map.projection.toScreenLocation(point)
             val mapLocation = IntArray(2)
@@ -550,13 +563,14 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             mapContainer.getLocationOnScreen(containerLocation)
             val containerX = mapLocation[0] - containerLocation[0] + screenPoint.x
             val containerY = mapLocation[1] - containerLocation[1] + screenPoint.y
-            pegman.x = (containerX - pegman.width / 2f)
-                .coerceIn(0f, (mapContainer.width - pegman.width).toFloat())
-            pegman.y = (containerY - pegman.height.toFloat())
-                .coerceIn(0f, (mapContainer.height - pegman.height).toFloat())
-            pegman.translationX = 0f
-            pegman.translationY = 0f
-            pegman.visibility = View.VISIBLE
+            mapLocationPegman.x = (containerX - mapLocationPegman.width / 2f)
+                .coerceIn(0f, (mapContainer.width - mapLocationPegman.width).toFloat())
+            mapLocationPegman.y = (containerY - mapLocationPegman.height.toFloat())
+                .coerceIn(0f, (mapContainer.height - mapLocationPegman.height).toFloat())
+            mapLocationPegman.translationX = 0f
+            mapLocationPegman.translationY = 0f
+            mapLocationPegman.visibility = View.VISIBLE
+            mapLocationPegman.bringToFront()
             pegman.bringToFront()
         }
     }
@@ -583,7 +597,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         clearCoverageRoads()
         val center = location.position ?: return
         selectedMapPoint = center
-        positionPegman(center)
+        positionMapLocationPegman(center)
+        positionMapPegmanBottomRight()
         val links = location.links.orEmpty()
         if (links.isEmpty()) return
         links.forEach { link ->
@@ -611,15 +626,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun zoomMap(amount: Float) {
         googleMap?.animateCamera(CameraUpdateFactory.zoomBy(amount))
-    }
-
-    private fun zoomPanorama(amount: Float) {
-        val currentPanorama = panorama ?: return
-        val current = currentPanorama.panoramaCamera
-        val camera = StreetViewPanoramaCamera.Builder(current)
-            .zoom((current.zoom + amount).coerceAtLeast(0f))
-            .build()
-        currentPanorama.animateTo(camera, PANORAMA_ZOOM_ANIMATION_MS)
     }
 
     private fun pointAlongBearing(start: LatLng, bearing: Float, distanceMeters: Double): LatLng {
@@ -700,7 +706,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 googleMap?.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(metadata.position, MAP_PANORAMA_ZOOM)
                 )
-                positionPegman(metadata.position)
+                positionMapLocationPegman(metadata.position)
+                positionMapPegmanBottomRight()
                 panorama?.setPosition(metadata.panoId)
             }
         }
