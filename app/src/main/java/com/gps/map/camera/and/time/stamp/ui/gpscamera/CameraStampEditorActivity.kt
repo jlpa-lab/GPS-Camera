@@ -202,7 +202,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
         }
-        addressText.text = address
+        addressText.text = editorPlaceLabel(address)
         locationClientLabel.text = getString(R.string.weather_unavailable)
 
         mapEnabled = hasMapsApiKey()
@@ -322,7 +322,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun loadAddress() {
         if (latitude.isNaN() || longitude.isNaN()) {
             address = getString(R.string.location_unavailable)
-            addressText.text = address
+            addressText.text = editorPlaceLabel(address)
             return
         }
         addressExecutor.execute {
@@ -339,9 +339,20 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
                 ?: String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
             address = displayAddress
             runOnUiThread {
-                addressText.text = displayAddress
-            refreshTemplateOverlay()
+                addressText.text = editorPlaceLabel(displayAddress)
+                refreshTemplateOverlay()
             }
+        }
+    }
+
+    /** Keeps the Tools editor's compact Place row to a useful city/region label. */
+    private fun editorPlaceLabel(value: String): String {
+        val clean = value.replace(Regex("\\s+"), " ").trim()
+        if (!toolsCameraMode || clean.isBlank()) return clean
+        val parts = clean.split(',').map(String::trim).filter(String::isNotBlank)
+        return when {
+            parts.size >= 2 -> parts.takeLast(2).joinToString(", ")
+            else -> clean
         }
     }
 

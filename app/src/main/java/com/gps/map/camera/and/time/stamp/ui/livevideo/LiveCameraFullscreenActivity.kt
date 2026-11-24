@@ -20,7 +20,7 @@ import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import kotlin.math.abs
 
-/** Landscape-only player opened by the Live Camera full-screen action. */
+/** Portrait-locked player opened by the Live Camera full-screen action. */
 class LiveCameraFullscreenActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var preview: ImageView

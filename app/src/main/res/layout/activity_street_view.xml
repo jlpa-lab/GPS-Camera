@@ -141,6 +141,14 @@
                     android:layout_height="match_parent"
                     android:visibility="gone" />
 
+                <ImageView
+                    android:id="@+id/street_view_static_panorama"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/street_view_title"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/street_view_panorama_fullscreen"
                     android:layout_width="wrap_content"
@@ -282,6 +290,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
 
+                <WebView
+                    android:id="@+id/street_view_coverage_web_map"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:visibility="gone" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="30dp"
@@ -357,6 +372,7 @@
                     android:layout_marginBottom="14dp"
                     android:clickable="true"
                     android:contentDescription="@string/street_view_pegman"
+                    android:elevation="12dp"
                     android:src="@drawable/ic_pegman_illustration" />
             </FrameLayout>
         </LinearLayout>

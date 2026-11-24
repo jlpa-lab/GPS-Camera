@@ -3,9 +3,13 @@ package com.gps.map.camera.and.time.stamp.ui.streetview
 import android.Manifest
 import android.graphics.Point
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -22,10 +26,12 @@ import com.google.android.gms.maps.StreetViewPanorama
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.maps.StreetViewPanoramaView
+import com.google.android.gms.maps.model.StreetViewSource
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.StreetViewPanoramaCamera
 import com.google.android.gms.maps.model.RoundCap
+import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
@@ -46,7 +52,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private enum class ScreenState { DRAG, RELEASE, PANORAMA, UNAVAILABLE }
 
     private lateinit var panoramaView: StreetViewPanoramaView
+    private lateinit var staticPanorama: ImageView
     private lateinit var mapView: MapView
+    private lateinit var coverageWebMap: WebView
     private lateinit var previewContainer: FrameLayout
     private lateinit var mapContainer: FrameLayout
     private lateinit var dragHint: View
@@ -85,6 +93,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private var panoramaJob: Job? = null
     private var metadataJob: Job? = null
     private var panoramaRequest = 0
+    private var pendingPanoramaId: String? = null
+    private var coverageWebMapReady = false
     private val locationProvider by lazy { GpsLocationProvider(this) }
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -124,7 +134,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun bindViews() {
         panoramaView = findViewById(R.id.street_view_panorama)
+        staticPanorama = findViewById(R.id.street_view_static_panorama)
         mapView = findViewById(R.id.street_view_aerial_map)
+        coverageWebMap = findViewById(R.id.street_view_coverage_web_map)
         previewContainer = findViewById(R.id.street_view_preview_container)
         mapContainer = findViewById(R.id.street_view_map_container)
         dragHint = findViewById(R.id.street_view_drag_hint)
@@ -154,7 +166,106 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         // vertical move during a pinch can otherwise be interpreted as page
         // scrolling instead of Google Maps zoom/pan input.
         protectMapGestures(mapView)
+        protectMapGestures(coverageWebMap)
         protectMapGestures(panoramaView)
+        setupCoverageWebMap()
+    }
+
+    private fun setupCoverageWebMap() {
+        val apiKey = mapsApiKey() ?: return
+        coverageWebMap.settings.javaScriptEnabled = true
+        coverageWebMap.settings.domStorageEnabled = true
+        coverageWebMap.settings.allowFileAccess = false
+        coverageWebMap.addJavascriptInterface(CoverageMapBridge(), "Android")
+        coverageWebMap.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                // Keep the native map visible until the JavaScript API confirms that
+                // the coverage layer was created. This preserves the native fallback
+                // when the key/network does not allow the Maps JS API to load.
+                coverageWebMapReady = false
+            }
+        }
+        coverageWebMap.loadDataWithBaseURL(
+            "https://maps.google.com",
+            coverageMapHtml(apiKey),
+            "text/html",
+            "UTF-8",
+            null
+        )
+    }
+
+    private fun coverageMapHtml(apiKey: String): String {
+        val point = selectedPlace?.let { "${it.latitude},${it.longitude}" } ?: "0,0"
+        val latitudeText = point.substringBefore(',')
+        val longitudeText = point.substringAfter(',')
+        return """
+            <!doctype html><html><head>
+              <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+              <style>html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#dfe8e4}</style>
+            </head><body><div id="map"></div>
+            <script>
+              let coverageMap;
+              async function initStreetCoverage() {
+                const maps = await google.maps.importLibrary("maps");
+                const streetView = await google.maps.importLibrary("streetView");
+                coverageMap = new maps.Map(document.getElementById("map"), {
+                  center: {lat: $latitudeText, lng: $longitudeText}, zoom: 16,
+                  clickableIcons: false, streetViewControl: false,
+                  fullscreenControl: false, mapTypeControl: false, zoomControl: false,
+                  styles: [{featureType:"poi",stylers:[{visibility:"off"}]}]
+                });
+                const coverage = new streetView.StreetViewCoverageLayer();
+                coverage.setMap(coverageMap);
+                coverageMap.addListener("click", function(event) {
+                  if (event.latLng && window.Android) {
+                    window.Android.onMapClicked(event.latLng.lat(), event.latLng.lng());
+                  }
+                });
+                if (window.Android) window.Android.onMapReady();
+              }
+              function moveCoverageMap(lat, lng) {
+                if (coverageMap) coverageMap.panTo({lat:lat,lng:lng});
+              }
+            </script>
+            <script async defer src="https://maps.googleapis.com/maps/api/js?key=$apiKey&callback=initStreetCoverage"></script>
+            </body></html>
+        """.trimIndent()
+    }
+
+    private fun mapsApiKey(): String? = runCatching {
+        packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
+            .metaData?.getString("com.google.android.geo.API_KEY")
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    private fun initialCoveragePoint(): LatLng? = selectedMapPoint
+        ?: selectedPlace?.let { LatLng(it.latitude, it.longitude) }
+        ?: googleMap?.cameraPosition?.target
+
+    private fun syncCoverageWebMap(point: LatLng) {
+        if (!coverageWebMapReady) return
+        coverageWebMap.post {
+            coverageWebMap.evaluateJavascript(
+                "moveCoverageMap(${point.latitude},${point.longitude})",
+                null
+            )
+        }
+    }
+
+    private inner class CoverageMapBridge {
+        @JavascriptInterface
+        fun onMapReady() {
+            runOnUiThread {
+                coverageWebMapReady = true
+                coverageWebMap.visibility = View.VISIBLE
+                initialCoveragePoint()?.let(::syncCoverageWebMap)
+            }
+        }
+
+        @JavascriptInterface
+        fun onMapClicked(latitude: Double, longitude: Double) {
+            runOnUiThread { selectMapPoint(LatLng(latitude, longitude)) }
+        }
     }
 
     private fun protectMapGestures(mapSurface: View) {
@@ -216,12 +327,15 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
         map.setOnMapLoadedCallback {
             selectedMapPoint?.let(::positionPegman)
+            lastPanoramaLocation?.let(::drawCoverageRoad)
         }
         enableMyLocationLayer()
-        selectedPlace?.let { drawPlace(it) } ?: run {
+        selectedPlace?.let { drawPlace(it) }
+        if (selectedPlace == null) {
             resetPegmanToCorner()
             lastPanoramaLocation?.let(::drawCoverageRoad)
         }
+        initialCoveragePoint()?.let(::syncCoverageWebMap)
     }
 
     private fun enableMyLocationLayer() {
@@ -251,6 +365,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 panoramaHasLocation = false
             } else {
                 panoramaHasLocation = true
+                pendingPanoramaId = null
+                staticPanorama.visibility = View.GONE
                 panoramaJob?.cancel()
                 drawCoverageRoad(location)
                 showPreviewState()
@@ -259,7 +375,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         // The preview is the default state. If the panorama callback arrived
         // after the place was loaded, request that place now instead of waiting
         // for a Pegman drag.
-        selectedPlace?.let {
+        pendingPanoramaId?.let {
+            readyPanorama.setPosition(it)
+        } ?: selectedPlace?.let {
             requestPanorama(LatLng(it.latitude, it.longitude))
         } ?: showPreviewState()
     }
@@ -313,9 +431,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun showPreviewState() {
         state = ScreenState.PANORAMA
-        val hasPreview = selectedPlace != null && panorama != null && panoramaHasLocation
+        val hasPreview = selectedPlace != null &&
+            ((panorama != null && panoramaHasLocation) || staticPanorama.visibility == View.VISIBLE)
         dragHint.visibility = if (hasPreview) View.GONE else View.VISIBLE
-        panoramaView.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaView.visibility = if (panoramaHasLocation) View.VISIBLE else View.GONE
         panoramaLocation.visibility = if (hasPreview) View.VISIBLE else View.GONE
         panoramaFullscreen.visibility = if (hasPreview) View.VISIBLE else View.GONE
         panoramaZoomIn.visibility = if (hasPreview) View.VISIBLE else View.GONE
@@ -381,6 +500,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             selectedMapPoint = point
             positionPegman(point)
         }
+        syncCoverageWebMap(point)
         // Resolve the nearest panorama through the same request/timeout path
         // used by map taps. This also covers the case where the location fix
         // arrives after the panorama view has already initialized.
@@ -388,6 +508,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun selectMapPoint(point: LatLng) {
+        Log.d(TAG, "selectMapPoint ${point.latitude},${point.longitude}")
         manualPlaceSelected = true
         shouldUseCurrentLocation = false
         val current = selectedPlace ?: EarthPlace(
@@ -398,6 +519,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         )
         selectedPlace = current.copy(latitude = point.latitude, longitude = point.longitude)
         selectedMapPoint = point
+        syncCoverageWebMap(point)
         mapPlace.text = formatMapPlace(selectedPlace!!)
         clearCoverageRoads()
         positionPegman(point)
@@ -435,6 +557,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             pegman.translationX = 0f
             pegman.translationY = 0f
             pegman.visibility = View.VISIBLE
+            pegman.bringToFront()
         }
     }
 
@@ -445,11 +568,18 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             pegman.translationX = 0f
             pegman.translationY = 0f
             pegman.visibility = View.VISIBLE
+            pegman.bringToFront()
         }
     }
 
     private fun drawCoverageRoad(location: StreetViewPanoramaLocation) {
-        val map = googleMap ?: return
+        val map = googleMap ?: run {
+            // The panorama and map are independent async surfaces. Keep the
+            // location so the coverage overlay is drawn as soon as the map is
+            // ready instead of losing it during initialization.
+            lastPanoramaLocation = location
+            return
+        }
         clearCoverageRoads()
         val center = location.position ?: return
         selectedMapPoint = center
@@ -543,12 +673,15 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun requestPanorama(point: LatLng, radiusMeters: Int = PANORAMA_SEARCH_RADIUS_METERS) {
+        Log.d(TAG, "requestPanorama ${point.latitude},${point.longitude} radius=$radiusMeters")
         val request = ++panoramaRequest
         panoramaJob?.cancel()
         metadataJob?.cancel()
         panoramaHasLocation = false
+        pendingPanoramaId = null
+        staticPanorama.visibility = View.GONE
         showPreviewState()
-        panorama?.setPosition(point, radiusMeters)
+        panorama?.setPosition(point, radiusMeters, StreetViewSource.OUTDOOR)
 
         // The Android panorama SDK can take a long time to resolve a LatLng,
         // especially after a map tap. Resolve the same point through Google's
@@ -559,7 +692,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             delay(STREET_VIEW_METADATA_FALLBACK_DELAY_MS)
             if (request != panoramaRequest || panoramaHasLocation) return@launch
             val metadata = withContext(Dispatchers.IO) { findStreetViewMetadata(point, radiusMeters) }
+            Log.d(TAG, "metadata result=${metadata != null} request=$request current=$panoramaRequest")
             if (request == panoramaRequest && !panoramaHasLocation && metadata != null) {
+                pendingPanoramaId = metadata.panoId
+                showStaticPanorama(metadata.panoId)
                 selectedMapPoint = metadata.position
                 googleMap?.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(metadata.position, MAP_PANORAMA_ZOOM)
@@ -581,11 +717,29 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
+    private fun showStaticPanorama(panoId: String) {
+        val apiKey = runCatching {
+            packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
+                .metaData?.getString("com.google.android.geo.API_KEY")
+        }.getOrNull()?.takeIf { !it.isNullOrBlank() } ?: return
+        val imageUrl = "https://maps.googleapis.com/maps/api/streetview" +
+            "?size=640x588&pano=$panoId&heading=0&pitch=0&fov=90&key=$apiKey"
+        Glide.with(this)
+            .load(imageUrl)
+            .dontAnimate()
+            .into(staticPanorama)
+        staticPanorama.visibility = View.VISIBLE
+        showPreviewState()
+    }
+
     private fun findStreetViewMetadata(point: LatLng, radiusMeters: Int): StreetViewMetadata? {
         val apiKey = runCatching {
             packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
                 .metaData?.getString("com.google.android.geo.API_KEY")
-        }.getOrNull()?.takeIf { !it.isNullOrBlank() } ?: return null
+        }.getOrNull()?.takeIf { !it.isNullOrBlank() } ?: run {
+            Log.w(TAG, "Google Maps API key missing for Street View metadata")
+            return null
+        }
         val endpoint = URL(
             "https://maps.googleapis.com/maps/api/streetview/metadata" +
                 "?location=${point.latitude},${point.longitude}" +
@@ -597,16 +751,23 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             readTimeout = STREET_VIEW_METADATA_TIMEOUT_MS.toInt()
         }
         return try {
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                Log.w(TAG, "Street View metadata HTTP ${connection.responseCode}")
+                return null
+            }
             val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-            if (json.optString("status") != "OK") return null
+            if (json.optString("status") != "OK") {
+                Log.w(TAG, "Street View metadata status=${json.optString("status")}")
+                return null
+            }
             val location = json.optJSONObject("location") ?: return null
             val panoId = json.optString("pano_id").takeIf { it.isNotBlank() } ?: return null
             StreetViewMetadata(
                 panoId,
                 LatLng(location.optDouble("lat"), location.optDouble("lng"))
             )
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
+            Log.w(TAG, "Street View metadata request failed", exception)
             null
         } finally {
             connection.disconnect()
@@ -686,6 +847,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         locationProvider.stopLocationUpdates()
         mapView.onDestroy()
         panoramaView.onDestroy()
+        coverageWebMap.destroy()
         super.onDestroy()
     }
 
@@ -696,6 +858,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     companion object {
+        private const val TAG = "StreetViewActivity"
         private const val NORMAL_PREVIEW_HEIGHT_DP = 280
         private const val NORMAL_MAP_HEIGHT_DP = 270
         private const val FULLSCREEN_PANEL_HEIGHT_DP = 680

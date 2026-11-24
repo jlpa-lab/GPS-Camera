@@ -155,7 +155,7 @@
         <activity
             android:name=".ui.livevideo.LiveCameraFullscreenActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.LiveCameraFullscreen"
             tools:ignore="LockedOrientationActivity" />
 

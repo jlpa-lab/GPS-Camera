@@ -716,9 +716,9 @@ class GpsVideoActivity : AppCompatActivity() {
         cameraContent.visibility = if (cameraVisible) View.VISIBLE else View.GONE
         previewContent.visibility = if (next == ScreenState.PREVIEW) View.VISIBLE else View.GONE
         failedContent.visibility = if (next == ScreenState.SAVE_FAILED) View.VISIBLE else View.GONE
-        readyTopBar.visibility = if (next == ScreenState.READY) View.VISIBLE else View.GONE
-        // Keep recording chrome on top of the live camera feed. The elapsed-time
-        // indicator is the only recording status shown while the camera is active.
+        // Keep the normal GPS Video header visible while recording. The timer is
+        // separate recording status and sits below this header on the preview.
+        readyTopBar.visibility = if (cameraVisible) View.VISIBLE else View.GONE
         recordingTopBar.visibility = View.GONE
         readyControls.visibility = if (next == ScreenState.READY) View.VISIBLE else View.GONE
         recordingControls.visibility = if (next == ScreenState.RECORDING) View.VISIBLE else View.GONE
