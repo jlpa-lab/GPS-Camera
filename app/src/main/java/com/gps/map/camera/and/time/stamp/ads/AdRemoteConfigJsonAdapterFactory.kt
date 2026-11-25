@@ -51,6 +51,7 @@ class AdRemoteConfigJsonAdapterFactory : JsonAdapter.Factory {
                 var enableUaCheck = false
                 var reloadIntervalSeconds: Int? = null
                 var colorCTA = "default"
+                var colorBG = "default"
                 var heightCTA = 45
                 var positionCTA = "BOTTOM"
                 var components: List<String> = listOf("icon_headline", "body", "media", "cta")
@@ -62,6 +63,7 @@ class AdRemoteConfigJsonAdapterFactory : JsonAdapter.Factory {
                         "enable_ua_check" -> enableUaCheck = reader.nextBoolean()
                         "reloadIntervalSeconds" -> reloadIntervalSeconds = reader.nextInt()
                         "colorCTA" -> colorCTA = safeNextString(reader, "default")
+                        "colorBG" -> colorBG = safeNextString(reader, "default")
                         "heightCTA" -> heightCTA = readHeightValue(reader)
                         "positionCTA" -> positionCTA = safeNextString(reader, "BOTTOM").uppercase(Locale.US)
                         "components" -> components = readComponentsList(reader)
@@ -76,6 +78,7 @@ class AdRemoteConfigJsonAdapterFactory : JsonAdapter.Factory {
                     enableUaCheck = enableUaCheck,
                     reloadIntervalSeconds = reloadIntervalSeconds,
                     colorCTA = colorCTA,
+                    colorBG = colorBG,
                     heightCTA = heightCTA,
                     positionCTA = positionCTA,
                     components = components

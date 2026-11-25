@@ -105,7 +105,9 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
         // Display the same layout instance used by binding so the splash banner is visible.
         setContentView(binding.root)
         Log.d("AppEvent", "SplashActivity")
-        OneSignal.initWithContext(applicationContext, getString(R.string.onesignal_app_id))
+        // OneSignal is initialized after Remote Config resolves so the app can
+        // change the provider ID without shipping a new APK. Invalid placeholder
+        // IDs are deliberately ignored instead of crashing startup.
     //    RemoteConfigUtils.init(this, this)
 
         val track = findViewById<View>(R.id.splash_loader_track)
@@ -275,12 +277,16 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
 
     override fun loadSuccess() {
         getConfigSuccess = true
+        if (!RemoteConfigUtils.getShowAds()) {
+            AdsManager.clearAll()
+        }
+        initializeOneSignalIfConfigured()
     }
 
     override fun onResume() {
         super.onResume()
         // Re-check network state when returning to app (e.g. after changing settings in Wi-Fi screen)
-        if (!isCheckingNetworkForStartup && isNetwork()) {
+        if (!isCheckingNetworkForStartup && isNetwork() && RemoteConfigUtils.getShowAds()) {
             noInternetDialog?.dismiss()
             ERainAd.getInstance().onCheckShowSplashWhenFail(this@SplashActivity, object : AdCallback() {
                 override fun onNextAction() {
@@ -295,6 +301,12 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
 
     private fun checkRemoteConfigResult() {
         AdRemoteConfig.initialize(this, RemoteConfigUtils.getAdRemoteConfig())
+        if (!RemoteConfigUtils.getShowAds()) {
+            AdsManager.clearAll()
+            AppOpenManager.getInstance().disableAppResume()
+            moveActivity()
+            return
+        }
         loadSplashBanner()
         if (!isFromUninstallShortcut) {
             loadNativeLanguage(
@@ -383,6 +395,19 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
                 networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||     // 1
                 networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)   // 3
         return hasTransport && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    private fun initializeOneSignalIfConfigured() {
+        val appId = RemoteConfigUtils.getOneSignalAppId(this).trim()
+        val isUuid = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
+            .matches(appId)
+        if (!isUuid || appId == "00000000-0000-0000-0000-000000000000") return
+
+        runCatching {
+            OneSignal.initWithContext(applicationContext, appId)
+        }.onFailure { error ->
+            Log.w("OneSignal", "OneSignal initialization skipped", error)
+        }
     }
 
 

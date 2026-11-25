@@ -156,16 +156,17 @@
     "enable_ua_check": false
   },
   "native_home": {
-    "id": "ca-app-pub-2864154863223892/5390123042",
+    "id": "ca-app-pub-7462273888693209/9504635011",
     "isEnable": true,
     "colorCTA": "default",
-    "heightCTA": 45,
+    "colorBG": "#182638",
+    "heightCTA": 40,
     "positionCTA": "BOTTOM",
     "components": ["icon_headline", "body", "media", "cta"],
     "enable_ua_check": false
   },
   "native_all": {
-    "id": "ca-app-pub-2864154863223892/4448576461",
+    "id": "ca-app-pub-7462273888693209/2269801964",
     "isEnable": true,
     "colorCTA": "default",
     "heightCTA": 45,
@@ -202,10 +203,11 @@
     "components": ["icon_headline", "body", "media", "cta"],
     "enable_ua_check": false
   },
-  "native_welcome": {
-    "id": "ca-app-pub-7208941695689653/9849017274",
-    "isEnable": false,
+  "native_welcome_back": {
+    "id": "ca-app-pub-7462273888693209/3093984387",
+    "isEnable": true,
     "colorCTA": "default",
+    "colorBG": "#FFFFFF",
     "heightCTA": 45,
     "positionCTA": "BOTTOM",
     "components": ["icon_headline", "body", "media", "cta"],

@@ -7,7 +7,8 @@
     <string name="no_internet_title">No Internet Connection</string>
     <string name="no_internet_message">We couldn\'t load the data.&#10;Please check your internet&#10;connection.</string>
     <string name="no_internet_connect">Connect internet</string>
-    <string name="onesignal_app_id" translatable="false">00000000-0000-0000-0000-000000000000</string>
+    <!-- Set the GPS Camera OneSignal App ID here or via Firebase Remote Config. -->
+    <string name="onesignal_app_id" translatable="false"></string>
     <string name="notification_friend_entered">%1$s entered %2$s</string>
     <string name="notification_friend_left">%1$s left %2$s</string>
     <string name="notification_entry_alert">%1$s · Entry alert</string>

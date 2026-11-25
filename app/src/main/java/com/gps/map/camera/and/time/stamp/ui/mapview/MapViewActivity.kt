@@ -47,6 +47,8 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAllAd
 import com.gps.map.camera.and.time.stamp.bases.ext.isNetwork
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
@@ -60,7 +62,6 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import android.view.animation.LinearInterpolator
 import androidx.activity.OnBackPressedCallback
-import com.gps.map.camera.and.time.stamp.ads.AdsManager
 
 class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -83,6 +84,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     private lateinit var searchProgress: ProgressBar
     private lateinit var searchResults: RecyclerView
     private lateinit var searchModePanel: View
+    private lateinit var nativeAllSearchSlot: View
     private lateinit var resultsContent: View
     private lateinit var resultsTitle: TextView
     private lateinit var mapLoading: View
@@ -148,12 +150,15 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map_view)
+        AdsManager.loadNativeAll(this, R.layout.layout_native_ad_small)
+        bindNativeAllAd(this, findViewById(R.id.native_all_container))
 
         mapView = findViewById(R.id.map_view)
         searchInput = findViewById(R.id.map_view_search_input)
         searchProgress = findViewById(R.id.map_view_search_progress)
         searchResults = findViewById(R.id.map_view_search_results)
         searchModePanel = findViewById(R.id.map_view_search_mode)
+        nativeAllSearchSlot = findViewById(R.id.map_view_native_all_search_slot)
         resultsContent = findViewById(R.id.map_view_results_content)
         resultsTitle = findViewById(R.id.map_view_results_title)
         mapLoading = findViewById(R.id.map_view_loading)
@@ -510,12 +515,14 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         setPlaceDetailsMode(false)
         renderRecentSearches()
         searchModePanel.visibility = View.VISIBLE
+        nativeAllSearchSlot.visibility = View.VISIBLE
         findViewById<View>(R.id.map_view_container).visibility = View.GONE
         uiState = UiState.SEARCH
     }
 
     private fun hideSearchMode() {
         searchModePanel.visibility = View.GONE
+        nativeAllSearchSlot.visibility = View.GONE
         findViewById<View>(R.id.map_view_container).visibility = View.VISIBLE
     }
 
@@ -528,6 +535,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         stylePanel.visibility = View.GONE
         placeDetails.visibility = View.GONE
         searchModePanel.visibility = View.GONE
+        nativeAllSearchSlot.visibility = View.GONE
         findViewById<View>(R.id.map_view_container).visibility = View.GONE
         statePanel.visibility = View.VISIBLE
 

@@ -4,11 +4,13 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.ads.banner_collapsible_home
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAdSlot
 import com.gps.map.camera.and.time.stamp.utils.Routes
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -23,6 +25,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             view.findViewById(R.id.fr_banner_collapsible_home),
             isCollapse = true
         )
+
+        val activity = requireActivity() as AppCompatActivity
+        bindNativeAdSlot(
+            activity = activity,
+            root = view.findViewById(R.id.native_home_container),
+            adLive = AdsManager.nativeHomeAdLive,
+            loadingLive = AdsManager.nativeHomeLoadingLive,
+            adContainerId = R.id.native_home_ad,
+            shimmerId = R.id.shimmer_native_home,
+        )
+        AdsManager.loadNativeHome(activity, R.layout.layout_native_home)
         configureFeatureCard(
             view.findViewById(R.id.card_earth_view),
             R.string.home_earth_view,

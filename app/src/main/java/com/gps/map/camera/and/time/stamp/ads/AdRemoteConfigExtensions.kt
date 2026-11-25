@@ -83,8 +83,11 @@ val AdRemoteConfig.Companion.native_survey: AdUnitConfig
 val AdRemoteConfig.Companion.native_confirm_uninstall: AdUnitConfig
     get() = getInstance().native_confirm_uninstall
 
+val AdRemoteConfig.Companion.native_welcome_back: AdUnitConfig
+    get() = getInstance().native_welcome_back
+
 val AdRemoteConfig.Companion.native_welcome: AdUnitConfig
-    get() = getInstance().native_welcome
+    get() = native_welcome_back
 
 val AdRemoteConfig.Companion.inter_welcome: AdUnitConfig
     get() = getInstance().inter_welcome

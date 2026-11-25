@@ -14,7 +14,6 @@ import com.ads.module.ads.wrapper.ApNativeAd
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.gms.ads.nativead.NativeAdView
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.bases.ext.dpToPx
@@ -36,7 +35,14 @@ fun populateNativeAdView(
     val config = AdsManager.getAdConfig(apNativeAd)
 
     val adView = LayoutInflater.from(activity)
-        .inflate(apNativeAd.layoutCustomNative, null) as NativeAdView
+        .inflate(apNativeAd.layoutCustomNative, null) as? NativeAdView ?: run {
+        containerShimmerLoading.stopShimmer()
+        containerShimmerLoading.visibility = View.GONE
+        adPlaceHolder.visibility = View.GONE
+        return
+    }
+
+    applyAdBackground(adView, config?.colorBG)
 
     if (config?.key == "native_all") {
         adView.findViewById<View>(R.id.ad_container)
@@ -74,54 +80,38 @@ fun populateNativeAdView(
         applyCtaColor(ctaButton, config?.colorCTA)
     }
 
-    // Dynamic component reordering and visibility control
+    // Keep the reference layout's stable structure and only toggle optional blocks.
+    // Re-parenting these views at runtime changes ConstraintLayout/LinearLayout
+    // params and was the reason the home ad could render with the wrong size.
     if (config != null) {
         val validKeys = setOf("icon_headline", "body", "media", "cta")
         var enabledComponents = config.components
         if (enabledComponents.isEmpty() || enabledComponents.none { it in validKeys }) {
             enabledComponents = listOf("icon_headline", "body", "media", "cta")
         }
-        val blockMap = mutableMapOf<String, View>()
-
-        adView.findViewById<View>(R.id.block_icon_headline)?.let { blockMap["icon_headline"] = it }
-        adView.findViewById<View>(R.id.ad_body)?.let { blockMap["body"] = it }
-        adView.findViewById<View>(R.id.ad_media)?.let { blockMap["media"] = it }
-        adView.findViewById<View>(R.id.ad_call_to_action)?.let { blockMap["cta"] = it }
-
-        val adContainer = adView.findViewById<View>(R.id.ad_container) as? LinearLayout
-        if (adContainer != null) {
-            // Option 2: Dynamic reordering in LinearLayout container
-            blockMap.values.forEach { view ->
-                (view.parent as? ViewGroup)?.removeView(view)
-                view.visibility = View.GONE
-            }
-            enabledComponents.forEach { componentName ->
-                blockMap[componentName]?.let { view ->
-                    adContainer.addView(view)
-                    view.visibility = View.VISIBLE
-                }
-            }
-        } else {
-            // Option 1 fallback: Toggle visibility on existing flat structures
-            val showIconHeadline = enabledComponents.contains("icon_headline")
-            val blockIconHeadline = adView.findViewById<View>(R.id.block_icon_headline)
-            if (blockIconHeadline != null) {
-                blockIconHeadline.visibility = if (showIconHeadline) View.VISIBLE else View.GONE
-            } else {
-                adView.findViewById<View>(R.id.ad_app_icon)?.visibility = if (showIconHeadline) View.VISIBLE else View.GONE
-                adView.findViewById<View>(R.id.ad_icon)?.visibility = if (showIconHeadline) View.VISIBLE else View.GONE
-                adView.findViewById<View>(R.id.ad_headline)?.visibility = if (showIconHeadline) View.VISIBLE else View.GONE
-                adView.findViewById<View>(R.id.ad_advertiser)?.visibility = if (showIconHeadline) View.VISIBLE else View.GONE
-            }
-            adView.findViewById<View>(R.id.ad_body)?.visibility = if (enabledComponents.contains("body")) View.VISIBLE else View.GONE
-            adView.findViewById<View>(R.id.ad_media)?.visibility = if (enabledComponents.contains("media")) View.VISIBLE else View.GONE
-            adView.findViewById<View>(R.id.ad_call_to_action)?.visibility = if (enabledComponents.contains("cta")) View.VISIBLE else View.GONE
-        }
+        val showIconHeadline = enabledComponents.contains("icon_headline")
+        adView.findViewById<View>(R.id.block_icon_headline)?.visibility =
+            if (showIconHeadline) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_app_icon)?.visibility =
+            if (showIconHeadline) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_icon)?.visibility =
+            if (showIconHeadline) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_headline)?.visibility =
+            if (showIconHeadline) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_advertiser)?.visibility =
+            if (showIconHeadline) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_body)?.visibility =
+            if (enabledComponents.contains("body")) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_media)?.visibility =
+            if (enabledComponents.contains("media")) View.VISIBLE else View.GONE
+        adView.findViewById<View>(R.id.ad_call_to_action)?.visibility =
+            if (enabledComponents.contains("cta")) View.VISIBLE else View.GONE
     }
 
     Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.admobNativeAd, adView)
     adPlaceHolder.removeAllViews()
     adPlaceHolder.addView(adView)
+    AdAnalytics.shown(config?.key ?: "unknown", "native", config?.id)
     // A loading update can be delivered after the ad update because the two
     // LiveData streams are independent. Re-assert the final loaded state after
     // the view is attached so the shimmer cannot remain over the ad.
@@ -158,6 +148,17 @@ private fun applyCtaColor(ctaButton: View, colorCTA: String?) {
     }
 }
 
+private fun applyAdBackground(adView: NativeAdView, colorBG: String?) {
+    if (colorBG.isNullOrBlank() || colorBG.equals("default", ignoreCase = true)) return
+    val color = runCatching { Color.parseColor(colorBG) }.getOrNull() ?: return
+    val target = adView.findViewById<View>(R.id.ad_container) ?: adView
+    target.background = GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = 18.dpToPx(adView.context).toFloat()
+        setStroke(1.dpToPx(adView.context).toInt(), Color.argb(90, 126, 188, 255))
+    }
+}
+
 /**
  * ERainAd extension – explicit ctaHeightInDp, kept for backward-compat.
  */
@@ -174,7 +175,15 @@ fun ERainAd.populateNativeAdView(
     }
 
     val adView: NativeAdView =
-        LayoutInflater.from(activity).inflate(apNativeAd.layoutCustomNative, null) as NativeAdView
+        (LayoutInflater.from(activity)
+            .inflate(apNativeAd.layoutCustomNative, null) as? NativeAdView) ?: run {
+            containerShimmerLoading.stopShimmer()
+            containerShimmerLoading.visibility = View.GONE
+            adPlaceHolder.visibility = View.GONE
+            return
+        }
+
+    applyAdBackground(adView, AdsManager.getAdConfig(apNativeAd)?.colorBG)
 
     containerShimmerLoading.stopShimmer()
     containerShimmerLoading.visibility = View.GONE

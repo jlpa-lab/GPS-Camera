@@ -1,8 +1,10 @@
 package com.gps.map.camera.and.time.stamp.ui.streetview
 
 import android.Manifest
+import android.content.Context
 import android.graphics.Point
 import android.os.Bundle
+import android.text.Editable
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -11,12 +13,20 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import android.widget.Toast
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -34,11 +44,16 @@ import com.google.android.gms.maps.model.RoundCap
 import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAllAd
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
+import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
+import com.gps.map.camera.and.time.stamp.ui.earthview.EarthViewPlaceAdapter
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -70,6 +85,11 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var mapLocationPegman: ImageView
     private lateinit var mapZoomIn: TextView
     private lateinit var mapZoomOut: TextView
+    private lateinit var streetSearchIcon: View
+    private lateinit var streetSearchOverlay: View
+    private lateinit var streetSearchInput: EditText
+    private lateinit var streetSearchResults: RecyclerView
+    private lateinit var streetPlaceAdapter: EarthViewPlaceAdapter
 
     private var googleMap: GoogleMap? = null
     private val coverageRoads = mutableListOf<Polyline>()
@@ -95,6 +115,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private var panoramaRequest = 0
     private var pendingPanoramaId: String? = null
     private var coverageWebMapReady = false
+    private var streetSearchJob: Job? = null
+    private var streetSearchDebounceJob: Job? = null
+    private var streetSearchMode = false
+    private var updatingStreetSearchText = false
     private val locationProvider by lazy { GpsLocationProvider(this) }
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -112,6 +136,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_street_view)
+        AdsManager.loadNativeAll(this, R.layout.layout_native_ad_small)
+        bindNativeAllAd(this, findViewById(R.id.native_all_container))
         bindViews()
         AdsManager.loadInterHome(this, ignoreLimit = true)
         AdsManager.loadInterBack(this, ignoreLimit = true)
@@ -159,6 +185,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         mapLocationPegman = findViewById(R.id.street_view_map_location_pegman)
         mapZoomIn = findViewById(R.id.street_view_map_zoom_in)
         mapZoomOut = findViewById(R.id.street_view_map_zoom_out)
+        streetSearchIcon = findViewById(R.id.street_view_search_icon)
+        streetSearchOverlay = findViewById(R.id.street_view_search_overlay)
+        streetSearchInput = findViewById(R.id.street_view_search_input)
+        streetSearchResults = findViewById(R.id.street_view_search_results)
+        streetPlaceAdapter = EarthViewPlaceAdapter(::selectSearchPlace)
+        streetSearchResults.layoutManager = LinearLayoutManager(this)
+        streetSearchResults.adapter = streetPlaceAdapter
         previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
         previewContainer.clipToOutline = true
         mapContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
@@ -289,7 +322,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun bindActions() {
         findViewById<View>(R.id.street_view_back).setOnClickListener {
-            if (state == ScreenState.PANORAMA) {
+            if (streetSearchMode) {
+                hideStreetSearch()
+            } else if (state == ScreenState.PANORAMA) {
                 finish()
             } else if (mapFullscreen) {
                 toggleMapFullscreen()
@@ -301,6 +336,45 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             .setOnClickListener { toggleMapFullscreen() }
         panoramaFullscreen.setOnClickListener { togglePanoramaFullscreen() }
         tryAnotherRoad.setOnClickListener { openStreetView() }
+        streetSearchIcon.setOnClickListener { startStreetSearch() }
+        findViewById<View>(R.id.street_view_search_button).setOnClickListener {
+            searchStreetPlaces(streetSearchInput.text.toString())
+        }
+        findViewById<View>(R.id.street_view_clear_search).setOnClickListener {
+            streetSearchInput.text?.clear()
+        }
+        streetSearchInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) showStreetSearch()
+        }
+        streetSearchInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                searchStreetPlaces(streetSearchInput.text.toString())
+                true
+            } else {
+                false
+            }
+        }
+        streetSearchInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
+            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = text?.toString()?.trim().orEmpty()
+                findViewById<View>(R.id.street_view_clear_search).visibility =
+                    if (query.isEmpty()) View.GONE else View.VISIBLE
+                if (updatingStreetSearchText || query.length < MIN_STREET_SEARCH_QUERY_LENGTH) {
+                    streetSearchDebounceJob?.cancel()
+                    if (query.isEmpty()) streetSearchResults.visibility = View.GONE
+                    return
+                }
+                streetSearchDebounceJob?.cancel()
+                streetSearchDebounceJob = lifecycleScope.launch {
+                    delay(STREET_SEARCH_DEBOUNCE_MS)
+                    searchStreetPlaces(query)
+                }
+            }
+
+            override fun afterTextChanged(text: Editable?) = Unit
+        })
         pegman.setOnTouchListener(::onPegmanTouch)
         mapZoomIn.setOnClickListener { zoomMap(1f) }
         mapZoomOut.setOnClickListener { zoomMap(-1f) }
@@ -438,6 +512,96 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         showPreviewState()
     }
 
+    private fun startStreetSearch() {
+        showStreetSearch()
+        streetSearchInput.requestFocus()
+        streetSearchInput.post {
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                ?.showSoftInput(streetSearchInput, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun showStreetSearch() {
+        streetSearchMode = true
+        streetSearchOverlay.visibility = View.VISIBLE
+        streetSearchIcon.visibility = View.GONE
+        findViewById<View>(R.id.street_view_title).visibility = View.VISIBLE
+        updateStreetContentPosition()
+    }
+
+    private fun hideStreetSearch() {
+        streetSearchMode = false
+        streetSearchJob?.cancel()
+        streetSearchDebounceJob?.cancel()
+        streetSearchResults.visibility = View.GONE
+        streetSearchOverlay.visibility = View.GONE
+        streetSearchIcon.visibility = View.VISIBLE
+        findViewById<View>(R.id.street_view_title).visibility = View.VISIBLE
+        updateStreetContentPosition()
+        streetSearchInput.clearFocus()
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+            ?.hideSoftInputFromWindow(streetSearchInput.windowToken, 0)
+    }
+
+    private fun updateStreetContentPosition() {
+        val contentScroll = findViewById<View>(R.id.street_view_content_scroll)
+        val params = contentScroll.layoutParams as? ConstraintLayout.LayoutParams ?: return
+        params.topToTop = ConstraintLayout.LayoutParams.UNSET
+        params.topToBottom = if (streetSearchMode) {
+            R.id.street_view_search_overlay
+        } else {
+            R.id.street_view_header
+        }
+        params.topMargin = 0
+        contentScroll.layoutParams = params
+    }
+
+    private fun searchStreetPlaces(rawQuery: String) {
+        val query = rawQuery.trim()
+        if (query.length < MIN_STREET_SEARCH_QUERY_LENGTH) return
+        streetSearchDebounceJob?.cancel()
+        streetSearchJob?.cancel()
+        showStreetSearch()
+        streetSearchResults.visibility = View.GONE
+        streetSearchJob = lifecycleScope.launch {
+            try {
+                val places = withContext(Dispatchers.IO) {
+                    EarthPlaceSearch.search(query)
+                }
+                if (!isActive) return@launch
+                streetPlaceAdapter.submitList(places)
+                streetSearchResults.visibility = if (places.isEmpty()) View.GONE else View.VISIBLE
+                if (places.isEmpty()) {
+                    Toast.makeText(
+                        this@StreetViewActivity,
+                        R.string.earth_view_no_places_message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                if (isActive) {
+                    Toast.makeText(
+                        this@StreetViewActivity,
+                        R.string.earth_view_map_failed_message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun selectSearchPlace(place: EarthPlace) {
+        updatingStreetSearchText = true
+        streetSearchInput.setText(place.name)
+        streetSearchInput.setSelection(streetSearchInput.text.length)
+        updatingStreetSearchText = false
+        selectedPlace = place
+        updatePlace(place)
+        hideStreetSearch()
+    }
+
     private fun showPreviewState() {
         state = ScreenState.PANORAMA
         val hasPreview = selectedPlace != null &&
@@ -550,6 +714,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun positionMapPegmanBottomRight() {
+        // This Pegman is the persistent drag control. It never represents the
+        // selected road location and must stay anchored to the map corner.
         pegman.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             pegman.x = (mapContainer.width - pegman.width - dp(14)).coerceAtLeast(0).toFloat()
@@ -563,6 +729,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun positionMapLocationPegman(point: LatLng) {
         val map = googleMap ?: return
+        // This second Pegman is the location marker for the road selected by a
+        // map tap, coverage road, or search result. It is intentionally
+        // separate from the draggable corner control above.
         mapLocationPegman.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             val screenPoint = map.projection.toScreenLocation(point)
@@ -884,6 +1053,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         private const val COVERAGE_ROAD_LENGTH_METERS = 220.0
         private const val STREET_VIEW_METADATA_FALLBACK_DELAY_MS = 1_500L
         private const val STREET_VIEW_METADATA_TIMEOUT_MS = 5_000L
+        private const val MIN_STREET_SEARCH_QUERY_LENGTH = 2
+        private const val STREET_SEARCH_DEBOUNCE_MS = 350L
         const val PANORAMA_LOAD_TIMEOUT_MS = 12_000L
         const val PANORAMA_ZOOM_ANIMATION_MS = 220L
         const val EXTRA_CURRENT_LOCATION_ONLY = "street_view_current_location_only"

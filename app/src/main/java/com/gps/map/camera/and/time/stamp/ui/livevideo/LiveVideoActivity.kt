@@ -22,6 +22,7 @@ import com.gps.map.camera.and.time.stamp.BuildConfig
 import com.gps.map.camera.and.time.stamp.MainActivity
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAllAd
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -54,6 +55,7 @@ class LiveVideoActivity : AppCompatActivity() {
     private lateinit var recentSearches: View
     private lateinit var recentSearchList: LinearLayout
     private lateinit var noRecentSearches: TextView
+    private lateinit var nativeAllSearchSlot: View
 
     private var allVideos: List<LiveVideoPin> = emptyList()
     private var selectedTab: VideoTab? = VideoTab.POPULAR
@@ -74,6 +76,8 @@ class LiveVideoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_video)
+        AdsManager.loadNativeAll(this, R.layout.layout_native_ad_small)
+        bindNativeAllAd(this, findViewById(R.id.native_all_container))
 
         searchInput = findViewById(R.id.live_video_search)
         videoList = findViewById(R.id.live_video_list)
@@ -85,6 +89,7 @@ class LiveVideoActivity : AppCompatActivity() {
         noRecentSearches = findViewById(R.id.live_video_no_recent_searches)
         AdsManager.loadInterHome(this, ignoreLimit = true)
         AdsManager.loadInterBack(this, ignoreLimit = true)
+        nativeAllSearchSlot = findViewById(R.id.live_video_native_all_search_slot)
         adapter = LiveVideoAdapter(::openVideo)
 
         videoList.adapter = adapter
@@ -175,6 +180,7 @@ class LiveVideoActivity : AppCompatActivity() {
     private fun updateSearchMode() {
         val isSearchMode = searchInput.hasFocus()
         val isRecentSearchState = isSearchMode && searchQuery.isBlank()
+        nativeAllSearchSlot.visibility = if (isSearchMode) View.VISIBLE else View.GONE
         recentSearches.visibility = if (isRecentSearchState) View.VISIBLE else View.GONE
         resultsHeading.visibility = if (searchQuery.isNotBlank()) View.VISIBLE else View.GONE
         findViewById<View>(R.id.live_video_tabs).visibility = if (isSearchMode) View.GONE else View.VISIBLE

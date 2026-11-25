@@ -2,7 +2,7 @@ package com.gps.map.camera.and.time.stamp.app
 
 import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
 import com.gps.map.camera.and.time.stamp.ads.inter_welcome_back
-import com.gps.map.camera.and.time.stamp.ads.native_welcome
+import com.gps.map.camera.and.time.stamp.ads.native_welcome_back
 import com.gps.map.camera.and.time.stamp.ads.open_resume
 
 enum class ResumeAdsEntryMode {
@@ -36,7 +36,7 @@ object ResumeAdsEntryRule {
         val canUseOpenResume = AdRemoteConfig.open_resume.isEnable
         if (canUseOpenResume) return ResumeAdsEntryMode.OPEN_RESUME
 
-        val canUseWelcome = AdRemoteConfig.native_welcome.isEnable && AdRemoteConfig.inter_welcome_back.isEnable
+        val canUseWelcome = AdRemoteConfig.native_welcome_back.isEnable && AdRemoteConfig.inter_welcome_back.isEnable
         return if (canUseWelcome) ResumeAdsEntryMode.WELCOME else ResumeAdsEntryMode.NONE
     }
 

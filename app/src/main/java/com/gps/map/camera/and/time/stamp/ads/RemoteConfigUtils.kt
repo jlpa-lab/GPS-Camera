@@ -7,6 +7,7 @@ import com.google.firebase.remoteconfig.remoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.gps.map.camera.and.time.stamp.BuildConfig
 import com.gps.map.camera.and.time.stamp.GlobalApplication
+import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.app.AppConstants.DEFAULT_TIME_DELAY_SHOW_LANGUAGE_DONE_BUTTON
 import com.gps.map.camera.and.time.stamp.data.model.ForceUpdateConfig
@@ -19,6 +20,8 @@ object RemoteConfigUtils {
     private const val ON_SHOW_DIALOG_CONSENT = "on_show_dialog_consent"
     private const val DELAY_SHOW_LANGUAGE_DONE_BUTTON = "delay_button_done_language"
     private const val TIME_DELAY_SHOW_LANGUAGE_DONE_BUTTON = "time_delay_show_language_done_button"
+    private const val SHOW_ADS = "show_ads"
+    private const val ONESIGNAL_APP_ID = "onesignal_app_id"
     private const val AD_REMOTE_CONFIG = "ad_remote_config"
     private const val FORCE_UPDATE_CONFIG = "force_update_config"
     private const val BACKEND_BASE_URL = "backend_base_url"
@@ -30,6 +33,7 @@ object RemoteConfigUtils {
     private const val ON_ENABLE_UNINSTALL_WIDGET = "on_enable_uninstall_widget"
 
     private val mapConditionForAd: HashMap<String, Any> = hashMapOf(
+        SHOW_ADS to true,
         ON_SHOW_DIALOG_CONSENT to true,
         ON_SHOW_NAVIGATION_BUTTON to false,
         DELAY_SHOW_LANGUAGE_DONE_BUTTON to true,
@@ -45,6 +49,9 @@ object RemoteConfigUtils {
 
     fun getOnShowNavigationButton(): Boolean = getBoolean(ON_SHOW_NAVIGATION_BUTTON)
     fun getOnShowDialogConsent(): Boolean = getBoolean(ON_SHOW_DIALOG_CONSENT)
+    fun getShowAds(): Boolean = getBoolean(SHOW_ADS, true)
+    fun getOneSignalAppId(context: Context): String =
+        getString(ONESIGNAL_APP_ID, context.getString(R.string.onesignal_app_id))
     fun getOnEnableUninstallWidget(): Boolean = getBoolean(ON_ENABLE_UNINSTALL_WIDGET, false)
     const val TRACKER_BACKEND_URL: String = "https://phone-tracker-backend-ol00.onrender.com"
 
@@ -105,11 +112,11 @@ object RemoteConfigUtils {
         // Keep the bundled build-specific file as the SDK default as well, so the app
         // remains usable when fetchAndActivate cannot reach Firebase.
         defaults[AD_REMOTE_CONFIG] = loadDefaultAdRemoteConfig()
-       // defaults[BACKEND_BASE_URL] = BuildConfig.TRACKER_BACKEND_URL
+        defaults[BACKEND_BASE_URL] = TRACKER_BACKEND_URL
         defaults[TERMS_AND_CONDITIONS_URL] = AppConstants.LINK_TERMS_AND_CONDITIONS
         defaults[PRIVACY_POLICY_URL] = AppConstants.LINK_PRIVACY_POLICY
-        //defaults[MAPS_API_KEY] = BuildConfig.MAPS_API_KEY
-       // defaults[GOOGLE_PLACES_API_KEY] = BuildConfig.GOOGLE_PLACES_API_KEY
+        defaults[ONESIGNAL_APP_ID] = context.getString(R.string.onesignal_app_id)
+        defaults[FORCE_UPDATE_CONFIG] = loadDefaultForceUpdateConfig()
         remoteConfig.apply {
             setConfigSettingsAsync(configSettings)
             mapConditionForAd.forEach { (key, value) ->

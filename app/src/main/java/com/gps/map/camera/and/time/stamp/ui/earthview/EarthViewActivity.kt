@@ -38,6 +38,8 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAllAd
 import com.gps.map.camera.and.time.stamp.bases.ext.isNetwork
 import com.gps.map.camera.and.time.stamp.ui.streetview.StreetViewActivity
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
@@ -65,7 +67,6 @@ import kotlinx.coroutines.isActive
 import android.text.Editable
 import android.text.TextWatcher
 import androidx.activity.OnBackPressedCallback
-import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import java.util.Locale
 
 class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -88,6 +89,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var screenTitle: TextView
     private lateinit var searchInput: EditText
     private lateinit var searchResults: RecyclerView
+    private lateinit var nativeAllSearchSlot: View
     private lateinit var earthControls: View
     private lateinit var streetViewButton: View
     private lateinit var resultStreetViewButton: View
@@ -133,6 +135,8 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_earth_view)
+        AdsManager.loadNativeAll(this, R.layout.layout_native_ad_small)
+        bindNativeAllAd(this, findViewById(R.id.native_all_container))
 
         worldWindow = findViewById(R.id.earth_map_view)
         worldWindow.controller = EarthViewController(worldWindow, MIN_IMAGERY_RANGE_METERS)
@@ -146,6 +150,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         screenTitle = findViewById(R.id.earth_view_title)
         searchInput = findViewById(R.id.earth_view_search_input)
         searchResults = findViewById(R.id.earth_view_search_results)
+        nativeAllSearchSlot = findViewById(R.id.earth_view_native_all_search_slot)
         earthControls = findViewById(R.id.earth_view_controls)
         streetViewButton = findViewById(R.id.earth_view_street_view_button)
         resultStreetViewButton = findViewById(R.id.earth_view_result_street_view_button)
@@ -449,6 +454,9 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
                     hideEarthState()
                     placeAdapter.submitList(displayPlaces)
                     searchResults.visibility = View.VISIBLE
+                    // Give the results panel the full viewport instead of
+                    // leaving the IME covering the bottom of the list.
+                    hideKeyboard()
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -671,6 +679,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun setSearchMode(active: Boolean, animate: Boolean = false) {
         searchMode = active
+        nativeAllSearchSlot.visibility = if (active) View.VISIBLE else View.GONE
         screenTitle.visibility = if (active) View.GONE else View.VISIBLE
         searchOverlay.visibility = if (active) View.VISIBLE else View.GONE
         searchIcon.visibility = if (active) View.GONE else View.VISIBLE
@@ -728,13 +737,20 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun updateMapLayout() {
         val layoutParams = mapContainer.layoutParams as ConstraintLayout.LayoutParams
         layoutParams.dimensionRatio = null
-        layoutParams.height = dp(MAP_HEIGHT_DP)
+        // Search results live below the map. Shrink the 3D globe while the
+        // search panel is open so the result list remains visible and can
+        // consume the remaining space for scrolling.
+        layoutParams.height = dp(if (searchMode) SEARCH_MAP_HEIGHT_DP else MAP_HEIGHT_DP)
         layoutParams.topToTop = ConstraintLayout.LayoutParams.UNSET
-        layoutParams.topToBottom = R.id.earth_view_header_overlay
+        layoutParams.topToBottom = if (searchMode) {
+            R.id.earth_view_search_overlay
+        } else {
+            R.id.earth_view_header_overlay
+        }
         layoutParams.bottomToBottom = ConstraintLayout.LayoutParams.UNSET
         layoutParams.marginStart = dp(20)
         layoutParams.marginEnd = dp(20)
-        layoutParams.topMargin = dp(MAP_TOP_MARGIN_DP)
+        layoutParams.topMargin = if (searchMode) dp(16) else dp(MAP_TOP_MARGIN_DP)
         mapContainer.layoutParams = layoutParams
         mapContainer.background = ContextCompat.getDrawable(this, R.drawable.bg_earth_map_result)
         mapContainer.clipToOutline = true
@@ -1007,7 +1023,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private companion object {
-        const val MAX_SEARCH_RESULTS = 3
+        const val MAX_SEARCH_RESULTS = 8
         const val MIN_QUERY_LENGTH = 2
         const val SEARCH_DEBOUNCE_MS = 450L
         const val MAP_LOADING_MIN_MS = 900L
@@ -1029,6 +1045,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         const val WORLD_IMAGERY_TILE_CACHE_CAPACITY = 1_800L
         const val WORLD_IMAGERY_TILE_CACHE_LOW_WATER = 1_350L
         const val MAP_HEIGHT_DP = 540
+        const val SEARCH_MAP_HEIGHT_DP = 220
         const val MAP_TOP_MARGIN_DP = 16
         const val EXTRA_PLACE_NAME = "earth_view_place_name"
         const val EXTRA_PLACE_ADDRESS = "earth_view_place_address"

@@ -54,8 +54,6 @@
         android:id="@+id/earth_view_search_overlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="56dp"
-        android:layout_marginEnd="20dp"
         android:elevation="12dp"
         android:translationZ="12dp"
         android:visibility="gone"
@@ -67,6 +65,8 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="20dp"
             android:background="@drawable/bg_earth_search"
             android:elevation="8dp"
             android:paddingStart="20dp"
@@ -109,6 +109,21 @@
                 android:padding="2dp"
                 android:src="@drawable/ic_close"
                 android:visibility="gone" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/earth_view_native_all_search_slot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="20dp"
+            android:visibility="gone">
+
+            <include
+                layout="@layout/layout_native_all"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </FrameLayout>
     </LinearLayout>
 
@@ -291,6 +306,7 @@
         android:overScrollMode="never"
         android:paddingTop="0dp"
         android:paddingBottom="0dp"
+        android:scrollbars="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

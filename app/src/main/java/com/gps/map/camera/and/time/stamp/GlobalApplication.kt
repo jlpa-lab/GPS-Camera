@@ -14,6 +14,7 @@ import android.os.Looper
 import androidx.annotation.StringRes
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.android.gms.ads.MobileAds
+import com.google.firebase.FirebaseApp
 import com.ads.module.application.AdsMultiDexApplication
 import com.ads.module.admob.Admob
 import com.ads.module.admob.AppOpenManager
@@ -48,11 +49,11 @@ class GlobalApplication : AdsMultiDexApplication() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        FirebaseApp.initializeApp(this)
         ThemeManager.initialize(this)
         LocaleManager.initialize(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleObserver())
         registerActivityLifecycleCallbacks(AppActivityLifecycleCallbacks())
-        //FirebaseApp.initializeApp(this)
         MobileAds.initialize(this) {}
         DevConfig.init(
             context = this,

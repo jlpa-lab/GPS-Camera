@@ -126,6 +126,13 @@ data class AdRemoteConfig(
         return adUnitConfig
     }
 
+    private fun getAdUnitWithLegacyKey(key: String, legacyKey: String): AdUnitConfig {
+        return ads[key] ?: ads[legacyKey]?.copy(key = key) ?: run {
+            Timber.w("Ad unit '%s' not found in configuration.", key)
+            AdUnitConfig(id = "", isEnable = false, key = key)
+        }
+    }
+
     val inter_splash: AdUnitConfig
         get() = getAdUnit("inter_splash")
 
@@ -199,8 +206,12 @@ data class AdRemoteConfig(
     val native_confirm_uninstall: AdUnitConfig
         get() = getAdUnit("native_confirm_uninstall")
 
+    val native_welcome_back: AdUnitConfig
+        get() = getAdUnitWithLegacyKey("native_welcome_back", "native_welcome")
+
+    /** Legacy source compatibility for callers that still use the old key. */
     val native_welcome: AdUnitConfig
-        get() = getAdUnit("native_welcome")
+        get() = native_welcome_back
 
     val inter_welcome: AdUnitConfig
         get() = getAdUnit("inter_welcome")

@@ -70,6 +70,21 @@
             android:textSize="14sp" />
     </LinearLayout>
 
+    <FrameLayout
+        android:id="@+id/live_video_native_all_search_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="20dp"
+        android:visibility="gone">
+
+        <include
+            layout="@layout/layout_native_all"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
+
     <LinearLayout
         android:id="@+id/live_video_recent_searches"
         android:layout_width="match_parent"

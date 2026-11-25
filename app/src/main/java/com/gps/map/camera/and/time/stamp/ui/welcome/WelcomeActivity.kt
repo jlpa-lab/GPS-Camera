@@ -13,10 +13,11 @@ import androidx.activity.OnBackPressedCallback
 import com.ads.module.admob.AppOpenManager
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.bindNativeAdSlot
 import com.gps.map.camera.and.time.stamp.app.AppConstants
 import com.gps.map.camera.and.time.stamp.localization.LocaleManager
 
-/** No-ad welcome screen displayed after returning from the background. */
+/** Welcome Back screen displayed after returning from the background. */
 class WelcomeActivity : AppCompatActivity() {
     private var navigationInProgress = false
 
@@ -65,6 +66,15 @@ class WelcomeActivity : AppCompatActivity() {
 
         // Preload in the background. Start remains usable even when the ad
         // request is slow, blocked by DNS, offline, or disabled remotely.
+        bindNativeAdSlot(
+            activity = this,
+            root = findViewById(R.id.native_welcome_container),
+            adLive = AdsManager.nativeWelcomeAdLive,
+            loadingLive = AdsManager.nativeWelcomeLoadingLive,
+            adContainerId = R.id.native_welcome_ad,
+            shimmerId = R.id.shimmer_native_language,
+        )
+        AdsManager.loadNativeWelcome(this, R.layout.layout_native_language)
         AdsManager.loadInterWelcome(this)
 
         findViewById<View>(R.id.welcome_start_button).setOnClickListener {

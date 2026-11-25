@@ -9,14 +9,21 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -36,6 +43,7 @@ import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
+import com.gps.map.camera.and.time.stamp.ui.location.LocationPlaceAdapter
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -159,11 +167,32 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
                 routeDetails = null
             }
         })
+        findViewById<View>(R.id.route_plan_from_row).setOnClickListener {
+            showPlaceSearch(isOrigin = true)
+        }
+        findViewById<View>(R.id.route_plan_to_row).setOnClickListener {
+            showPlaceSearch(isOrigin = false)
+        }
+        fromValue.setOnClickListener { showPlaceSearch(isOrigin = true) }
+        toValue.setOnClickListener { showPlaceSearch(isOrigin = false) }
+        fromValue.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                showPlaceSearch(isOrigin = true)
+                true
+            } else false
+        }
+        toValue.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                showPlaceSearch(isOrigin = false)
+                true
+            } else false
+        }
     }
 
     private fun bindActions() {
         findViewById<View>(R.id.route_plan_back).setOnClickListener { finish() }
         findRouteButton.setOnClickListener { findRoute() }
+        searchDestinationButton.setOnClickListener { showPlaceSearch(isOrigin = false) }
         locationSettings.setOnClickListener { openLocationSettings() }
         viewDirectionsButton.setOnClickListener { openGoogleMapsDirections() }
         editRouteButton.setOnClickListener { showInputState() }
@@ -269,6 +298,88 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         selectedMode = mode
         updateModeButtons()
         if (screenState == ScreenState.PREVIEW) findRoute()
+    }
+
+    private fun showPlaceSearch(isOrigin: Boolean) {
+        if (isLoading) return
+        val dialogView = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_route_destination_search, null, false)
+        val input = dialogView.findViewById<EditText>(R.id.route_destination_search_input)
+        val searchButton = dialogView.findViewById<TextView>(R.id.route_destination_search_button)
+        val progress = dialogView.findViewById<ProgressBar>(R.id.route_destination_search_progress)
+        val message = dialogView.findViewById<TextView>(R.id.route_destination_search_message)
+        val results = dialogView.findViewById<RecyclerView>(R.id.route_destination_search_results)
+        dialogView.findViewById<TextView>(R.id.route_place_search_title).setText(
+            if (isOrigin) R.string.route_plan_search_origin else R.string.route_plan_search_destination
+        )
+        lateinit var dialog: AlertDialog
+
+        val adapter = LocationPlaceAdapter { place ->
+            if (isOrigin) {
+                fromPlace = place
+                fromLocation = LatLng(place.latitude, place.longitude)
+                fromQuery = place.name
+            } else {
+                destination = place
+                destinationQuery = place.name
+            }
+            updatingFields = true
+            if (isOrigin) fromValue.setText(place.name) else toValue.setText(place.name)
+            updatingFields = false
+            routeDetails = null
+            screenState = ScreenState.INPUT
+            updateScreen()
+            searchJob?.cancel()
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                ?.hideSoftInputFromWindow(input.windowToken, 0)
+            dialog.dismiss()
+        }
+        results.layoutManager = LinearLayoutManager(this)
+        results.adapter = adapter
+
+        dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        fun search() {
+            val query = input.text.toString().trim()
+            if (query.isBlank()) {
+                message.setText(R.string.route_plan_search_enter_destination)
+                message.visibility = View.VISIBLE
+                return
+            }
+            searchJob?.cancel()
+            searchButton.isEnabled = false
+            progress.visibility = View.VISIBLE
+            message.visibility = View.GONE
+            searchJob = lifecycleScope.launch {
+                val places = withContext(Dispatchers.IO) {
+                    runCatching { EarthPlaceSearch.search(query) }.getOrDefault(emptyList())
+                }
+                if (!isActive || !dialog.isShowing) return@launch
+                progress.visibility = View.GONE
+                searchButton.isEnabled = true
+                adapter.submitList(places)
+                if (places.isEmpty()) {
+                    message.setText(R.string.route_plan_search_no_results)
+                    message.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        searchButton.setOnClickListener { search() }
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                search()
+                true
+            } else false
+        }
+        dialog.setOnDismissListener { searchJob?.cancel() }
+        dialog.show()
+        input.requestFocus()
+        dialog.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+        )
     }
 
     private fun findRoute() {

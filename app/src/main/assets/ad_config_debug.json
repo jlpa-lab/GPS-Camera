@@ -169,7 +169,8 @@
     "id": "ca-app-pub-3940256099942544/2247696110",
     "isEnable": true,
     "colorCTA": "default",
-    "heightCTA": 45,
+    "colorBG": "#182638",
+    "heightCTA": 40,
     "positionCTA": "BOTTOM",
     "components": ["icon_headline", "body", "media", "cta"],
     "enable_ua_check": false
@@ -212,10 +213,11 @@
     "components": ["icon_headline", "body", "media", "cta"],
     "enable_ua_check": false
   },
-  "native_welcome": {
+  "native_welcome_back": {
     "id": "ca-app-pub-3940256099942544/2247696110",
     "isEnable": true,
     "colorCTA": "default",
+    "colorBG": "#FFFFFF",
     "heightCTA": 45,
     "positionCTA": "BOTTOM",
     "components": ["icon_headline", "body", "media", "cta"],

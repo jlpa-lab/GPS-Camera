@@ -31,7 +31,6 @@ import timber.log.Timber
 @SuppressLint("StaticFieldLeak")
 object AdsManager {
 
-    private const val NATIVE_AD_LOAD_TIMEOUT_MS = 6_000L
     private const val WELCOME_AD_SHOW_FALLBACK_TIMEOUT_MS = 2_500L
 
     val nativeLanguageAdLive = MutableLiveData<ApNativeAd?>()
@@ -48,6 +47,7 @@ object AdsManager {
     val nativeAllAdLive = MutableLiveData<ApNativeAd?>()
     val nativeHomeLoadingLive = MutableLiveData(false)
     val nativeAllLoadingLive = MutableLiveData(false)
+    val nativeWelcomeLoadingLive = MutableLiveData(false)
     var interWelcomeAdLive = MutableLiveData<ApInterstitialAd?>()
 
     var interHomeBackAdLive = MutableLiveData<ApInterstitialAd?>()
@@ -61,6 +61,73 @@ object AdsManager {
 
     private var rewardExample :RewardedAd? = null
 
+    private fun trackedInterstitialCallback(
+        placement: String,
+        adUnitId: String? = null,
+        onLoaded: (ApInterstitialAd?) -> Unit = {},
+        onLoadFailed: (LoadAdError?) -> Unit = {},
+        onNext: () -> Unit = {},
+        onClosed: () -> Unit = {},
+        onShow: () -> Unit = {},
+        onImpression: () -> Unit = {},
+        onClick: () -> Unit = {},
+        onFailedShow: (AdError?) -> Unit = {},
+    ) = object : AdCallback() {
+        override fun onApInterstitialLoad(ad: ApInterstitialAd?) {
+            super.onApInterstitialLoad(ad)
+            AdAnalytics.loaded(placement, "interstitial", adUnitId)
+            ad?.interstitialAd?.setOnPaidEventListener { value ->
+                AdAnalytics.revenuePaid(placement, "interstitial", value, adUnitId)
+            }
+            onLoaded(ad)
+        }
+
+        override fun onAdFailedToLoad(error: LoadAdError?) {
+            super.onAdFailedToLoad(error)
+            AdAnalytics.failedToLoad(placement, "interstitial", error?.message, adUnitId)
+            onLoadFailed(error)
+        }
+
+        override fun onInterstitialShow() {
+            super.onInterstitialShow()
+            AdAnalytics.shown(placement, "interstitial", adUnitId)
+            onShow()
+        }
+
+        override fun onAdImpression() {
+            super.onAdImpression()
+            AdAnalytics.impression(placement, "interstitial", adUnitId)
+            onImpression()
+        }
+
+        override fun onAdClicked() {
+            super.onAdClicked()
+            AdAnalytics.clicked(placement, "interstitial", adUnitId)
+            onClick()
+        }
+
+        override fun onAdFailedToShow(error: AdError?) {
+            super.onAdFailedToShow(error)
+            AdAnalytics.failedToShow(placement, "interstitial", error?.message, adUnitId)
+            onFailedShow(error)
+        }
+
+        override fun onAdFailedToShowHigh(error: AdError?) = onAdFailedToShow(error)
+        override fun onAdFailedToShowMedium(error: AdError?) = onAdFailedToShow(error)
+        override fun onAdFailedToShowAll(error: AdError?) = onAdFailedToShow(error)
+
+        override fun onNextAction() {
+            super.onNextAction()
+            onNext()
+        }
+
+        override fun onAdClosed() {
+            super.onAdClosed()
+            AdAnalytics.closed(placement, "interstitial", adUnitId)
+            onClosed()
+        }
+    }
+
     private fun loadNativeInternal(
         activity: Activity,
         config: AdUnitConfig,
@@ -70,6 +137,7 @@ object AdsManager {
         loadingLive: MutableLiveData<Boolean>? = null,
     ) {
         if (!config.isEnable
+            || !RemoteConfigUtils.getShowAds()
             || AppPurchase.getInstance().isPurchased(activity)
             || !shouldDisplay
         ) {
@@ -77,43 +145,47 @@ object AdsManager {
             liveData.postValue(null)
             return
         }
+        // Keep one request in flight and reuse the preloaded ad when a screen
+        // is recreated. Cancelling a slow request here causes the low-memory
+        // devices that need preloading most to lose the ad entirely.
+        if (liveData.value != null || loadingLive?.value == true) return
         loadingLive?.postValue(true)
         if (!activity.isNetworkAvailable()) {
+            AdAnalytics.failedToLoad(config.key, "native", "network_unavailable", config.id)
             liveData.postValue(null)
             loadingLive?.postValue(false)
             return
         }
 
-        // A stalled SDK request must not leave a native-ad shimmer visible
-        // indefinitely. Keep this guard in the shared loader so every native
-        // placement gets the same bounded loading behavior.
-        var loadTimedOut = false
-        val mainHandler = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            loadTimedOut = true
-            Timber.w("Native ad load timed out for ${config.id}")
-            liveData.postValue(null)
-            loadingLive?.postValue(false)
-        }
-        mainHandler.postDelayed(timeoutRunnable, NATIVE_AD_LOAD_TIMEOUT_MS)
-
+        AdAnalytics.requested(config.key, "native", config.id)
         ERainAd.getInstance()
             .loadNativeAdResultCallback(activity, config.id, layoutRes, object : AdCallback() {
                 override fun onNativeAdLoaded(nativeAd: ApNativeAd) {
                     super.onNativeAdLoaded(nativeAd)
-                    if (loadTimedOut) return
-                    mainHandler.removeCallbacks(timeoutRunnable)
                     adConfigMap[nativeAd] = config
+                    nativeAd.admobNativeAd?.setOnPaidEventListener { value ->
+                        AdAnalytics.revenuePaid(config.key, "native", value, config.id)
+                    }
+                    AdAnalytics.loaded(config.key, "native", config.id)
                     liveData.postValue(nativeAd)
                     loadingLive?.postValue(false)
                 }
 
                 override fun onAdFailedToLoad(adError: LoadAdError?) {
                     super.onAdFailedToLoad(adError)
-                    if (loadTimedOut) return
-                    mainHandler.removeCallbacks(timeoutRunnable)
+                    AdAnalytics.failedToLoad(config.key, "native", adError?.message, config.id)
                     liveData.postValue(null)
                     loadingLive?.postValue(false)
+                }
+
+                override fun onAdImpression() {
+                    super.onAdImpression()
+                    AdAnalytics.impression(config.key, "native", config.id)
+                }
+
+                override fun onAdClicked() {
+                    super.onAdClicked()
+                    AdAnalytics.clicked(config.key, "native", config.id)
                 }
             })
     }
@@ -242,10 +314,11 @@ object AdsManager {
     fun loadNativeWelcome(activity: Activity, layoutRes: Int) {
         loadNativeInternal(
             activity,
-            AdRemoteConfig.native_welcome,
+            AdRemoteConfig.native_welcome_back,
             layoutRes,
             nativeWelcomeAdLive,
-            ERainAd.getInstance().getShouldDisplayNativeWelcomeBack(AdRemoteConfig.native_welcome.enableUaCheck)
+            ERainAd.getInstance().getShouldDisplayNativeWelcomeBack(AdRemoteConfig.native_welcome_back.enableUaCheck),
+            loadingLive = nativeWelcomeLoadingLive
         )
     }
 
@@ -288,14 +361,19 @@ object AdsManager {
     fun loadInterOnboarding(context: Context, ignoreLimit: Boolean = false) {
         val config = AdRemoteConfig.inter_onboarding
         if (!config.isEnable
+            || !RemoteConfigUtils.getShowAds()
             || AppPurchase.getInstance().isPurchased(context)
             || (!ignoreLimit && !ERainAd.getInstance().getShouldDisplayInterOnboarding(config.enableUaCheck))
         ) {
             interOnboarding = null
             return
         }
-        interOnboarding =
-            ERainAd.getInstance().getInterstitialAds(context, config.id, object : AdCallback() {})
+        AdAnalytics.requested("inter_onboarding", "interstitial", config.id)
+        interOnboarding = ERainAd.getInstance().getInterstitialAds(
+            context,
+            config.id,
+            trackedInterstitialCallback("inter_onboarding", adUnitId = config.id)
+        )
     }
 
 
@@ -306,12 +384,16 @@ object AdsManager {
                 .isPurchased(context) && (ignoreLimit)
         ) {
             ERainAd.getInstance()
-                .forceShowInterstitial(context, interstitial, object : AdCallback() {
-                    override fun onNextAction() {
-                        super.onNextAction()
-                        onAction()
-                    }
-                }, true)
+                .forceShowInterstitial(
+                    context,
+                    interstitial,
+                    trackedInterstitialCallback(
+                        "inter_onboarding",
+                        adUnitId = AdRemoteConfig.inter_onboarding.id,
+                        onNext = onAction
+                    ),
+                    true
+                )
         } else {
             onAction()
         }
@@ -326,6 +408,7 @@ object AdsManager {
         }
         val config = AdRemoteConfig.inter_back
         if (!config.isEnable
+            || !RemoteConfigUtils.getShowAds()
             || AppPurchase.getInstance().isPurchased(context)
             || (!ignoreLimit && !ERainAd.getInstance()
                 .getShouldDisplayInterWelcomeBack(config.enableUaCheck))
@@ -338,17 +421,17 @@ object AdsManager {
             return
         }
         var loaded: ApInterstitialAd? = null
-        loaded = ERainAd.getInstance().getInterstitialAds(context, config.id, object : AdCallback() {
-            override fun onApInterstitialLoad(apInterstitialAd: ApInterstitialAd?) {
-                super.onApInterstitialLoad(apInterstitialAd)
-                emit(apInterstitialAd ?: loaded)
-            }
-
-            override fun onAdFailedToLoad(adError: LoadAdError?) {
-                super.onAdFailedToLoad(adError)
-                emit(null)
-            }
-        })
+        AdAnalytics.requested("inter_back", "interstitial", config.id)
+        loaded = ERainAd.getInstance().getInterstitialAds(
+            context,
+            config.id,
+            trackedInterstitialCallback(
+                "inter_back",
+                adUnitId = config.id,
+                onLoaded = { emit(it ?: loaded) },
+                onLoadFailed = { emit(null) }
+            )
+        )
         if (loaded?.isReady == true) emit(loaded)
     }
 
@@ -372,6 +455,7 @@ object AdsManager {
         // stable because the screen consumes the same cache for start/back.
         val config = AdRemoteConfig.inter_welcome_back
         if (!config.isEnable
+            || !RemoteConfigUtils.getShowAds()
             || AppPurchase.getInstance().isPurchased(context)
             || (!ignoreLimit && !ERainAd.getInstance()
                 .getShouldDisplayInterWelcomeBack(config.enableUaCheck))
@@ -384,17 +468,17 @@ object AdsManager {
             return
         }
         var loaded: ApInterstitialAd? = null
-        loaded = ERainAd.getInstance().getInterstitialAds(context, config.id, object : AdCallback() {
-            override fun onApInterstitialLoad(apInterstitialAd: ApInterstitialAd?) {
-                super.onApInterstitialLoad(apInterstitialAd)
-                emit(apInterstitialAd ?: loaded)
-            }
-
-            override fun onAdFailedToLoad(adError: LoadAdError?) {
-                super.onAdFailedToLoad(adError)
-                emit(null)
-            }
-        })
+        AdAnalytics.requested("inter_welcome_back", "interstitial", config.id)
+        loaded = ERainAd.getInstance().getInterstitialAds(
+            context,
+            config.id,
+            trackedInterstitialCallback(
+                "inter_welcome_back",
+                adUnitId = config.id,
+                onLoaded = { emit(it ?: loaded) },
+                onLoadFailed = { emit(null) }
+            )
+        )
         if (loaded?.isReady == true) emit(loaded)
     }
 
@@ -430,47 +514,20 @@ object AdsManager {
                 WELCOME_AD_SHOW_FALLBACK_TIMEOUT_MS
             )
             ERainAd.getInstance()
-                .forceShowInterstitial(context, interstitial, object : AdCallback() {
-                    override fun onInterstitialShow() {
-                        super.onInterstitialShow()
-                        adStarted = true
-                    }
-
-                    override fun onAdImpression() {
-                        super.onAdImpression()
-                        adStarted = true
-                    }
-
-                    override fun onNextAction() {
-                        super.onNextAction()
-                        continueOnce(adStarted)
-                    }
-
-                    override fun onAdClosed() {
-                        super.onAdClosed()
-                        continueOnce(adStarted)
-                    }
-
-                    override fun onAdFailedToShow(adError: AdError?) {
-                        super.onAdFailedToShow(adError)
-                        continueOnce(false)
-                    }
-
-                    override fun onAdFailedToShowHigh(adError: AdError?) {
-                        super.onAdFailedToShowHigh(adError)
-                        continueOnce(false)
-                    }
-
-                    override fun onAdFailedToShowMedium(adError: AdError?) {
-                        super.onAdFailedToShowMedium(adError)
-                        continueOnce(false)
-                    }
-
-                    override fun onAdFailedToShowAll(adError: AdError?) {
-                        super.onAdFailedToShowAll(adError)
-                        continueOnce(false)
-                    }
-                }, false)
+                .forceShowInterstitial(
+                    context,
+                    interstitial,
+                    trackedInterstitialCallback(
+                        "inter_back",
+                        adUnitId = AdRemoteConfig.inter_back.id,
+                        onShow = { adStarted = true },
+                        onImpression = { adStarted = true },
+                        onNext = { continueOnce(adStarted) },
+                        onClosed = { continueOnce(adStarted) },
+                        onFailedShow = { continueOnce(false) }
+                    ),
+                    false
+                )
         } else {
             onAction(false)
         }
@@ -530,47 +587,20 @@ object AdsManager {
         }
         handler.postDelayed(fallback, WELCOME_AD_SHOW_FALLBACK_TIMEOUT_MS)
         ERainAd.getInstance()
-            .forceShowInterstitial(context, interstitial, object : AdCallback() {
-                override fun onInterstitialShow() {
-                    super.onInterstitialShow()
-                    adStarted = true
-                }
-
-                override fun onAdImpression() {
-                    super.onAdImpression()
-                    adStarted = true
-                }
-
-                override fun onNextAction() {
-                    super.onNextAction()
-                    continueOnce()
-                }
-
-                override fun onAdClosed() {
-                    super.onAdClosed()
-                    continueOnce()
-                }
-
-                override fun onAdFailedToShow(adError: AdError?) {
-                    super.onAdFailedToShow(adError)
-                    continueOnce()
-                }
-
-                override fun onAdFailedToShowHigh(adError: AdError?) {
-                    super.onAdFailedToShowHigh(adError)
-                    continueOnce()
-                }
-
-                override fun onAdFailedToShowMedium(adError: AdError?) {
-                    super.onAdFailedToShowMedium(adError)
-                    continueOnce()
-                }
-
-                override fun onAdFailedToShowAll(adError: AdError?) {
-                    super.onAdFailedToShowAll(adError)
-                    continueOnce()
-                }
-            }, false)
+            .forceShowInterstitial(
+                context,
+                interstitial,
+                trackedInterstitialCallback(
+                    "inter_welcome_back",
+                    adUnitId = AdRemoteConfig.inter_welcome_back.id,
+                    onShow = { adStarted = true },
+                    onImpression = { adStarted = true },
+                    onNext = { continueOnce() },
+                    onClosed = { continueOnce() },
+                    onFailedShow = { continueOnce() }
+                ),
+                false
+            )
     }
 
 
@@ -583,6 +613,7 @@ object AdsManager {
         }
         val config = AdRemoteConfig.inter_home
         if (!config.isEnable
+            || !RemoteConfigUtils.getShowAds()
             || AppPurchase.getInstance().isPurchased(context)
             || (!ignoreLimit && !ERainAd.getInstance()
                 .getShouldDisplayInterWelcomeBack(config.enableUaCheck))
@@ -595,17 +626,17 @@ object AdsManager {
             return
         }
         var loaded: ApInterstitialAd? = null
-        loaded = ERainAd.getInstance().getInterstitialAds(context, config.id, object : AdCallback() {
-            override fun onApInterstitialLoad(apInterstitialAd: ApInterstitialAd?) {
-                super.onApInterstitialLoad(apInterstitialAd)
-                emit(apInterstitialAd ?: loaded)
-            }
-
-            override fun onAdFailedToLoad(adError: LoadAdError?) {
-                super.onAdFailedToLoad(adError)
-                emit(null)
-            }
-        })
+        AdAnalytics.requested("inter_home", "interstitial", config.id)
+        loaded = ERainAd.getInstance().getInterstitialAds(
+            context,
+            config.id,
+            trackedInterstitialCallback(
+                "inter_home",
+                adUnitId = config.id,
+                onLoaded = { emit(it ?: loaded) },
+                onLoadFailed = { emit(null) }
+            )
+        )
         if (loaded?.isReady == true) emit(loaded)
     }
 
@@ -616,14 +647,26 @@ object AdsManager {
         if (interstitial != null && interstitial.isReady && !AppPurchase.getInstance()
                 .isPurchased(context) && allowShow
         ) {
+            var actionCompleted = false
+            fun continueOnce() {
+                if (actionCompleted) return
+                actionCompleted = true
+                interHomeAdLive = MutableLiveData()
+                onAction()
+            }
             ERainAd.getInstance()
-                .forceShowInterstitial(context, interstitial, object : AdCallback() {
-                    override fun onNextAction() {
-                        super.onNextAction()
-                        interHomeAdLive = MutableLiveData()
-                        onAction()
-                    }
-                }, false)
+                .forceShowInterstitial(
+                    context,
+                    interstitial,
+                    trackedInterstitialCallback(
+                        "inter_home",
+                        adUnitId = AdRemoteConfig.inter_home.id,
+                        onNext = { continueOnce() },
+                        onClosed = { continueOnce() },
+                        onFailedShow = { continueOnce() }
+                    ),
+                    false
+                )
         } else {
             onAction()
         }
@@ -633,7 +676,7 @@ object AdsManager {
         onSuccess: () -> Unit,
         onFailed: () -> Unit
     ) {
-        if (AdRemoteConfig.reward_example.isEnable.not() || AppPurchase.getInstance()
+        if (!RemoteConfigUtils.getShowAds() || AdRemoteConfig.reward_example.isEnable.not() || AppPurchase.getInstance()
                 .isPurchased(activity)
         ) {
             onFailed()
@@ -695,20 +738,37 @@ object AdsManager {
             frAds.visibility = View.GONE
             return
         }
-        if (adUnitConfig.isEnable) {
+        if (adUnitConfig.isEnable && RemoteConfigUtils.getShowAds()) {
             removeBannerView(activity, frAds)
+            AdAnalytics.requested(adUnitConfig.key, "banner", adUnitConfig.id)
             if (isCollapse) ERainAd.getInstance().loadCollapsibleBanner(
                 activity,
                 adUnitConfig.id,
                 AppConstant.CollapsibleGravity.BOTTOM,
                 object : AdCallback() {
+                    override fun onAdLoaded() {
+                        super.onAdLoaded()
+                        findLoadedBannerView(frAds)?.setOnPaidEventListener { value ->
+                            AdAnalytics.revenuePaid(adUnitConfig.key, "banner", value, adUnitConfig.id)
+                        }
+                        AdAnalytics.loaded(adUnitConfig.key, "banner", adUnitConfig.id)
+                        AdAnalytics.shown(adUnitConfig.key, "banner", adUnitConfig.id)
+                    }
+
+                    override fun onAdImpression() {
+                        super.onAdImpression()
+                        AdAnalytics.impression(adUnitConfig.key, "banner", adUnitConfig.id)
+                    }
+
                     override fun onAdClicked() {
                         super.onAdClicked()
+                        AdAnalytics.clicked(adUnitConfig.key, "banner", adUnitConfig.id)
                         onAdClicked()
                     }
 
                     override fun onAdFailedToLoad(i: LoadAdError?) {
                         super.onAdFailedToLoad(i)
+                        AdAnalytics.failedToLoad(adUnitConfig.key, "banner", i?.message, adUnitConfig.id)
                         frAds.visibility = View.GONE
                         Timber.tag("AdsManager_Banner")
                             .d("Load banner on ${activity.javaClass.simpleName} failed by : ${i?.message}")
@@ -716,13 +776,29 @@ object AdsManager {
                 })
             else ERainAd.getInstance()
                 .loadBanner(activity, adUnitConfig.id, object : AdCallback() {
+                    override fun onAdLoaded() {
+                        super.onAdLoaded()
+                        findLoadedBannerView(frAds)?.setOnPaidEventListener { value ->
+                            AdAnalytics.revenuePaid(adUnitConfig.key, "banner", value, adUnitConfig.id)
+                        }
+                        AdAnalytics.loaded(adUnitConfig.key, "banner", adUnitConfig.id)
+                        AdAnalytics.shown(adUnitConfig.key, "banner", adUnitConfig.id)
+                    }
+
+                    override fun onAdImpression() {
+                        super.onAdImpression()
+                        AdAnalytics.impression(adUnitConfig.key, "banner", adUnitConfig.id)
+                    }
+
                     override fun onAdClicked() {
                         super.onAdClicked()
+                        AdAnalytics.clicked(adUnitConfig.key, "banner", adUnitConfig.id)
                         onAdClicked()
                     }
 
                     override fun onAdFailedToLoad(i: LoadAdError?) {
                         super.onAdFailedToLoad(i)
+                        AdAnalytics.failedToLoad(adUnitConfig.key, "banner", i?.message, adUnitConfig.id)
                         frAds.visibility = View.GONE
                         Timber.tag("AdsManager_Banner")
                             .d("Load banner on ${activity.javaClass.simpleName} failed by : ${i?.message}")
@@ -732,6 +808,16 @@ object AdsManager {
             frAds.removeAllViews()
             frAds.visibility = View.GONE
         }
+    }
+
+    @SuppressLint("InflateParams")
+    private fun findLoadedBannerView(frAds: FrameLayout): AdView? {
+        val container = frAds.findViewById<FrameLayout>(R.id.banner_container) ?: return null
+        return (0 until container.childCount)
+            .asSequence()
+            .map(container::getChildAt)
+            .filterIsInstance<AdView>()
+            .firstOrNull()
     }
 
     @SuppressLint("InflateParams")
@@ -768,6 +854,7 @@ object AdsManager {
         nativeAllAdLive.postValue(null)
         nativeHomeLoadingLive.postValue(false)
         nativeAllLoadingLive.postValue(false)
+        nativeWelcomeLoadingLive.postValue(false)
         interWelcomeAdLive = MutableLiveData()
         interSplashAd = null
         interOnboarding = null
