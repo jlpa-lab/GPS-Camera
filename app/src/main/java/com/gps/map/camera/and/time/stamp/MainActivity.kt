@@ -9,6 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.ui.home.HomeFragment
 import com.gps.map.camera.and.time.stamp.ui.settings.SettingsFragment
 import com.gps.map.camera.and.time.stamp.ui.tools.ToolsFragment
@@ -22,6 +23,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         configureSystemBars()
         bindBottomNavigation()
 
@@ -67,11 +70,17 @@ class MainActivity : AppCompatActivity() {
 
         navItems.forEachIndexed { index, item ->
             item.setOnClickListener {
-                when (index) {
-                    0 -> selectTab(index, HomeFragment())
-                    1 -> selectTab(index, ToolsFragment())
-                    2 -> selectTab(index, WidgetFragment())
-                    3 -> selectTab(index, SettingsFragment())
+                if (index == 3) {
+                    selectTab(index, SettingsFragment())
+                    return@setOnClickListener
+                }
+                AdsManager.loadInterBack(this, ignoreLimit = true)
+                AdsManager.showInterHome(this, ignoreLimit = true) {
+                    when (index) {
+                        0 -> selectTab(index, HomeFragment())
+                        1 -> selectTab(index, ToolsFragment())
+                        2 -> selectTab(index, WidgetFragment())
+                    }
                 }
             }
         }

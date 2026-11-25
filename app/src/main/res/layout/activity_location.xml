@@ -332,4 +332,19 @@
                 android:text="@string/location_search_manually" />
         </LinearLayout>
     </LinearLayout>
+    <FrameLayout
+        android:id="@+id/fr_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:gravity="bottom"
+        android:background="@color/black">
+
+        <include
+            android:id="@+id/include_banner"
+            layout="@layout/layout_banner_control"
+            android:layout_width="match_parent"
+            android:gravity="bottom"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
 </LinearLayout>

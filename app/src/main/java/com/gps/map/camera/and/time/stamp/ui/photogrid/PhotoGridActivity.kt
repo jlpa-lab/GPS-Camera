@@ -17,6 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.databinding.ActivityPhotoGridBinding
 import com.gps.map.camera.and.time.stamp.ui.gallery.GalleryMediaAccess
 import com.gps.map.camera.and.time.stamp.ui.gallery.MediaStoreImageSaver
@@ -68,7 +71,7 @@ class PhotoGridActivity : AppCompatActivity() {
                 }
             }
         })
-
+        loadPhotoGridBanner()
         binding.photoGridBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.photoGridCreate.setOnClickListener { openEditor() }
         binding.photoGridSave.setOnClickListener { saveGrid() }
@@ -304,6 +307,12 @@ class PhotoGridActivity : AppCompatActivity() {
         lifecycleScope.launch {
             collect { block(it) }
         }
+    }
+    private fun loadPhotoGridBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, binding.frBanner, isCollapse = false
+        )
     }
 
     private companion object {

@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -32,6 +33,7 @@ import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.RoundCap
 import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +113,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_street_view)
         bindViews()
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         selectedPlace = if (
             intent.getBooleanExtra(EXTRA_CURRENT_LOCATION_ONLY, false)
         ) {
@@ -120,7 +124,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
         shouldUseCurrentLocation = selectedPlace == null
         bindActions()
-
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AdsManager.showInterHomeBack(this@StreetViewActivity, onAction = { _ ->
+                    finish()
+                })
+            }
+        })
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
         panoramaView.onCreate(savedInstanceState)
@@ -149,7 +159,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         mapLocationPegman = findViewById(R.id.street_view_map_location_pegman)
         mapZoomIn = findViewById(R.id.street_view_map_zoom_in)
         mapZoomOut = findViewById(R.id.street_view_map_zoom_out)
-
         previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
         previewContainer.clipToOutline = true
         mapContainer.outlineProvider = ViewOutlineProvider.BACKGROUND

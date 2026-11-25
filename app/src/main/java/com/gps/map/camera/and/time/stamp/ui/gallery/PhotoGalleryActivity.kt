@@ -21,6 +21,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.databinding.ActivityGalleryBinding
 import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomizationStore
@@ -74,6 +77,7 @@ class PhotoGalleryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGalleryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        loadPhotoGalleryBanner()
         viewModel = ViewModelProvider(this)[GalleryViewModel::class.java]
         adapter = GalleryCaptureAdapter(::openDetails)
         galleryTemplateOverlay = StampOverlayView(this)
@@ -306,6 +310,12 @@ class PhotoGalleryActivity : AppCompatActivity() {
         loadFirstPage()
     }
 
+    private fun loadPhotoGalleryBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, binding.frBanner, isCollapse = false
+        )
+    }
     private fun deleteFailed() {
         resetDeleteControls()
         Toast.makeText(this, R.string.gallery_delete_failed, Toast.LENGTH_SHORT).show()
@@ -408,6 +418,7 @@ class PhotoGalleryActivity : AppCompatActivity() {
         const val PAGE_SIZE = 30
     }
 }
+
 
 private class GalleryGridSpacingDecoration(
     private val horizontalSpacing: Int,

@@ -29,6 +29,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.lifecycleScope
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,6 +72,7 @@ class StampTemplateActivity : AppCompatActivity() {
         selectedKey = StampCustomizationStore.selectedTemplate(this)
         showList(false)
         requestLiveContext()
+        loadStampTemplateBanner()
     }
 
     private fun requestLiveContext() {
@@ -77,7 +81,12 @@ class StampTemplateActivity : AppCompatActivity() {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         )
     }
-
+    private fun loadStampTemplateBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     private fun loadLiveContext() {
         locationProvider.findCurrentLocation(
             onSuccess = { location ->

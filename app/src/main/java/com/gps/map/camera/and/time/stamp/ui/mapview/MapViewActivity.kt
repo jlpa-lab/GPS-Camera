@@ -59,6 +59,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import android.view.animation.LinearInterpolator
+import androidx.activity.OnBackPressedCallback
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 
 class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -170,6 +172,8 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         placeAddress = findViewById(R.id.map_view_place_address)
         locationCount = findViewById(R.id.map_view_location_count)
         recentSearchesTitle = findViewById(R.id.map_view_recent_searches_title)
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         recentSearchRows += listOf(
             findViewById(R.id.map_view_recent_station),
             findViewById(R.id.map_view_recent_palace),
@@ -178,7 +182,13 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
             findViewById(R.id.map_view_recent_fifth)
         )
         renderRecentSearches()
-
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AdsManager.showInterHomeBack(this@MapViewActivity, onAction = { _ ->
+                    finish()
+                })
+            }
+        })
         searchResults.layoutManager = LinearLayoutManager(this)
         placeAdapter = MapPlaceAdapter(::moveToPlace)
         searchResults.adapter = placeAdapter

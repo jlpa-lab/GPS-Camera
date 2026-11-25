@@ -21,6 +21,7 @@ import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.BuildConfig
 import com.gps.map.camera.and.time.stamp.MainActivity
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -82,6 +83,8 @@ class LiveVideoActivity : AppCompatActivity() {
         recentSearches = findViewById(R.id.live_video_recent_searches)
         recentSearchList = findViewById(R.id.live_video_recent_search_list)
         noRecentSearches = findViewById(R.id.live_video_no_recent_searches)
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         adapter = LiveVideoAdapter(::openVideo)
 
         videoList.adapter = adapter
@@ -106,7 +109,13 @@ class LiveVideoActivity : AppCompatActivity() {
             }
         }
         updateTabSelection()
-
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AdsManager.showInterHomeBack(this@LiveVideoActivity, onAction = { _ ->
+                    finish()
+                })
+            }
+        })
         searchInput.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus && searchQuery.isNotBlank()) saveRecentSearch(searchQuery)
             if (!hasFocus && searchQuery.isBlank()) {

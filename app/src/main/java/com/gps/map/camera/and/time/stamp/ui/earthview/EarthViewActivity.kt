@@ -64,6 +64,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import android.text.Editable
 import android.text.TextWatcher
+import androidx.activity.OnBackPressedCallback
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import java.util.Locale
 
 class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -158,7 +160,8 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         stateMessage = findViewById(R.id.earth_view_state_message)
         statePrimaryButton = findViewById(R.id.earth_view_state_primary_button)
         stateSecondaryButton = findViewById(R.id.earth_view_state_secondary_button)
-
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         placeAdapter = EarthViewPlaceAdapter(::moveToPlace)
         searchResults.layoutManager = LinearLayoutManager(this)
         searchResults.adapter = placeAdapter
@@ -169,6 +172,14 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         findViewById<View>(R.id.earth_view_search_button).setOnClickListener {
             searchPlace(searchInput.text.toString(), showKeyboard = false)
         }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AdsManager.showInterHomeBack(this@EarthViewActivity, onAction = { _ ->
+                    finish()
+                })
+            }
+        })
+
         dimension2d.setOnClickListener { setViewMode(false) }
         dimension3d.setOnClickListener { setViewMode(true) }
         findViewById<ImageButton>(R.id.earth_view_clear_search).setOnClickListener {

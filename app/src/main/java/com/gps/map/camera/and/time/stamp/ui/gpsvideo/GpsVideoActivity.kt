@@ -46,6 +46,9 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.location.LocationFormatter
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
@@ -233,7 +236,7 @@ class GpsVideoActivity : AppCompatActivity() {
         playButton = findViewById(R.id.gps_video_play)
         soundButton = findViewById(R.id.gps_video_sound)
         galleryThumbnail = findViewById(R.id.gps_video_gallery_thumbnail)
-
+        loadGpsVideoBanner()
         previewFrame = findViewById(R.id.gps_video_player_frame)
         cameraStampOverlay = StampOverlayView(this)
         previewStampOverlay = StampOverlayView(this)
@@ -263,7 +266,12 @@ class GpsVideoActivity : AppCompatActivity() {
         stampCustomization = StampCustomizationStore.read(this)
         cameraStampOverlay.post { updateCameraStampOverlayBounds() }
     }
-
+    private fun loadGpsVideoBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     private fun bindActions() {
         findViewById<View>(R.id.gps_video_back).setOnClickListener { finish() }
         findViewById<View>(R.id.gps_video_preview_back).setOnClickListener { handleBack() }

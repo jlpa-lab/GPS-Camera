@@ -684,12 +684,17 @@ object AdsManager {
     }
 
     fun loadBanner(
-        activity: AppCompatActivity,
+        context: Context,
         adUnitConfig: AdUnitConfig,
         frAds: FrameLayout,
         isCollapse: Boolean,
         onAdClicked: () -> Unit = {},
     ) {
+
+        val activity = context as? Activity ?: run {
+            frAds.visibility = View.GONE
+            return
+        }
         if (adUnitConfig.isEnable) {
             removeBannerView(activity, frAds)
             if (isCollapse) ERainAd.getInstance().loadCollapsibleBanner(

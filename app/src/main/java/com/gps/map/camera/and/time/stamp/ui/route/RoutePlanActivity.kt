@@ -30,6 +30,9 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
@@ -100,6 +103,7 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_route_plan)
         bindViews()
         bindActions()
+        loadRoutePlanBanner()
         restoreState(savedInstanceState)
 
         mapLifecycleEnabled = hasMapsApiKey()
@@ -170,7 +174,12 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         previewModeButton(RouteTravelMode.WALK).setOnClickListener { selectMode(RouteTravelMode.WALK) }
         previewModeButton(RouteTravelMode.CYCLE).setOnClickListener { selectMode(RouteTravelMode.CYCLE) }
     }
-
+    private fun loadRoutePlanBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         map.mapType = GoogleMap.MAP_TYPE_NORMAL

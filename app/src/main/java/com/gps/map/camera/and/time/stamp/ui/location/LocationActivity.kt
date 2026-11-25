@@ -36,6 +36,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlace
 import com.gps.map.camera.and.time.stamp.ui.earthview.EarthPlaceSearch
 import com.gps.map.camera.and.time.stamp.utils.location.GpsLocationProvider
@@ -97,6 +100,7 @@ class LocationActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_location)
         bindViews()
         bindActions()
+        loadLocationBanner()
         restoreState(savedInstanceState)
 
         mapLifecycleEnabled = hasMapsApiKey()
@@ -155,7 +159,12 @@ class LocationActivity : AppCompatActivity(), OnMapReadyCallback {
             override fun handleOnBackPressed() = handleBack()
         })
     }
-
+    private fun loadLocationBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         map.mapType = GoogleMap.MAP_TYPE_NORMAL

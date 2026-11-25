@@ -23,6 +23,7 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
@@ -45,6 +46,9 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.ui.gpscamera.CameraPhotoPreviewActivity
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.OpenMeteoWeather
 import com.gps.map.camera.and.time.stamp.ui.stamptemplate.StampCustomization
@@ -172,7 +176,7 @@ class CameraActivity : AppCompatActivity() {
         lensFacing = savedInstanceState?.getInt(STATE_LENS_FACING, CameraSelector.LENS_FACING_BACK)
             ?: CameraSelector.LENS_FACING_BACK
         cameraSelector = selectorFor(lensFacing)
-
+       if(toolsCameraMode) { loadToolsCameraBanner()}
         cameraPreview = findViewById(R.id.camera_preview)
         cameraTitle = findViewById(R.id.camera_title)
         cameraUnavailablePanel = findViewById(R.id.camera_unavailable_panel)
@@ -182,6 +186,8 @@ class CameraActivity : AppCompatActivity() {
         flashButton = findViewById(R.id.flash_button)
         captureButton = findViewById(R.id.capture_button)
         cameraControls = findViewById(R.id.camera_controls)
+        AdsManager.loadInterHome(this, ignoreLimit = true)
+        AdsManager.loadInterBack(this, ignoreLimit = true)
         stampCustomization = StampCustomizationStore.read(this)
         templateOverlay = StampOverlayView(this)
         previewFrame.addView(
@@ -207,7 +213,13 @@ class CameraActivity : AppCompatActivity() {
                 result.lastLocation?.let(::showLocation)
             }
         }
-
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AdsManager.showInterHomeBack(this@CameraActivity, onAction = { _ ->
+                    finish()
+                })
+            }
+        })
         findViewById<ImageButton>(R.id.back_button).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.camera_gallery_button).setOnClickListener { galleryPicker.launch("image/*") }
         findViewById<ImageButton>(R.id.switch_camera_button).setOnClickListener { switchCamera() }
@@ -221,6 +233,12 @@ class CameraActivity : AppCompatActivity() {
         updateStamp()
     }
 
+    private fun loadToolsCameraBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     override fun onResume() {
         super.onResume()
         if (::templateOverlay.isInitialized) {

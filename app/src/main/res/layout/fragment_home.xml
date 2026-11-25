@@ -1,10 +1,17 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_gradient"
-    android:clipToPadding="false"
-    android:fillViewport="true"
-    android:overScrollMode="never">
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -198,4 +205,20 @@
                 android:layout_weight="1" />
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+    </ScrollView>
+        <FrameLayout
+            android:id="@+id/fr_banner_collapsible_home"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:gravity="bottom"
+            android:background="@color/black">
+
+            <include
+                android:layout_gravity="bottom"
+                android:id="@+id/include_banner_collapsible_home"
+                layout="@layout/layout_banner_control"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </FrameLayout>
+    </LinearLayout>

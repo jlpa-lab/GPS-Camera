@@ -41,7 +41,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/fr_banner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/gallery_header">
@@ -370,4 +370,23 @@
             </LinearLayout>
         </ScrollView>
     </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/fr_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:background="@color/black">
+
+        <include
+            android:id="@+id/include_banner"
+            layout="@layout/layout_banner_control"
+            android:layout_width="match_parent"
+            android:gravity="bottom"
+            android:layout_height="wrap_content" />
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
