@@ -21,6 +21,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolygonOptions
 import com.gps.map.camera.and.time.stamp.R
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementUnit
 import com.gps.map.camera.and.time.stamp.ui.settings.MeasurementFormatter
@@ -67,6 +68,7 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_area_measurement)
+        AdsManager.loadInterAll(this, ignoreLimit = true)
         bindViews()
         bindActions()
 
@@ -109,7 +111,9 @@ class AreaMeasurementActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun bindActions() {
         findViewById<View>(R.id.area_measurement_back).setOnClickListener { finish() }
         actionButton.setOnClickListener {
-            Toast.makeText(this, R.string.area_measurement_tap_map, Toast.LENGTH_SHORT).show()
+            AdsManager.showInterAll(this) {
+                Toast.makeText(this, R.string.area_measurement_tap_map, Toast.LENGTH_SHORT).show()
+            }
         }
         findViewById<View>(R.id.area_measurement_undo).setOnClickListener { undoLastPoint() }
         findViewById<View>(R.id.area_measurement_reset).setOnClickListener { resetBoundary() }

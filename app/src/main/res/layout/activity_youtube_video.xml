@@ -31,7 +31,7 @@
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/live_camera_title"
             android:textColor="@color/location_primary_text"
-            android:textSize="20sp" />
+            android:textSize="18sp" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -112,8 +112,8 @@
 
                     <ImageView
                         android:id="@+id/youtube_pause_icon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:src="@drawable/ic_pause"
                         app:tint="@color/home_accent" />
 
@@ -130,8 +130,8 @@
 
                     <ImageView
                         android:id="@+id/youtube_mute_icon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
                         android:src="@drawable/ic_volume_off_live"
                         app:tint="@color/home_accent" />
 
@@ -147,8 +147,8 @@
 
                     <ImageView
                         android:id="@+id/youtube_fullscreen_icon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
                         android:src="@drawable/ic_fullscreen"
                         app:tint="@color/home_accent" />
 
@@ -168,7 +168,7 @@
                 android:layout_marginEnd="20dp"
                 android:fontFamily="@font/poppins_semibold"
                 android:textColor="@color/primary_text_color"
-                android:textSize="20sp" />
+                android:textSize="18sp" />
 
             <TextView
                 android:id="@+id/youtube_video_location"
@@ -179,7 +179,7 @@
                 android:layout_marginEnd="20dp"
                 android:fontFamily="@font/poppins_regular"
                 android:textColor="@color/secondary_text_color"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/youtube_reconnect_button"
@@ -212,7 +212,7 @@
                 android:gravity="center"
                 android:text="@string/live_camera_explore"
                 android:textColor="@color/primary_text_color"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

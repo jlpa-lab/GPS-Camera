@@ -39,19 +39,19 @@
                 android:fontFamily="@font/poppins_semibold"
                 android:includeFontPadding="false"
                 android:textColor="@color/primary_text_color"
-                android:textSize="16sp" />
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/permission_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:fontFamily="@font/poppins_regular"
                 android:includeFontPadding="false"
                 android:lineSpacingExtra="2dp"
                 android:maxLines="2"
                 android:textColor="@color/secondary_text_color"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <androidx.appcompat.widget.SwitchCompat

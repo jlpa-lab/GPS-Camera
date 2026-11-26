@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/editor_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/screen_background">
 
+    <!-- 1. Header Bar -->
     <LinearLayout
         android:id="@+id/editor_header"
         android:layout_width="0dp"
@@ -39,6 +41,7 @@
             android:textSize="20sp" />
     </LinearLayout>
 
+    <!-- 2. Media Preview Card -->
     <FrameLayout
         android:id="@+id/editor_media_frame"
         android:layout_width="0dp"
@@ -73,10 +76,12 @@
             android:visibility="gone" />
     </FrameLayout>
 
+    <!-- 3. Tabs Row -->
     <LinearLayout
         android:id="@+id/editor_tabs"
         android:layout_width="0dp"
         android:layout_height="76dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingStart="20dp"
@@ -116,21 +121,23 @@
         <TextView
             android:id="@+id/editor_tab_location"
             style="@style/StampEditorTab"
-            android:visibility="gone"
-            android:text="@string/tab_location" />
+            android:text="@string/tab_location"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/editor_tab_photo"
             style="@style/StampEditorTab"
-            android:visibility="gone"
-            android:text="@string/tab_change_image" />
+            android:text="@string/tab_change_image"
+            android:visibility="gone" />
     </LinearLayout>
 
+    <!-- 4. Details Card -->
     <LinearLayout
         android:id="@+id/editor_details_card"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
         android:background="@drawable/bg_tools_panel"
         android:gravity="center_vertical"
@@ -156,21 +163,23 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1.25"
+            android:ellipsize="end"
             android:fontFamily="@font/poppins_semibold"
             android:gravity="end"
             android:maxLines="1"
-            android:ellipsize="end"
             android:textColor="@color/app_color_text"
             android:textSize="16sp" />
     </LinearLayout>
 
+    <!-- 5. Save Button (Pinned Above Ad Banner) -->
     <TextView
         android:id="@+id/editor_save"
         android:layout_width="0dp"
         android:layout_height="52dp"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_preview_primary"
         android:clickable="true"
         android:focusable="true"
@@ -179,7 +188,7 @@
         android:text="@string/save_photo"
         android:textColor="@color/white"
         android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/fr_banner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/editor_details_card" />
@@ -194,7 +203,8 @@
         android:id="@+id/editor_map_card"
         android:layout_width="84dp"
         android:layout_height="100dp"
-        android:visibility="gone">
+        android:visibility="gone"
+        tools:ignore="MissingConstraints">
 
         <com.google.android.gms.maps.MapView
             android:id="@+id/editor_map_view"
@@ -240,7 +250,8 @@
         android:id="@+id/editor_stamp_panel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone">
+        android:visibility="gone"
+        tools:ignore="MissingConstraints">
 
         <TextView
             android:id="@+id/editor_date"
@@ -257,4 +268,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
     </LinearLayout>
+
+    <!-- 6. Persistent Bottom Banner -->
+    <FrameLayout
+        android:id="@+id/fr_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <include
+            android:id="@+id/include_banner"
+            layout="@layout/layout_banner_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="bottom" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

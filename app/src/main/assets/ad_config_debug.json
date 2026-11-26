@@ -14,6 +14,11 @@
     "isEnable": true,
     "enable_ua_check": false
   },
+  "inter_all": {
+    "id": "ca-app-pub-3940256099942544/1033173712",
+    "isEnable": true,
+    "enable_ua_check": false
+  },
   "inter_splash_uninstall": {
     "id": "ca-app-pub-3940256099942544/1033173712",
     "isEnable": true,

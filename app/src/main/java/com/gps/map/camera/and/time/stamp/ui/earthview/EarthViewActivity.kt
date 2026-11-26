@@ -167,6 +167,7 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
         stateSecondaryButton = findViewById(R.id.earth_view_state_secondary_button)
         AdsManager.loadInterHome(this, ignoreLimit = true)
         AdsManager.loadInterBack(this, ignoreLimit = true)
+        AdsManager.loadInterAll(this, ignoreLimit = true)
         placeAdapter = EarthViewPlaceAdapter(::moveToPlace)
         searchResults.layoutManager = LinearLayoutManager(this)
         searchResults.adapter = placeAdapter
@@ -206,7 +207,9 @@ class EarthViewActivity : AppCompatActivity(), OnMapReadyCallback {
             openCurrentLocationInStreetView()
         }
         resultStreetViewButton.setOnClickListener {
-            openSelectedPlaceInStreetView()
+            AdsManager.showInterAll(this) {
+                openSelectedPlaceInStreetView()
+            }
         }
         splitView.setOnClickListener {
             // The split-view affordance is the map result's direct entry point

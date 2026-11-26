@@ -576,7 +576,7 @@
     <string name="live_camera_muted">Muted</string>
     <string name="live_camera_unmuted">Unmuted</string>
     <string name="live_camera_fullscreen">Full screen</string>
-    <string name="live_camera_exit_fullscreen">Exit full screen</string>
+    <string name="live_camera_exit_fullscreen">full screen</string>
     <string name="live_camera_explore">Explore more cameras</string>
     <string name="live_camera_stream_interrupted">Stream interrupted</string>
     <string name="live_camera_reconnect">Reconnect</string>

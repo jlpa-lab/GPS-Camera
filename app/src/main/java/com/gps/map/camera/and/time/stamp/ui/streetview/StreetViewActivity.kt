@@ -8,6 +8,7 @@ import android.text.Editable
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -21,13 +22,13 @@ import androidx.activity.OnBackPressedCallback
 import android.widget.Toast
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -192,6 +193,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         streetPlaceAdapter = EarthViewPlaceAdapter(::selectSearchPlace)
         streetSearchResults.layoutManager = LinearLayoutManager(this)
         streetSearchResults.adapter = streetPlaceAdapter
+
         previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
         previewContainer.clipToOutline = true
         mapContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
@@ -961,29 +963,87 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun toggleMapFullscreen() {
         mapFullscreen = !mapFullscreen
+
         previewContainer.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_divider).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_map_title).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_section_title).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
         mapPlace.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
-        val params = mapContainer.layoutParams
-        params.height = dp(
-            if (mapFullscreen) FULLSCREEN_PANEL_HEIGHT_DP else NORMAL_MAP_HEIGHT_DP
-        )
-        mapContainer.layoutParams = params
+
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.street_view_content_scroll)
+        val contentLayout = findViewById<LinearLayout>(R.id.street_view_content)
+        val mapParams = mapContainer.layoutParams as LinearLayout.LayoutParams
+
+        if (mapFullscreen) {
+            scrollView?.isNestedScrollingEnabled = false
+            scrollView?.scrollTo(0, 0)
+
+            val contentParams = contentLayout.layoutParams
+            contentParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            contentLayout.layoutParams = contentParams
+
+            mapParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            mapParams.weight = 0f
+            mapParams.setMargins(0, 0, 0, 0)
+        } else {
+            scrollView?.isNestedScrollingEnabled = true
+
+            val contentParams = contentLayout.layoutParams
+            contentParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            contentLayout.layoutParams = contentParams
+
+            mapParams.height = 0
+            mapParams.weight = 5f
+            val sideMarginPx = dp(20)
+            mapParams.setMargins(sideMarginPx, dp(16), sideMarginPx, 0)
+        }
+
+        mapContainer.layoutParams = mapParams
         mapContainer.requestLayout()
     }
 
     private fun togglePanoramaFullscreen() {
         panoramaFullscreenMode = !panoramaFullscreenMode
         findViewById<View>(R.id.street_view_map_title).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_section_title).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         mapPlace.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         mapContainer.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_divider).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
-        val params = previewContainer.layoutParams
-        params.height = dp(
-            if (panoramaFullscreenMode) FULLSCREEN_PANEL_HEIGHT_DP else NORMAL_PREVIEW_HEIGHT_DP
-        )
-        previewContainer.layoutParams = params
+
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.street_view_content_scroll)
+        val contentLayout = findViewById<LinearLayout>(R.id.street_view_content)
+        val previewParams = previewContainer.layoutParams as LinearLayout.LayoutParams
+
+        if (panoramaFullscreenMode) {
+            // Disable scroll and jump to top
+            scrollView?.isNestedScrollingEnabled = false
+            scrollView?.scrollTo(0, 0)
+
+            // Expand content container to match parent
+            val contentParams = contentLayout.layoutParams
+            contentParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            contentLayout.layoutParams = contentParams
+
+            // Expand panorama preview frame to fill full screen
+            previewParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            previewParams.weight = 0f
+            previewParams.setMargins(0, 0, 0, 0)
+        } else {
+            // Re-enable scroll view
+            scrollView?.isNestedScrollingEnabled = true
+
+            val contentParams = contentLayout.layoutParams
+            contentParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            contentLayout.layoutParams = contentParams
+
+            // Restore preview frame height and margins
+            previewParams.height = 0
+            previewParams.weight = 5f
+            val sideMarginPx = dp(20)
+            previewParams.setMargins(sideMarginPx, dp(20), sideMarginPx, 0)
+        }
+
+        previewContainer.layoutParams = previewParams
         previewContainer.requestLayout()
     }
 

@@ -12,6 +12,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
 import android.location.Geocoder
 import android.net.Uri
@@ -55,6 +56,9 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
+import com.gps.map.camera.and.time.stamp.ads.AdsManager
+import com.gps.map.camera.and.time.stamp.ads.banner_all
 import com.gps.map.camera.and.time.stamp.ui.camera.CameraActivity
 import java.io.File
 import java.io.FileInputStream
@@ -92,6 +96,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var coordinatesText: TextView
     private lateinit var dateText: TextView
     private lateinit var locationClientLabel: TextView
+    private lateinit var locationPill: TextView
     private lateinit var templateOverlay: StampOverlayView
     private val saveExecutor = Executors.newSingleThreadExecutor()
     private val addressExecutor = Executors.newSingleThreadExecutor()
@@ -108,6 +113,9 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var photoOffsetX = 0f
     private var photoOffsetY = 0f
     private var mapCardBoundsFraction: RectF? = null
+    private var locationPillBoundsFraction: RectF? = null
+    private var locationPillVisible = false
+    private var locationPillText = ""
     private var stampPositionIndex = 0
     private var latitude = Double.NaN
     private var longitude = Double.NaN
@@ -130,11 +138,14 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private val fullscreenPreviewLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) saveEditedPhoto()
     }
-
+    private val galleryPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let(::replaceStampImage)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(if (toolsCameraMode) R.layout.activity_tools_stamp_editor else R.layout.activity_gps_stamp_editor)
-
+        if(toolsCameraMode) { loadStampEditorBanner()}
+        AdsManager.loadInterAll(this, ignoreLimit = true)
         val photoText = intent.getStringExtra(CameraActivity.EXTRA_PHOTO_URI)
         if (photoText == null) {
             finish()
@@ -162,6 +173,8 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         photoView = findViewById(R.id.editor_photo)
         photoView.setImageURI(sourcePhotoUri)
         mediaFrame = findViewById(R.id.editor_media_frame)
+        locationPill = findViewById(R.id.editor_location_pill)
+        enableLocationPillDrag()
         mapView = findViewById(R.id.editor_map_view)
         mapCard = findViewById(R.id.editor_map_card)
         mapPreview = findViewById(R.id.editor_map_image)
@@ -203,6 +216,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
         }
         addressText.text = editorPlaceLabel(address)
+        updateLocationPillText(address)
         locationClientLabel.text = getString(R.string.weather_unavailable)
 
         mapEnabled = hasMapsApiKey()
@@ -217,7 +231,11 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         findViewById<View>(R.id.editor_back).setOnClickListener { finish() }
-        findViewById<TextView>(R.id.editor_save).setOnClickListener { saveEditedPhoto() }
+        findViewById<TextView>(R.id.editor_save).setOnClickListener {
+            AdsManager.showInterAll(this) {
+                saveEditedPhoto()
+            }
+        }
         findViewById<ImageButton>(R.id.editor_fullscreen).setOnClickListener { openFullscreenPreview() }
         findViewById<TextView>(R.id.editor_tab_details).setOnClickListener {
             showDetailsMode()
@@ -229,7 +247,10 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             if (toolsCameraMode) chooseTemplate() else toggleMap()
         }
         findViewById<TextView>(R.id.editor_tab_location).setOnClickListener { toggleLocationDetails() }
-        findViewById<TextView>(R.id.editor_tab_photo).setOnClickListener { showChangeImageMode() }
+        findViewById<TextView>(R.id.editor_tab_photo).setOnClickListener {
+           // showChangeImageMode()
+            galleryPicker.launch("image/*")
+        }
         changeImageOverlay.setOnClickListener {
             launchStampImagePicker()
         }
@@ -239,7 +260,12 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         refreshTemplateOverlay()
         setSelectedTab(R.id.editor_tab_details)
     }
-
+    private fun loadStampEditorBanner() {
+        val bannerConfig = AdRemoteConfig.banner_all
+        AdsManager.loadBanner(
+            this, bannerConfig, findViewById(R.id.fr_banner), isCollapse = false
+        )
+    }
     override fun onStart() {
         super.onStart()
         if (mapEnabled) mapView.onStart()
@@ -323,26 +349,58 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         if (latitude.isNaN() || longitude.isNaN()) {
             address = getString(R.string.location_unavailable)
             addressText.text = editorPlaceLabel(address)
+            updateLocationPillText(address)
             return
         }
         addressExecutor.execute {
-            val resolvedAddress = try {
+            val geocodedAddress = try {
                 if (!Geocoder.isPresent()) null else {
                     @Suppress("DEPRECATION")
                     Geocoder(this, Locale.getDefault()).getFromLocation(latitude, longitude, 1)
-                        ?.firstOrNull()?.getAddressLine(0)
+                        ?.firstOrNull()
                 }
             } catch (_: Exception) {
                 null
             }
+            val resolvedAddress = geocodedAddress?.getAddressLine(0)
             val displayAddress = resolvedAddress?.takeIf { it.isNotBlank() }
                 ?: String.format(Locale.getDefault(), "%.5f, %.5f", latitude, longitude)
+            val cityAndCountry = listOfNotNull(
+                geocodedAddress?.locality?.takeIf { it.isNotBlank() }
+                    ?: geocodedAddress?.subAdminArea?.takeIf { it.isNotBlank() },
+                geocodedAddress?.countryName?.takeIf { it.isNotBlank() }
+            ).joinToString(", ")
             address = displayAddress
             runOnUiThread {
                 addressText.text = editorPlaceLabel(displayAddress)
+                updateLocationPillText(cityAndCountry.ifBlank { displayAddress })
                 refreshTemplateOverlay()
             }
         }
+    }
+
+    private fun updateLocationPillText(value: String) {
+        locationPillText = cityCountryFromAddress(value)
+        if (::locationPill.isInitialized) locationPill.text = locationPillText
+    }
+
+    private fun cityCountryFromAddress(value: String): String {
+        val parts = value.replace(Regex("\\s+"), " ")
+            .split(',')
+            .map(String::trim)
+            .filter(String::isNotBlank)
+        if (parts.size < 2) return value.trim()
+        if (parts.all { it.toDoubleOrNull() != null }) {
+            return getString(R.string.location_unavailable)
+        }
+
+        val firstPart = parts.first()
+        val firstPartLower = firstPart.lowercase(Locale.getDefault())
+        val looksLikeStreet = firstPart.any(Char::isDigit) ||
+            listOf(" street", " st", " road", " rd", " avenue", " ave", " boulevard", " blvd", " drive", " dr")
+                .any { firstPartLower.contains(it) }
+        val city = if (looksLikeStreet) parts.getOrNull(1) ?: firstPart else firstPart
+        return "$city, ${parts.last()}"
     }
 
     /** Keeps the Tools editor's compact Place row to a useful city/region label. */
@@ -649,22 +707,47 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun toggleLocationDetails() {
-        changeImageOverlay.visibility = View.GONE
-        swappedImages = false
-        useLiveMapInTemplate = true
-        photoView.setImageURI(sourcePhotoUri)
-        mapView.visibility = if (mapEnabled) View.VISIBLE else View.GONE
-        mapCardVisible = true
-        updateStandaloneMapVisibility()
-        mapFallback.visibility = View.GONE
-        showCurrentLocationMapPreview()
-        updateTemplateFloatingImage()
+        locationPillVisible = !locationPillVisible
+        locationPill.text = locationPillText
+        locationPill.visibility = if (locationPillVisible) View.VISIBLE else View.GONE
         setSelectedTab(R.id.editor_tab_location)
     }
 
+    private fun enableLocationPillDrag() {
+        var previousRawX = 0f
+        var previousRawY = 0f
+
+        locationPill.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    previousRawX = event.rawX
+                    previousRawY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.rawX - previousRawX
+                    val deltaY = event.rawY - previousRawY
+                    val maxLeft = (mediaFrame.width - view.width).coerceAtLeast(0).toFloat()
+                    val maxTop = (mediaFrame.height - view.height).coerceAtLeast(0).toFloat()
+                    val newLeft = (view.x + deltaX).coerceIn(0f, maxLeft)
+                    val newTop = (view.y + deltaY).coerceIn(0f, maxTop)
+                    view.translationX += newLeft - view.x
+                    view.translationY += newTop - view.y
+                    previousRawX = event.rawX
+                    previousRawY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
+                else -> true
+            }
+        }
+    }
+
     private fun showDetailsMode() {
-        templateVisible = false
-        templateOverlay.visibility = View.GONE
+        templateVisible = !templateVisible
+        templateOverlay.visibility =
+            if (templateVisible) View.VISIBLE else View.GONE
+
         changeImageOverlay.visibility = View.GONE
         swappedImages = false
         photoView.setImageURI(sourcePhotoUri)
@@ -674,6 +757,11 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFallback.visibility = View.GONE
         showStampImagePreview()
         updateTemplateFloatingImage()
+
+        if (templateVisible) {
+            refreshTemplateOverlay()
+        }
+
         setSelectedTab(R.id.editor_tab_details)
     }
 
@@ -843,6 +931,19 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
                 (visualTop + mapCard.height * scale) / photoView.height
             )
         }
+        locationPillBoundsFraction = if (
+            locationPillVisible && locationPill.width > 0 && locationPill.height > 0 &&
+            photoView.width > 0 && photoView.height > 0
+        ) {
+            RectF(
+                locationPill.x / photoView.width,
+                locationPill.y / photoView.height,
+                (locationPill.x + locationPill.width) / photoView.width,
+                (locationPill.y + locationPill.height) / photoView.height
+            )
+        } else {
+            null
+        }
     }
 
     private fun renderAndSave(mapBitmap: Bitmap?) {
@@ -981,6 +1082,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             canvas.drawBitmap(floatingBitmap, null, mapRect, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
             canvas.restore()
         }
+        if (locationPillVisible) drawLocationPill(canvas, photo)
         if (templateVisible) {
             val customization = stampCustomization ?: StampCustomizationStore.read(this)
             StampRenderer.draw(
@@ -1010,6 +1112,42 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             floatingBitmap.recycle()
         }
         return result
+    }
+
+    private fun drawLocationPill(canvas: Canvas, photo: Bitmap) {
+        val fraction = locationPillBoundsFraction ?: return
+        val text = locationPillText.takeIf(String::isNotBlank) ?: return
+        val bounds = RectF(
+            fraction.left * photo.width,
+            fraction.top * photo.height,
+            fraction.right * photo.width,
+            fraction.bottom * photo.height
+        )
+        val radius = bounds.height() / 2f
+        canvas.drawRoundRect(bounds, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xCC202127.toInt()
+        })
+        canvas.drawRoundRect(bounds, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF35D0A4.toInt()
+            style = Paint.Style.STROKE
+            strokeWidth = maxOf(2f, photo.width / 540f)
+        })
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = bounds.height() * 0.46f
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        }
+        val availableWidth = bounds.width() - bounds.height() * 0.8f
+        while (textPaint.measureText(text) > availableWidth && textPaint.textSize > 8f) {
+            textPaint.textSize *= 0.92f
+        }
+        val baseline = bounds.centerY() - (textPaint.ascent() + textPaint.descent()) / 2f
+        canvas.drawText(
+            text,
+            bounds.centerX() - textPaint.measureText(text) / 2f,
+            baseline,
+            textPaint
+        )
     }
 
     private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {

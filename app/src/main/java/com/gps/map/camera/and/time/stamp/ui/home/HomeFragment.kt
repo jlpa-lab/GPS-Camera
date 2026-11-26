@@ -2,6 +2,7 @@ package com.gps.map.camera.and.time.stamp.ui.home
 
 import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -130,5 +131,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    override fun onDestroyView() {
+        val bannerFrame = view?.findViewById<FrameLayout>(R.id.fr_banner_collapsible_home)
+        AdsManager.destroyBanner(bannerFrame)
+        super.onDestroyView()
     }
 }

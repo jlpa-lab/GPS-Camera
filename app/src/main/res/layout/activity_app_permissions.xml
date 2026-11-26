@@ -40,7 +40,7 @@
                 android:lineSpacingExtra="4dp"
                 android:text="@string/permissions_subtitle"
                 android:textColor="@color/secondary_text_color"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:id="@+id/permissions_list"
@@ -105,7 +105,7 @@
                 android:includeFontPadding="false"
                 android:text="@string/permissions_settings_hint"
                 android:textColor="@color/permissions_hint_text"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </layout>

@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/screen_background">
 
+    <!-- Header -->
     <LinearLayout
         android:id="@+id/saved_photo_header"
         android:layout_width="0dp"
@@ -23,7 +24,6 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
-            android:padding="12dp"
             android:src="@drawable/ic_back_arrow" />
 
         <TextView
@@ -36,6 +36,7 @@
             android:textSize="20sp" />
     </LinearLayout>
 
+    <!-- Photo Preview Frame -->
     <FrameLayout
         android:id="@+id/saved_photo_frame"
         android:layout_width="0dp"
@@ -43,7 +44,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="24dp"
         android:background="@drawable/bg_preview_photo_card"
         android:clipToOutline="true"
         app:layout_constraintBottom_toTopOf="@id/saved_photo_message"
@@ -59,13 +60,14 @@
             android:scaleType="fitCenter" />
     </FrameLayout>
 
+    <!-- Message Text -->
     <TextView
         android:id="@+id/saved_photo_message"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="20dp"
         android:fontFamily="@font/poppins_semibold"
         android:text="@string/saved_to_gallery"
         android:textColor="@color/primary_text_color"
@@ -74,6 +76,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Action Buttons (Pinned above ad banner) -->
     <LinearLayout
         android:id="@+id/saved_photo_actions"
         android:layout_width="0dp"
@@ -82,7 +85,7 @@
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="16dp"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/fr_banner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -116,4 +119,22 @@
             android:textColor="@color/secondary_text_color"
             android:textSize="16sp" />
     </LinearLayout>
+
+    <!-- Bottom Banner -->
+    <FrameLayout
+        android:id="@+id/fr_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <include
+            android:id="@+id/include_banner"
+            layout="@layout/layout_banner_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="bottom" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

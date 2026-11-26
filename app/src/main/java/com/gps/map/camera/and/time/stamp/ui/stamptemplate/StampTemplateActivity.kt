@@ -72,7 +72,6 @@ class StampTemplateActivity : AppCompatActivity() {
         selectedKey = StampCustomizationStore.selectedTemplate(this)
         showList(false)
         requestLiveContext()
-        loadStampTemplateBanner()
     }
 
     private fun requestLiveContext() {
@@ -126,6 +125,7 @@ class StampTemplateActivity : AppCompatActivity() {
         selectedKey = StampCustomizationStore.selectedTemplate(this)
         listPreviews.clear()
         setContentView(R.layout.activity_stamp_template)
+        loadStampTemplateBanner()
         findViewById<TextView>(R.id.template_title).setText(R.string.tool_template)
         findViewById<TextView>(R.id.template_save).visibility = View.GONE
         findViewById<ImageButton>(R.id.template_back).setOnClickListener { finish() }
@@ -164,6 +164,7 @@ class StampTemplateActivity : AppCompatActivity() {
             dateMenuOpen = false
         }
         setContentView(R.layout.activity_stamp_template)
+        loadStampTemplateBanner()
         findViewById<TextView>(R.id.template_title).text = "Template Settings"
         findViewById<TextView>(R.id.template_save).apply {
             visibility = View.VISIBLE
