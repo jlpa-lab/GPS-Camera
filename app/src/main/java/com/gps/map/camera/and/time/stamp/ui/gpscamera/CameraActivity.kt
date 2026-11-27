@@ -106,7 +106,7 @@ class CameraActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private var activeCamera: Camera? = null
     private var latestLocation: android.location.Location? = null
-    private var locationAddress = "Location unavailable"
+    private var locationAddress = ""
     private var weatherText: String? = null
     private var stampCustomization: StampCustomization? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
@@ -712,7 +712,7 @@ class CameraActivity : AppCompatActivity() {
     @MainThread
     private fun showLocation(location: android.location.Location) {
         latestLocation = location
-        locationAddress = "Current location"
+        locationAddress = getString(R.string.current_location)
         updateStamp()
         imageExecutor.execute {
             val resolved = try {
@@ -726,7 +726,7 @@ class CameraActivity : AppCompatActivity() {
             }
             val weather = OpenMeteoWeather.fetchCached(location.latitude, location.longitude)?.uiText
             runOnUiThread {
-                locationAddress = resolved?.takeIf { it.isNotBlank() } ?: "Current location"
+                locationAddress = resolved?.takeIf { it.isNotBlank() } ?: getString(R.string.current_location)
                 weatherText = weather
                 refreshTemplateOverlay()
             }

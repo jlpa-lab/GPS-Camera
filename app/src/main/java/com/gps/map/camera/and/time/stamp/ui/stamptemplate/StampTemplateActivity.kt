@@ -44,7 +44,6 @@ class StampTemplateActivity : AppCompatActivity() {
     private val card = 0xFF172638.toInt()
     private val input = 0xFF101E2B.toInt()
     private val accent = 0xFF7EBCFF.toInt()
-    private val sampleAddress = "Banff National Park, Alberta, Canada"
     private var selectedKey = ""
     private var draft = StampCustomization("")
     private var dirty = false
@@ -53,7 +52,7 @@ class StampTemplateActivity : AppCompatActivity() {
     private var colorPickerSyncing = false
     private var preview: StampPreviewView? = null
     private val listPreviews = mutableListOf<StampPreviewView>()
-    private var liveAddress = "Location unavailable"
+    private var liveAddress = ""
     private var liveLatitude = Double.NaN
     private var liveLongitude = Double.NaN
     private var liveCapturedAt = System.currentTimeMillis()
@@ -93,7 +92,7 @@ class StampTemplateActivity : AppCompatActivity() {
                 liveLongitude = location.longitude
                 liveCapturedAt = location.time.takeIf { it > 0L } ?: System.currentTimeMillis()
                 locationProvider.reverseGeocodeFull(location) { address ->
-                    liveAddress = address?.takeIf { it.isNotBlank() } ?: "Current location"
+                    liveAddress = address?.takeIf { it.isNotBlank() } ?: getString(R.string.current_location)
                     refreshPreviewData()
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
@@ -109,7 +108,7 @@ class StampTemplateActivity : AppCompatActivity() {
     }
 
     private fun currentRenderData() = StampRenderData(
-        address = liveAddress,
+        address = liveAddress.ifBlank { getString(R.string.location_unavailable) },
         latitude = liveLatitude,
         longitude = liveLongitude,
         capturedAt = liveCapturedAt,
@@ -142,7 +141,7 @@ class StampTemplateActivity : AppCompatActivity() {
                 StampCustomizationStore.selectTemplate(this@StampTemplateActivity, item.key)
                 showSettings()
             }
-            holder.findViewById<TextView>(R.id.template_item_title).text = item.name
+            holder.findViewById<TextView>(R.id.template_item_title).setText(item.nameRes)
             val check = holder.findViewById<ImageView>(R.id.template_item_check)
             check.isSelected = selected
             check.setImageResource(if (selected) R.drawable.ic_template_check else android.R.color.transparent)
@@ -154,7 +153,7 @@ class StampTemplateActivity : AppCompatActivity() {
             holder.findViewById<FrameLayout>(R.id.template_item_preview_host).addView(image, FrameLayout.LayoutParams(-1, -1))
             list.addView(holder)
         }
-        if (showToast) Toast.makeText(this, "Customization saved successfully", Toast.LENGTH_SHORT).show()
+        if (showToast) Toast.makeText(this, R.string.template_saved, Toast.LENGTH_SHORT).show()
     }
 
     private fun showSettings(loadSaved: Boolean = true) {
@@ -165,7 +164,7 @@ class StampTemplateActivity : AppCompatActivity() {
         }
         setContentView(R.layout.activity_stamp_template)
         loadStampTemplateBanner()
-        findViewById<TextView>(R.id.template_title).text = "Template Settings"
+        findViewById<TextView>(R.id.template_title).setText(R.string.template_title)
         findViewById<TextView>(R.id.template_save).apply {
             visibility = View.VISIBLE
             setOnClickListener { saveSettings() }
@@ -191,7 +190,7 @@ class StampTemplateActivity : AppCompatActivity() {
         manual.setOnClickListener {
             draft = draft.copy(
                 addressMode = TemplateAddressMode.MANUAL,
-                manualAddress = draft.manualAddress.ifBlank { "Banff Avenue, Banff, Alberta" }
+                manualAddress = draft.manualAddress.ifBlank { getString(R.string.template_sample_address) }
             )
             dirty = true
             showSettings(false)
@@ -201,7 +200,7 @@ class StampTemplateActivity : AppCompatActivity() {
         bindSelection(detail, draft.addressDetail.ordinal)
         detail.forEachIndexed { index, view -> view.setOnClickListener { draft = draft.copy(addressDetail = TemplateAddressDetail.entries[index]); dirty = true; preview?.setCustomization(draft); bindSelection(detail, index) } }
         if (draft.addressMode == TemplateAddressMode.MANUAL && draft.manualAddress.isBlank()) {
-            draft = draft.copy(manualAddress = "Banff Avenue, Banff, Alberta")
+            draft = draft.copy(manualAddress = getString(R.string.template_sample_address))
             preview?.setCustomization(draft)
         }
         val addressInput = findViewById<EditText>(R.id.template_manual_address_input)
@@ -211,7 +210,9 @@ class StampTemplateActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { draft = draft.copy(manualAddress = s.toString()); dirty = true; preview?.setCustomization(draft) }
             override fun afterTextChanged(s: Editable?) = Unit
         })
-        findViewById<ImageView>(R.id.template_manual_address_map).setOnClickListener { addressInput.setText("Banff Avenue, Banff, Alberta") }
+        findViewById<ImageView>(R.id.template_manual_address_map).setOnClickListener {
+            addressInput.setText(R.string.template_sample_address)
+        }
 
         val dateToggle = findViewById<Switch>(R.id.template_date_toggle)
         dateToggle.isChecked = draft.showDateTime
@@ -265,7 +266,10 @@ class StampTemplateActivity : AppCompatActivity() {
 
     private fun bindDateMenu() {
         dateMenu = findViewById(R.id.template_date_format)
-        dateMenu?.text = "${StampRenderer.formatDate(System.currentTimeMillis(), draft.dateFormat)}   ⌄"
+        dateMenu?.text = getString(
+            R.string.template_date_menu_format,
+            StampRenderer.formatDate(System.currentTimeMillis(), draft.dateFormat)
+        )
         dateMenu?.visibility = if (draft.showDateTime) View.VISIBLE else View.GONE
         dateMenu?.setOnClickListener { chooseDateFormat() }
 
@@ -404,14 +408,19 @@ class StampTemplateActivity : AppCompatActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     override fun onBackPressed() {
-        if (dirty) AlertDialog.Builder(this).setTitle("Discard changes?").setMessage("Your template changes will be lost.").setNegativeButton("Keep editing", null).setPositiveButton("Discard") { _, _ -> showList(false) }.show()
+        if (dirty) AlertDialog.Builder(this)
+            .setTitle(R.string.template_discard_title)
+            .setMessage(R.string.template_discard_message)
+            .setNegativeButton(R.string.template_keep_editing, null)
+            .setPositiveButton(R.string.template_discard) { _, _ -> showList(false) }
+            .show()
         else super.onBackPressed()
     }
 
     private class StampPreviewView(context: Context) : View(context) {
         private val bitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.home_gps_camera)
         private var settings = StampCustomization(StampTemplateCatalog.items.first().key)
-        private var renderData = StampRenderData("Location unavailable", Double.NaN, Double.NaN)
+        private var renderData = StampRenderData(context.getString(R.string.location_unavailable), Double.NaN, Double.NaN)
         init { StampRenderer.configure(context) }
         fun setCustomization(value: StampCustomization) { settings = value; invalidate() }
         fun setRenderData(value: StampRenderData) { renderData = value; invalidate() }

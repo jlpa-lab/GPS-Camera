@@ -69,7 +69,7 @@ class YoutubeVideoActivity : AppCompatActivity() {
         cameraLocation = intent.getStringExtra(EXTRA_LOCATION).orEmpty().ifBlank { fallbackLocation(title) }
         findViewById<TextView>(R.id.youtube_video_title).text = title
         locationLabel = findViewById(R.id.youtube_video_location)
-        locationLabel.text = "LIVE • $cameraLocation"
+        locationLabel.text = getString(R.string.live_location_label, cameraLocation)
 
         previewImage = findViewById(R.id.youtube_preview_image)
         previewPlay = findViewById(R.id.youtube_preview_play)
@@ -141,7 +141,7 @@ class YoutubeVideoActivity : AppCompatActivity() {
         previewPlay.visibility = View.GONE
         webView.visibility = View.VISIBLE
         loading.visibility = View.VISIBLE
-        locationLabel.text = "LIVE • $cameraLocation"
+        locationLabel.text = getString(R.string.live_location_label, cameraLocation)
         reconnectButton.visibility = View.GONE
         exploreButton.setText(R.string.live_camera_explore)
         updateControlState()
@@ -243,13 +243,13 @@ class YoutubeVideoActivity : AppCompatActivity() {
     private fun fallbackLocation(title: String): String {
         val value = title.lowercase()
         return when {
-            "new york" in value || "manhattan" in value -> "New York, USA"
-            "chicago" in value -> "Chicago, USA"
-            "tokyo" in value -> "Tokyo, Japan"
-            "sydney" in value -> "Sydney, Australia"
-            "dubai" in value -> "Dubai, UAE"
+            "new york" in value || "manhattan" in value -> getString(R.string.live_location_new_york)
+            "chicago" in value -> getString(R.string.live_location_chicago)
+            "tokyo" in value -> getString(R.string.live_location_tokyo)
+            "sydney" in value -> getString(R.string.live_location_sydney)
+            "dubai" in value -> getString(R.string.live_location_dubai)
             title.contains(",") -> title.substringAfterLast(",").trim()
-            else -> "Worldwide"
+            else -> getString(R.string.live_location_worldwide)
         }
     }
 

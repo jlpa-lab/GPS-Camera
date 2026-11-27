@@ -280,7 +280,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         if (value == MeasurementUnit.METRIC) R.string.settings_metric else R.string.settings_imperial
     )
 
-    private fun stampLabel(value: String): String = StampTemplateCatalog.item(value).name
+    private fun stampLabel(value: String): String = getString(StampTemplateCatalog.item(value).nameRes)
 
     private fun languageLabel(code: String): String {
         val option = languageChoices().firstOrNull { it.code == code }

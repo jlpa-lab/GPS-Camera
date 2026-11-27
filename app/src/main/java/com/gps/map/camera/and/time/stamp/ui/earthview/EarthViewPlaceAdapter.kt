@@ -1,5 +1,6 @@
 package com.gps.map.camera.and.time.stamp.ui.earthview
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,16 +37,16 @@ class EarthViewPlaceAdapter(
 
         fun bind(place: EarthPlace) {
             name.text = place.name
-            address.text = place.displayAddress()
+            address.text = place.displayAddress(itemView.context)
             itemView.setOnClickListener { onPlaceClick(place) }
         }
     }
 
-    private fun EarthPlace.displayAddress(): String {
+    private fun EarthPlace.displayAddress(context: Context): String {
         val parts = address.split(',').map(String::trim).filter(String::isNotEmpty)
         return when {
             parts.size >= 2 -> parts.takeLast(2).joinToString(", ")
-            parts.firstOrNull().equals(name, ignoreCase = true) -> "Country"
+            parts.firstOrNull().equals(name, ignoreCase = true) -> context.getString(R.string.place_type_country)
             else -> address
         }
     }

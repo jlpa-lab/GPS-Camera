@@ -531,13 +531,13 @@ class LiveVideoActivity : AppCompatActivity() {
         video.location?.takeIf { it.isNotBlank() }?.let { return it }
         val value = video.name.lowercase(Locale.getDefault())
         return when {
-            "new york" in value -> "New York, USA"
-            "chicago" in value -> "Chicago, USA"
-            "tokyo" in value -> "Tokyo, Japan"
-            "sydney" in value -> "Sydney, Australia"
-            "dubai" in value -> "Dubai, UAE"
+            "new york" in value -> getString(R.string.live_location_new_york)
+            "chicago" in value -> getString(R.string.live_location_chicago)
+            "tokyo" in value -> getString(R.string.live_location_tokyo)
+            "sydney" in value -> getString(R.string.live_location_sydney)
+            "dubai" in value -> getString(R.string.live_location_dubai)
             video.name.contains(",") -> video.name.substringAfterLast(",").trim()
-            else -> "Worldwide"
+            else -> getString(R.string.live_location_worldwide)
         }
     }
 
@@ -587,15 +587,16 @@ class LiveVideoActivity : AppCompatActivity() {
                     video.name.contains("tokyo shinjuku", ignoreCase = true) -> "Tokyo Shinjuku"
                     else -> video.name
                 }
-                location.text = "LIVE • ${video.location ?: when {
-                    video.name.contains("new york", ignoreCase = true) -> "New York, USA"
-                    video.name.contains("chicago", ignoreCase = true) -> "Chicago, USA"
-                    video.name.contains("tokyo", ignoreCase = true) -> "Tokyo, Japan"
-                    video.name.contains("sydney", ignoreCase = true) -> "Sydney, Australia"
-                    video.name.contains("dubai", ignoreCase = true) -> "Dubai, UAE"
+                val locationName = video.location ?: when {
+                    video.name.contains("new york", ignoreCase = true) -> itemView.context.getString(R.string.live_location_new_york)
+                    video.name.contains("chicago", ignoreCase = true) -> itemView.context.getString(R.string.live_location_chicago)
+                    video.name.contains("tokyo", ignoreCase = true) -> itemView.context.getString(R.string.live_location_tokyo)
+                    video.name.contains("sydney", ignoreCase = true) -> itemView.context.getString(R.string.live_location_sydney)
+                    video.name.contains("dubai", ignoreCase = true) -> itemView.context.getString(R.string.live_location_dubai)
                     video.name.contains(",") -> video.name.substringAfterLast(",").trim()
-                    else -> "Worldwide"
-                }}"
+                    else -> itemView.context.getString(R.string.live_location_worldwide)
+                }
+                location.text = itemView.context.getString(R.string.live_location_label, locationName)
                 Glide.with(thumbnail)
                     .load(video.thumbnailUrl ?: "https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg")
                     .placeholder(R.drawable.bg_live_video_black)

@@ -38,8 +38,10 @@ object StampRenderer {
     // an Activity/View has had a chance to configure the app fonts.
     @Volatile private var regularTypeface: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     @Volatile private var semiboldTypeface: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
+    @Volatile private var appContext: Context? = null
 
     fun configure(context: Context) {
+        appContext = context.applicationContext
         regularTypeface = ResourcesCompat.getFont(context, R.font.poppins_regular)
             ?: Typeface.create("sans-serif", Typeface.NORMAL)
         semiboldTypeface = ResourcesCompat.getFont(context, R.font.poppins_semibold)
@@ -501,7 +503,9 @@ object StampRenderer {
     }
 
     fun formatCoordinates(latitude: Double, longitude: Double): String {
-        if (latitude.isNaN() || longitude.isNaN()) return "Location unavailable"
+        if (latitude.isNaN() || longitude.isNaN()) {
+            return appContext?.getString(R.string.location_unavailable) ?: ""
+        }
         val lat = String.format(Locale.getDefault(), "%.4f° %s", kotlin.math.abs(latitude), if (latitude >= 0) "N" else "S")
         val lon = String.format(Locale.getDefault(), "%.4f° %s", kotlin.math.abs(longitude), if (longitude >= 0) "E" else "W")
         return "$lat · $lon"

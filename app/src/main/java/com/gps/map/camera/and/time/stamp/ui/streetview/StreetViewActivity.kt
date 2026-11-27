@@ -2,6 +2,7 @@ package com.gps.map.camera.and.time.stamp.ui.streetview
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Point
 import android.os.Bundle
 import android.text.Editable
@@ -41,7 +42,6 @@ import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.RoundCap
-import com.bumptech.glide.Glide
 import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.ads.bindNativeAllAd
@@ -59,7 +59,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.math.abs
 
 /** Lets the user drop Pegman on a real map before opening Street View. */
 class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
@@ -68,7 +67,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private enum class ScreenState { DRAG, RELEASE, PANORAMA, UNAVAILABLE }
 
     private lateinit var panoramaView: StreetViewPanoramaView
-    private lateinit var staticPanorama: ImageView
     private lateinit var mapView: MapView
     private lateinit var coverageWebMap: WebView
     private lateinit var previewContainer: FrameLayout
@@ -80,9 +78,11 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var tryAnotherRoad: TextView
     private lateinit var panoramaLocation: View
     private lateinit var panoramaFullscreen: TextView
+    private lateinit var panoramaSplitView: TextView
     private lateinit var mapPlace: TextView
     private lateinit var pegman: ImageView
-    private lateinit var mapLocationPegman: ImageView
+    private lateinit var mapLocationFocus: ImageButton
+    private lateinit var currentLocationDot: ImageView
     private lateinit var mapZoomIn: TextView
     private lateinit var mapZoomOut: TextView
     private lateinit var streetSearchIcon: View
@@ -95,6 +95,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private val coverageRoads = mutableListOf<Polyline>()
     private var lastPanoramaLocation: StreetViewPanoramaLocation? = null
     private var selectedMapPoint: LatLng? = null
+    private var currentLocationPoint: LatLng? = null
+    private var focusLocationPending = false
     private var shouldUseCurrentLocation = false
     private var manualPlaceSelected = false
     private var panorama: StreetViewPanorama? = null
@@ -106,9 +108,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private var permissionWasRequested = false
     private var returningFromSettings = false
     private var lastLocationProblem: GpsLocationProvider.LocationProblem? = null
-    private var downRawX = 0f
-    private var downRawY = 0f
-    private var pegmanMoved = false
+    private var pegmanMarkersVisible = true
     private var locationJob: Job? = null
     private var panoramaJob: Job? = null
     private var metadataJob: Job? = null
@@ -168,7 +168,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun bindViews() {
         panoramaView = findViewById(R.id.street_view_panorama)
-        staticPanorama = findViewById(R.id.street_view_static_panorama)
         mapView = findViewById(R.id.street_view_aerial_map)
         coverageWebMap = findViewById(R.id.street_view_coverage_web_map)
         previewContainer = findViewById(R.id.street_view_preview_container)
@@ -180,9 +179,11 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         tryAnotherRoad = findViewById(R.id.street_view_try_another_road)
         panoramaLocation = findViewById(R.id.street_view_panorama_location)
         panoramaFullscreen = findViewById(R.id.street_view_panorama_fullscreen)
+        panoramaSplitView = findViewById(R.id.street_view_panorama_split_view)
         mapPlace = findViewById(R.id.street_view_map_place)
         pegman = findViewById(R.id.street_view_pegman)
-        mapLocationPegman = findViewById(R.id.street_view_map_location_pegman)
+        mapLocationFocus = findViewById(R.id.street_view_my_location)
+        currentLocationDot = findViewById(R.id.street_view_current_location_dot)
         mapZoomIn = findViewById(R.id.street_view_map_zoom_in)
         mapZoomOut = findViewById(R.id.street_view_map_zoom_out)
         streetSearchIcon = findViewById(R.id.street_view_search_icon)
@@ -192,6 +193,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         streetPlaceAdapter = EarthViewPlaceAdapter(::selectSearchPlace)
         streetSearchResults.layoutManager = LinearLayoutManager(this)
         streetSearchResults.adapter = streetPlaceAdapter
+
+        // The toggle is an ordinary Android control. Remove any theme-provided
+        // ripple/elevation surface so it cannot add a white halo below the icon.
+        pegman.background = null
+        pegman.foreground = null
+        pegman.stateListAnimator = null
+        pegman.elevation = 0f
 
         previewContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
         previewContainer.clipToOutline = true
@@ -213,6 +221,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun setupCoverageWebMap() {
         val apiKey = mapsApiKey() ?: return
+        coverageWebMapReady = false
         coverageWebMap.settings.javaScriptEnabled = true
         coverageWebMap.settings.domStorageEnabled = true
         coverageWebMap.settings.allowFileAccess = false
@@ -223,7 +232,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 // Keep the native map visible until the JavaScript API confirms that
                 // the coverage layer was created. This preserves the native fallback
                 // when the key/network does not allow the Maps JS API to load.
-                coverageWebMapReady = false
             }
         }
         coverageWebMap.loadDataWithBaseURL(
@@ -242,10 +250,31 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         return """
             <!doctype html><html><head>
               <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-              <style>html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#dfe8e4}</style>
+              <style>
+                html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#dfe8e4}
+    .gm-svpc,
+    .gm-bundled-control,
+    .gm-bundled-control > div{display:none !important;visibility:hidden !important;opacity:0 !important;pointer-events:none !important}
+              </style>
             </head><body><div id="map"></div>
             <script>
               let coverageMap;
+              let coverageLayer;
+              let panoramaMarker;
+              let gpsMarker;
+              let coverageVisible = true;
+              const pegmanIconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">' +
+                '<circle cx="20" cy="20" r="19.5" fill="#FFD46B" stroke="#FFF2C6"/>' +
+                '<circle cx="20" cy="12.5" r="2.6" fill="#172638"/>' +
+                '<path d="M15.1 22v-3.2c0-1.8 1.5-3.1 3.2-3.1h3.4c1.7 0 3.2 1.3 3.2 3.1V22h-2.2v6.2c0 .6-.4 1-1 1h-3.4c-.6 0-1-.4-1-1V22h-2.2Z" fill="#172638"/>' +
+                '</svg>'
+              );
+              const gpsIconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">' +
+                '<circle cx="10" cy="10" r="8.5" fill="#4285F4" stroke="#FFFFFF" stroke-width="3"/>' +
+                '</svg>'
+              );
               async function initStreetCoverage() {
                 const maps = await google.maps.importLibrary("maps");
                 const streetView = await google.maps.importLibrary("streetView");
@@ -255,8 +284,29 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                   fullscreenControl: false, mapTypeControl: false, zoomControl: false,
                   styles: [{featureType:"poi",stylers:[{visibility:"off"}]}]
                 });
-                const coverage = new streetView.StreetViewCoverageLayer();
-                coverage.setMap(coverageMap);
+                coverageLayer = new streetView.StreetViewCoverageLayer();
+                coverageLayer.setMap(coverageMap);
+    hideGoogleStreetViewControl();
+                panoramaMarker = new google.maps.Marker({
+                  map: coverageMap,
+                  visible: false,
+                  zIndex: 20,
+                  icon: {
+                    url: pegmanIconUrl,
+                    scaledSize: new google.maps.Size(40, 40),
+                    anchor: new google.maps.Point(20, 40)
+                  }
+                });
+                gpsMarker = new google.maps.Marker({
+                  map: coverageMap,
+                  visible: false,
+                  zIndex: 30,
+                  icon: {
+                    url: gpsIconUrl,
+                    scaledSize: new google.maps.Size(20, 20),
+                    anchor: new google.maps.Point(10, 10)
+                  }
+                });
                 coverageMap.addListener("click", function(event) {
                   if (event.latLng && window.Android) {
                     window.Android.onMapClicked(event.latLng.lat(), event.latLng.lng());
@@ -264,8 +314,50 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 });
                 if (window.Android) window.Android.onMapReady();
               }
+  function hideGoogleStreetViewControl() {
+    document.querySelectorAll('.gm-svpc').forEach(function(control) {
+      const wrapper = control.closest('.gm-bundled-control') || control.parentElement;
+      if (wrapper) {
+        wrapper.style.setProperty('display', 'none', 'important');
+        wrapper.style.setProperty('visibility', 'hidden', 'important');
+        wrapper.style.setProperty('pointer-events', 'none', 'important');
+      }
+    });
+  }
               function moveCoverageMap(lat, lng) {
                 if (coverageMap) coverageMap.panTo({lat:lat,lng:lng});
+              }
+              function setGpsLocation(lat, lng) {
+                if (!gpsMarker) return;
+                gpsMarker.setPosition({lat:lat,lng:lng});
+                gpsMarker.setMap(coverageMap);
+                gpsMarker.setVisible(true);
+              }
+              function setPanoramaMarker(lat, lng) {
+                if (!panoramaMarker) return;
+                const position = {lat:lat,lng:lng};
+                panoramaMarker.setPosition(position);
+                panoramaMarker.setMap(coverageVisible ? coverageMap : null);
+                panoramaMarker.setVisible(coverageVisible);
+                if (coverageMap && (!coverageMap.getBounds() || !coverageMap.getBounds().contains(position))) {
+                  coverageMap.panTo(position);
+                }
+              }
+              function setCoverageVisible(visible) {
+                coverageVisible = visible;
+                if (coverageLayer) coverageLayer.setMap(visible ? coverageMap : null);
+                if (panoramaMarker) {
+                  panoramaMarker.setMap(visible ? coverageMap : null);
+                  panoramaMarker.setVisible(visible);
+                }
+              }
+              function zoomCoverageMap(delta) {
+                if (coverageMap) coverageMap.setZoom(coverageMap.getZoom() + delta);
+              }
+              function resizeCoverageMap() {
+                if (!coverageMap) return;
+                google.maps.event.trigger(coverageMap, "resize");
+                hideGoogleStreetViewControl();
               }
             </script>
             <script async defer src="https://maps.googleapis.com/maps/api/js?key=$apiKey&callback=initStreetCoverage"></script>
@@ -292,13 +384,41 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
+    private fun syncCoverageWebMapGps(point: LatLng) {
+        if (!coverageWebMapReady) return
+        coverageWebMap.post {
+            coverageWebMap.evaluateJavascript(
+                "setGpsLocation(${point.latitude},${point.longitude})",
+                null
+            )
+        }
+    }
+
+    private fun syncCoverageWebMapPanorama(point: LatLng) {
+        if (!coverageWebMapReady) return
+        coverageWebMap.post {
+            coverageWebMap.evaluateJavascript(
+                "setPanoramaMarker(${point.latitude},${point.longitude})",
+                null
+            )
+        }
+    }
+
     private inner class CoverageMapBridge {
         @JavascriptInterface
         fun onMapReady() {
             runOnUiThread {
                 coverageWebMapReady = true
                 coverageWebMap.visibility = View.VISIBLE
+                mapView.visibility = View.GONE
+                currentLocationDot.visibility = View.GONE
                 initialCoveragePoint()?.let(::syncCoverageWebMap)
+                currentLocationPoint?.let(::syncCoverageWebMapGps)
+                lastPanoramaLocation?.position?.let(::syncCoverageWebMapPanorama)
+                coverageWebMap.evaluateJavascript(
+                    "resizeCoverageMap(); setCoverageVisible(${pegmanMarkersVisible})",
+                    null
+                )
             }
         }
 
@@ -335,7 +455,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
         findViewById<ImageButton>(R.id.street_view_map_fullscreen)
             .setOnClickListener { toggleMapFullscreen() }
+        mapLocationFocus.setOnClickListener { focusMapOnCurrentLocation() }
         panoramaFullscreen.setOnClickListener { togglePanoramaFullscreen() }
+        panoramaSplitView.setOnClickListener { togglePanoramaFullscreen() }
         tryAnotherRoad.setOnClickListener { openStreetView() }
         streetSearchIcon.setOnClickListener { startStreetSearch() }
         findViewById<View>(R.id.street_view_search_button).setOnClickListener {
@@ -376,7 +498,7 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
             override fun afterTextChanged(text: Editable?) = Unit
         })
-        pegman.setOnTouchListener(::onPegmanTouch)
+        pegman.setOnClickListener { togglePegmanMarkers() }
         mapZoomIn.setOnClickListener { zoomMap(1f) }
         mapZoomOut.setOnClickListener { zoomMap(-1f) }
     }
@@ -390,6 +512,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         map.uiSettings.isScrollGesturesEnabled = true
         map.uiSettings.isRotateGesturesEnabled = true
         map.uiSettings.isTiltGesturesEnabled = false
+        // Use the custom focus control above Pegman while retaining the native
+        // blue current-location dot on the map.
+        map.uiSettings.isMyLocationButtonEnabled = false
         map.mapType = GoogleMap.MAP_TYPE_NORMAL
         map.setOnMapClickListener(::selectMapPoint)
         map.setOnPolylineClickListener { road ->
@@ -400,13 +525,11 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             road.points.lastOrNull()?.let(::selectMapPoint)
         }
         map.setOnCameraIdleListener {
-            // Pegman is a map marker in the reference flow, not a screen
-            // sticker. Reproject it whenever the user pans or zooms.
-            selectedMapPoint?.let(::positionMapLocationPegman)
+            currentLocationPoint?.let(::positionCurrentLocationDot)
             positionMapPegmanBottomRight()
         }
         map.setOnMapLoadedCallback {
-            selectedMapPoint?.let(::positionMapLocationPegman)
+            currentLocationPoint?.let(::positionCurrentLocationDot)
             positionMapPegmanBottomRight()
             lastPanoramaLocation?.let(::drawCoverageRoad)
         }
@@ -447,7 +570,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             } else {
                 panoramaHasLocation = true
                 pendingPanoramaId = null
-                staticPanorama.visibility = View.GONE
                 panoramaJob?.cancel()
                 drawCoverageRoad(location)
                 showPreviewState()
@@ -461,45 +583,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         } ?: selectedPlace?.let {
             requestPanorama(LatLng(it.latitude, it.longitude))
         } ?: showPreviewState()
-    }
-
-    private fun onPegmanTouch(view: View, event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                view.parent?.requestDisallowInterceptTouchEvent(true)
-                view.tag = floatArrayOf(view.translationX, view.translationY)
-                downRawX = event.rawX
-                downRawY = event.rawY
-                pegmanMoved = false
-                return true
-            }
-            MotionEvent.ACTION_MOVE -> {
-                val start = view.tag as? FloatArray ?: return true
-                pegmanMoved = pegmanMoved ||
-                    abs(event.rawX - downRawX) > dp(8) || abs(event.rawY - downRawY) > dp(8)
-                view.translationX = start[0] + event.rawX - downRawX
-                view.translationY = start[1] + event.rawY - downRawY
-                return true
-            }
-            MotionEvent.ACTION_UP -> {
-                view.parent?.requestDisallowInterceptTouchEvent(false)
-                val wasMoved = pegmanMoved
-                val droppedPoint = if (wasMoved) pegmanDropPoint() else null
-                view.animate().translationX(0f).translationY(0f).setDuration(160).start()
-                if (droppedPoint != null) {
-                    selectMapPoint(droppedPoint)
-                } else {
-                    openStreetView()
-                }
-                return true
-            }
-            MotionEvent.ACTION_CANCEL -> {
-                view.parent?.requestDisallowInterceptTouchEvent(false)
-                view.animate().translationX(0f).translationY(0f).setDuration(160).start()
-                return true
-            }
-        }
-        return true
     }
 
     private fun showDragState() {
@@ -606,13 +689,14 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
     private fun showPreviewState() {
         state = ScreenState.PANORAMA
         val hasPreview = selectedPlace != null &&
-            ((panorama != null && panoramaHasLocation) || staticPanorama.visibility == View.VISIBLE)
+            panorama != null && panoramaHasLocation
         dragHint.visibility = if (hasPreview) View.GONE else View.VISIBLE
         // Keep the live panorama surface attached while it is loading. The
         // loading hint remains over it until a panorama callback succeeds.
         panoramaView.visibility = if (selectedPlace != null) View.VISIBLE else View.GONE
         panoramaLocation.visibility = if (hasPreview) View.VISIBLE else View.GONE
         panoramaFullscreen.visibility = if (hasPreview) View.VISIBLE else View.GONE
+        panoramaSplitView.visibility = if (panoramaFullscreenMode && hasPreview) View.VISIBLE else View.GONE
         tryAnotherRoad.visibility = View.GONE
         findViewById<TextView>(R.id.street_view_section_title)
             .setText(R.string.street_view_title)
@@ -646,9 +730,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         panoramaJob?.cancel()
         dragHint.visibility = View.VISIBLE
         panoramaView.visibility = View.GONE
-        mapLocationPegman.visibility = View.GONE
+        currentLocationDot.visibility = View.GONE
         panoramaLocation.visibility = View.GONE
         panoramaFullscreen.visibility = View.GONE
+        panoramaSplitView.visibility = View.GONE
         hintIcon.setImageResource(R.drawable.ic_earth_map_error)
         hintIcon.background = null
         hintIcon.setPadding(dp(20), dp(20), dp(20), dp(20))
@@ -673,7 +758,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             clearCoverageRoads()
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, 16f))
             selectedMapPoint = point
-            positionMapLocationPegman(point)
             positionMapPegmanBottomRight()
         }
         syncCoverageWebMap(point)
@@ -698,27 +782,15 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         syncCoverageWebMap(point)
         mapPlace.text = formatMapPlace(selectedPlace!!)
         clearCoverageRoads()
-        positionMapLocationPegman(point)
         positionMapPegmanBottomRight()
         // A normal map tap is the quick path: resolve the nearest panorama and
         // show it immediately. Pegman remains available for another road.
         openStreetView(point, exactMapSelection = true)
     }
 
-    private fun pegmanDropPoint(): LatLng? {
-        val map = googleMap ?: return null
-        val pegmanLocation = IntArray(2)
-        val mapLocation = IntArray(2)
-        pegman.getLocationOnScreen(pegmanLocation)
-        mapView.getLocationOnScreen(mapLocation)
-        val x = pegmanLocation[0] - mapLocation[0] + pegman.width / 2
-        val y = pegmanLocation[1] - mapLocation[1] + pegman.height
-        return map.projection.fromScreenLocation(Point(x, y))
-    }
-
     private fun positionMapPegmanBottomRight() {
-        // This Pegman is the persistent drag control. It never represents the
-        // selected road location and must stay anchored to the map corner.
+        // This Pegman is the persistent toggle control. It never represents a
+        // geographic point and must stay anchored to the map corner.
         pegman.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             pegman.x = (mapContainer.width - pegman.width - dp(14)).coerceAtLeast(0).toFloat()
@@ -730,12 +802,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    private fun positionMapLocationPegman(point: LatLng) {
+    private fun positionCurrentLocationDot(point: LatLng) {
+        if (coverageWebMapReady) {
+            currentLocationDot.visibility = View.GONE
+            return
+        }
         val map = googleMap ?: return
-        // This second Pegman is the location marker for the road selected by a
-        // map tap, coverage road, or search result. It is intentionally
-        // separate from the draggable corner control above.
-        mapLocationPegman.post {
+        currentLocationDot.post {
             if (mapContainer.width == 0 || mapContainer.height == 0) return@post
             val screenPoint = map.projection.toScreenLocation(point)
             val mapLocation = IntArray(2)
@@ -744,14 +817,18 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             mapContainer.getLocationOnScreen(containerLocation)
             val containerX = mapLocation[0] - containerLocation[0] + screenPoint.x
             val containerY = mapLocation[1] - containerLocation[1] + screenPoint.y
-            mapLocationPegman.x = (containerX - mapLocationPegman.width / 2f)
-                .coerceIn(0f, (mapContainer.width - mapLocationPegman.width).toFloat())
-            mapLocationPegman.y = (containerY - mapLocationPegman.height.toFloat())
-                .coerceIn(0f, (mapContainer.height - mapLocationPegman.height).toFloat())
-            mapLocationPegman.translationX = 0f
-            mapLocationPegman.translationY = 0f
-            mapLocationPegman.visibility = View.VISIBLE
-            mapLocationPegman.bringToFront()
+            val dotX = containerX - currentLocationDot.width / 2f
+            val dotY = containerY - currentLocationDot.height / 2f
+            currentLocationDot.x = dotX
+                .coerceIn(0f, (mapContainer.width - currentLocationDot.width).toFloat())
+            currentLocationDot.y = dotY
+                .coerceIn(0f, (mapContainer.height - currentLocationDot.height).toFloat())
+            currentLocationDot.visibility = if (
+                dotX + currentLocationDot.width >= 0f &&
+                    dotX <= mapContainer.width &&
+                    dotY + currentLocationDot.height >= 0f &&
+                    dotY <= mapContainer.height
+            ) View.VISIBLE else View.GONE
             pegman.bringToFront()
         }
     }
@@ -767,20 +844,45 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         }
     }
 
-    private fun drawCoverageRoad(location: StreetViewPanoramaLocation) {
-        val map = googleMap ?: run {
-            // The panorama and map are independent async surfaces. Keep the
-            // location so the coverage overlay is drawn as soon as the map is
-            // ready instead of losing it during initialization.
-            lastPanoramaLocation = location
+    private fun togglePegmanMarkers() {
+        pegmanMarkersVisible = !pegmanMarkersVisible
+        if (pegmanMarkersVisible) {
+            pegman.clearColorFilter()
+        } else {
+            pegman.setColorFilter(Color.GRAY)
+        }
+        coverageWebMap.evaluateJavascript(
+            "setCoverageVisible(${pegmanMarkersVisible})",
+            null
+        )
+    }
+
+    private fun focusMapOnCurrentLocation() {
+        val point = currentLocationPoint
+        if (point == null) {
+            focusLocationPending = true
+            findCurrentPlace()
             return
         }
-        clearCoverageRoads()
+        googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(point, MAP_PANORAMA_ZOOM))
+        selectedMapPoint = point
+        positionCurrentLocationDot(point)
+        syncCoverageWebMap(point)
+        syncCoverageWebMapGps(point)
+    }
+
+    private fun drawCoverageRoad(location: StreetViewPanoramaLocation) {
         val center = location.position ?: return
         selectedMapPoint = center
-        positionMapLocationPegman(center)
+        syncCoverageWebMapPanorama(center)
+        val map = googleMap ?: return
+        clearCoverageRoads()
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(center, MAP_PANORAMA_ZOOM)
+        )
+        syncCoverageWebMap(center)
         positionMapPegmanBottomRight()
-        val links = location.links.orEmpty()
+        val links = location.links?.toList() ?: emptyList()
         if (links.isEmpty()) return
         links.forEach { link ->
             coverageRoads += map.addPolyline(
@@ -807,6 +909,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun zoomMap(amount: Float) {
         googleMap?.animateCamera(CameraUpdateFactory.zoomBy(amount))
+        if (coverageWebMapReady) {
+            coverageWebMap.evaluateJavascript("zoomCoverageMap($amount)", null)
+        }
     }
 
     private fun pointAlongBearing(start: LatLng, bearing: Float, distanceMeters: Double): LatLng {
@@ -837,6 +942,13 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             locationProvider.findCurrentLocation(
                 onSuccess = { location ->
                     runOnUiThread {
+                        currentLocationPoint = LatLng(location.latitude, location.longitude)
+                        positionCurrentLocationDot(currentLocationPoint!!)
+                        syncCoverageWebMapGps(currentLocationPoint!!)
+                        if (focusLocationPending) {
+                            focusLocationPending = false
+                            focusMapOnCurrentLocation()
+                        }
                         if (shouldUseCurrentLocation && !manualPlaceSelected) {
                             updatePlace(
                                 EarthPlace(
@@ -866,7 +978,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         metadataJob?.cancel()
         panoramaHasLocation = false
         pendingPanoramaId = null
-        staticPanorama.visibility = View.GONE
         showPreviewState()
         // Use the default source so Street View can return any nearby 360°
         // panorama, including indoor imagery and photo spheres.
@@ -884,12 +995,11 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             Log.d(TAG, "metadata result=${metadata != null} request=$request current=$panoramaRequest")
             if (request == panoramaRequest && !panoramaHasLocation && metadata != null) {
                 pendingPanoramaId = metadata.panoId
-                showStaticPanorama(metadata.panoId)
                 selectedMapPoint = metadata.position
                 googleMap?.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(metadata.position, MAP_PANORAMA_ZOOM)
                 )
-                positionMapLocationPegman(metadata.position)
+                syncCoverageWebMapPanorama(metadata.position)
                 positionMapPegmanBottomRight()
                 panorama?.setPosition(metadata.panoId)
             }
@@ -905,21 +1015,6 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
                 showUnavailable()
             }
         }
-    }
-
-    private fun showStaticPanorama(panoId: String) {
-        val apiKey = runCatching {
-            packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
-                .metaData?.getString("com.google.android.geo.API_KEY")
-        }.getOrNull()?.takeIf { !it.isNullOrBlank() } ?: return
-        val imageUrl = "https://maps.googleapis.com/maps/api/streetview" +
-            "?size=640x588&pano=$panoId&heading=0&pitch=0&fov=90&key=$apiKey"
-        Glide.with(this)
-            .load(imageUrl)
-            .dontAnimate()
-            .into(staticPanorama)
-        staticPanorama.visibility = View.VISIBLE
-        showPreviewState()
     }
 
     private fun findStreetViewMetadata(point: LatLng, radiusMeters: Int): StreetViewMetadata? {
@@ -970,7 +1065,8 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         previewContainer.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_divider).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_map_title).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.street_view_section_title).visibility = if (mapFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_section_header).visibility =
+            if (mapFullscreen) View.GONE else View.VISIBLE
         mapPlace.visibility = if (mapFullscreen) View.GONE else View.VISIBLE
 
         val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.street_view_content_scroll)
@@ -988,17 +1084,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             mapParams.height = ViewGroup.LayoutParams.MATCH_PARENT
             mapParams.weight = 0f
             mapParams.setMargins(0, 0, 0, 0)
+            mapContainer.layoutParams = mapParams
         } else {
-            scrollView?.isNestedScrollingEnabled = true
-
-            val contentParams = contentLayout.layoutParams
-            contentParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            contentLayout.layoutParams = contentParams
-
-            mapParams.height = 0
-            mapParams.weight = 5f
-            val sideMarginPx = dp(20)
-            mapParams.setMargins(sideMarginPx, dp(16), sideMarginPx, 0)
+            restoreStreetViewSplitLayout()
+            return
         }
 
         mapContainer.layoutParams = mapParams
@@ -1007,8 +1096,10 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private fun togglePanoramaFullscreen() {
         panoramaFullscreenMode = !panoramaFullscreenMode
+        panoramaSplitView.visibility = if (panoramaFullscreenMode) View.VISIBLE else View.GONE
         findViewById<View>(R.id.street_view_map_title).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.street_view_section_title).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.street_view_section_header).visibility =
+            if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         mapPlace.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         mapContainer.visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
         findViewById<View>(R.id.street_view_divider).visibility = if (panoramaFullscreenMode) View.GONE else View.VISIBLE
@@ -1032,22 +1123,55 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
             previewParams.weight = 0f
             previewParams.setMargins(0, 0, 0, 0)
         } else {
-            // Re-enable scroll view
-            scrollView?.isNestedScrollingEnabled = true
-
-            val contentParams = contentLayout.layoutParams
-            contentParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            contentLayout.layoutParams = contentParams
-
-            // Restore preview frame height and margins
-            previewParams.height = 0
-            previewParams.weight = 5f
-            val sideMarginPx = dp(20)
-            previewParams.setMargins(sideMarginPx, dp(20), sideMarginPx, 0)
+            restoreStreetViewSplitLayout()
+            return
         }
 
         previewContainer.layoutParams = previewParams
         previewContainer.requestLayout()
+    }
+
+    private fun restoreStreetViewSplitLayout() {
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.street_view_content_scroll)
+        val contentLayout = findViewById<LinearLayout>(R.id.street_view_content)
+        val sideMarginPx = dp(20)
+
+        scrollView.isNestedScrollingEnabled = true
+        scrollView.scrollTo(0, 0)
+
+        val contentParams = contentLayout.layoutParams
+        contentParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        contentLayout.layoutParams = contentParams
+        contentLayout.weightSum = 10f
+
+        val previewParams = previewContainer.layoutParams as LinearLayout.LayoutParams
+        previewParams.height = 0
+        previewParams.weight = 5f
+        previewParams.setMargins(sideMarginPx, dp(20), sideMarginPx, 0)
+        previewContainer.layoutParams = previewParams
+
+        val mapParams = mapContainer.layoutParams as LinearLayout.LayoutParams
+        mapParams.height = 0
+        mapParams.weight = 5f
+        mapParams.setMargins(sideMarginPx, dp(16), sideMarginPx, 0)
+        mapContainer.layoutParams = mapParams
+
+        contentLayout.post {
+            val weightedHeight = previewContainer.height + mapContainer.height
+            if (weightedHeight <= 0) return@post
+            val eachHeight = weightedHeight / 2
+            val restoredPreviewParams = previewContainer.layoutParams as LinearLayout.LayoutParams
+            restoredPreviewParams.height = eachHeight
+            restoredPreviewParams.weight = 0f
+            previewContainer.layoutParams = restoredPreviewParams
+
+            val restoredMapParams = mapContainer.layoutParams as LinearLayout.LayoutParams
+            restoredMapParams.height = weightedHeight - eachHeight
+            restoredMapParams.weight = 0f
+            mapContainer.layoutParams = restoredMapParams
+            contentLayout.requestLayout()
+        }
+        contentLayout.requestLayout()
     }
 
     private fun readInitialPlace(): EarthPlace? {

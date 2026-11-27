@@ -153,17 +153,42 @@
             android:paddingBottom="28dp"
             android:weightSum="10">
 
-            <TextView
-                android:id="@+id/street_view_section_title"
+            <LinearLayout
+                android:id="@+id/street_view_section_header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="20dp"
-                android:fontFamily="@font/poppins_semibold"
-                android:text="@string/street_view_title"
-                android:textColor="@color/primary_text_color"
-                android:textSize="14sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/street_view_section_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="@string/street_view_title"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/street_view_panorama_fullscreen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_earth_view_control"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="@string/street_view_full_screen"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <FrameLayout
                 android:id="@+id/street_view_preview_container"
@@ -236,29 +261,23 @@
                     android:layout_height="match_parent"
                     android:visibility="gone" />
 
-                <ImageView
-                    android:id="@+id/street_view_static_panorama"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/street_view_title"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone" />
-
                 <TextView
-                    android:id="@+id/street_view_panorama_fullscreen"
+                    android:id="@+id/street_view_panorama_split_view"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="48dp"
                     android:layout_gravity="top|end"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginEnd="12dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="16dp"
                     android:background="@drawable/bg_earth_view_control"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:fontFamily="@font/poppins_semibold"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="@string/street_view_full_screen"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp"
+                    android:text="@string/street_view_split_view"
                     android:textColor="@color/primary_text_color"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:visibility="gone" />
 
                 <LinearLayout
@@ -353,6 +372,15 @@
                     android:background="@android:color/transparent"
                     android:visibility="gone" />
 
+                <ImageView
+                    android:id="@+id/street_view_current_location_dot"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_map_current_location_dot"
+                    android:contentDescription="@string/earth_view_my_location"
+                    android:elevation="11dp"
+                    android:visibility="gone" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="30dp"
@@ -399,7 +427,7 @@
                         android:focusable="true"
                         android:fontFamily="@font/poppins_semibold"
                         android:gravity="center"
-                        android:text="+"
+                        android:text="@string/map_zoom_in_symbol"
                         android:textColor="@color/primary_text_color"
                         android:textSize="22sp" />
 
@@ -414,7 +442,7 @@
                         android:focusable="true"
                         android:fontFamily="@font/poppins_semibold"
                         android:gravity="center"
-                        android:text="−"
+                        android:text="@string/map_zoom_out_symbol"
                         android:textColor="@color/primary_text_color"
                         android:textSize="22sp" />
                 </LinearLayout>
@@ -431,16 +459,20 @@
                     android:elevation="12dp"
                     android:src="@drawable/ic_pegman_illustration" />
 
-                <ImageView
-                    android:id="@+id/street_view_map_location_pegman"
+                <ImageButton
+                    android:id="@+id/street_view_my_location"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:clickable="false"
-                    android:contentDescription="@string/street_view_pegman"
-                    android:elevation="13dp"
-                    android:focusable="false"
-                    android:src="@drawable/ic_pegman_illustration"
-                    android:visibility="gone" />
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="14dp"
+                    android:layout_marginBottom="68dp"
+                    android:background="@drawable/bg_earth_view_control"
+                    android:contentDescription="@string/earth_view_my_location"
+                    android:elevation="12dp"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_my_location"
+                    android:tint="@color/home_accent" />
+
             </FrameLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

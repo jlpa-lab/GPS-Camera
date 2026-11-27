@@ -105,7 +105,7 @@
 
                     <TextView
                         style="@style/TemplateSectionTitle"
-                        android:text="Address" />
+                        android:text="@string/template_address" />
 
                     <LinearLayout
                         android:id="@+id/template_address_mode"
@@ -114,12 +114,12 @@
                         <TextView
                             android:id="@+id/template_address_auto"
                             style="@style/TemplateSegment"
-                            android:text="Automatic" />
+                            android:text="@string/template_automatic" />
 
                         <TextView
                             android:id="@+id/template_address_manual"
                             style="@style/TemplateSegment"
-                            android:text="Manual" />
+                            android:text="@string/template_manual" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -130,17 +130,17 @@
                         <TextView
                             android:id="@+id/template_address_none"
                             style="@style/TemplateSegment"
-                            android:text="None" />
+                            android:text="@string/template_none" />
 
                         <TextView
                             android:id="@+id/template_address_city"
                             style="@style/TemplateSegment"
-                            android:text="City" />
+                            android:text="@string/template_city" />
 
                         <TextView
                             android:id="@+id/template_address_full"
                             style="@style/TemplateSegment"
-                            android:text="Full Address" />
+                            android:text="@string/template_full_address" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -161,7 +161,7 @@
                             android:layout_weight="1"
                             android:background="@android:color/transparent"
                             android:fontFamily="@font/poppins_regular"
-                            android:hint="Enter address"
+                            android:hint="@string/template_enter_address"
                             android:includeFontPadding="false"
                             android:singleLine="true"
                             android:textColor="@color/primary_text_color"
@@ -172,7 +172,7 @@
                             android:id="@+id/template_manual_address_map"
                             android:layout_width="32dp"
                             android:layout_height="44dp"
-                            android:contentDescription="Edit address"
+                            android:contentDescription="@string/template_edit_address"
                             android:gravity="center"
                             android:padding="4dp"
                             android:src="@drawable/ic_template_manual_address"
@@ -188,7 +188,7 @@
 
                         <TextView
                             style="@style/TemplateBodyStrong"
-                            android:text="Date &amp; Time" />
+                            android:text="@string/template_date_time" />
 
                         <Switch
                             android:id="@+id/template_date_toggle"
@@ -219,7 +219,7 @@
                             <TextView
                                 android:id="@+id/template_date_short_month_title"
                                 style="@style/TemplateDateOptionTitle"
-                                android:text="Short month" />
+                                android:text="@string/template_short_month" />
 
                             <TextView
                                 android:id="@+id/template_date_short_month_value"
@@ -233,7 +233,7 @@
                             <TextView
                                 android:id="@+id/template_date_numeric_title"
                                 style="@style/TemplateDateOptionTitle"
-                                android:text="Numeric (DD/MM/YYYY)" />
+                                android:text="@string/template_numeric_date" />
 
                             <TextView
                                 android:id="@+id/template_date_numeric_value"
@@ -247,7 +247,7 @@
                             <TextView
                                 android:id="@+id/template_date_time_first_title"
                                 style="@style/TemplateDateOptionTitle"
-                                android:text="Time first" />
+                                android:text="@string/template_time_first" />
 
                             <TextView
                                 android:id="@+id/template_date_time_first_value"
@@ -261,7 +261,7 @@
                             <TextView
                                 android:id="@+id/template_date_weekday_title"
                                 style="@style/TemplateDateOptionTitle"
-                                android:text="With weekday" />
+                                android:text="@string/template_with_weekday" />
 
                             <TextView
                                 android:id="@+id/template_date_weekday_value"
@@ -275,7 +275,7 @@
                             <TextView
                                 android:id="@+id/template_date_iso_title"
                                 style="@style/TemplateDateOptionTitle"
-                                android:text="ISO date · 24-hour" />
+                                android:text="@string/template_iso_date" />
 
                             <TextView
                                 android:id="@+id/template_date_iso_value"
@@ -292,7 +292,7 @@
 
                         <TextView
                             style="@style/TemplateBody"
-                            android:text="Map / Icon" />
+                            android:text="@string/template_map_icon" />
 
                         <Switch
                             android:id="@+id/template_map_toggle"
@@ -305,7 +305,7 @@
 
                         <TextView
                             style="@style/TemplateBody"
-                            android:text="Weather" />
+                            android:text="@string/template_weather" />
 
                         <Switch
                             android:id="@+id/template_weather_toggle"
@@ -318,7 +318,7 @@
 
                         <TextView
                             style="@style/TemplateBody"
-                            android:text="Coordinates" />
+                            android:text="@string/template_coordinates" />
 
                         <Switch
                             android:id="@+id/template_coordinates_toggle"
@@ -334,7 +334,7 @@
 
                     <TextView
                         style="@style/TemplateSectionTitle"
-                        android:text="Background Color" />
+                        android:text="@string/template_background_color" />
 
                     <LinearLayout
                         android:id="@+id/template_color_swatches"
@@ -345,7 +345,7 @@
                         <TextView
                             android:id="@+id/template_color_add"
                             style="@style/TemplateSwatch"
-                            android:text="+" />
+                            android:text="@string/template_add_color" />
 
                         <TextView
                             android:id="@+id/template_color_1"
@@ -384,7 +384,7 @@
                             android:fontFamily="@font/poppins_semibold"
                             android:gravity="center"
                             android:includeFontPadding="false"
-                            android:text="Custom color"
+                            android:text="@string/template_custom_color"
                             android:textColor="@color/primary_text_color"
                             android:textSize="16sp" />
 
@@ -414,7 +414,7 @@
                                 android:layout_height="match_parent"
                                 android:fontFamily="@font/poppins_regular"
                                 android:gravity="center_vertical"
-                                android:text="HEX"
+                                android:text="@string/template_hex"
                                 android:textColor="@color/secondary_text_color"
                                 android:textSize="13sp" />
 
@@ -445,7 +445,7 @@
                                 android:layout_weight="1"
                                 android:fontFamily="@font/poppins_semibold"
                                 android:gravity="center"
-                                android:text="Cancel"
+                                android:text="@string/cancel"
                                 android:textColor="@color/secondary_text_color"
                                 android:textSize="14sp" />
 
@@ -456,7 +456,7 @@
                                 android:background="@drawable/bg_photo_grid_primary_button"
                                 android:fontFamily="@font/poppins_semibold"
                                 android:gravity="center"
-                                android:text="Apply color"
+                                android:text="@string/template_apply_color"
                                 android:textColor="@color/white"
                                 android:textSize="14sp" />
                         </LinearLayout>
@@ -469,7 +469,7 @@
 
                     <TextView
                         style="@style/TemplateSectionTitle"
-                        android:text="Position" />
+                        android:text="@string/template_position" />
 
                     <LinearLayout
                         android:id="@+id/template_position"
@@ -478,19 +478,19 @@
                         <TextView
                             android:id="@+id/template_position_top"
                             style="@style/TemplateSegment"
-                            android:text="Top" />
+                            android:text="@string/template_top" />
 
                         <TextView
                             android:id="@+id/template_position_bottom"
                             style="@style/TemplateSegment"
-                            android:text="Bottom" />
+                            android:text="@string/template_bottom" />
                     </LinearLayout>
 
                     <TextView
                         style="@style/TemplateBodyStrong"
                         android:layout_marginTop="12dp"
                         android:paddingBottom="8dp"
-                        android:text="Alignment" />
+                        android:text="@string/template_alignment" />
 
                     <LinearLayout
                         android:id="@+id/template_alignment"
@@ -499,17 +499,17 @@
                         <TextView
                             android:id="@+id/template_alignment_left"
                             style="@style/TemplateSegment"
-                            android:text="Left" />
+                            android:text="@string/template_left" />
 
                         <TextView
                             android:id="@+id/template_alignment_center"
                             style="@style/TemplateSegment"
-                            android:text="Center" />
+                            android:text="@string/template_center" />
 
                         <TextView
                             android:id="@+id/template_alignment_right"
                             style="@style/TemplateSegment"
-                            android:text="Right" />
+                            android:text="@string/template_right" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

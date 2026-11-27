@@ -34,6 +34,6 @@
             android:layout_height="20dp"
             android:background="@drawable/bg_template_selection_circle"
             android:padding="5dp"
-            android:contentDescription="Template selected" />
+            android:contentDescription="@string/template_selected" />
     </LinearLayout>
 </LinearLayout>

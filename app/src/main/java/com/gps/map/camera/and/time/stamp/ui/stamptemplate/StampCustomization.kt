@@ -2,6 +2,7 @@ package com.gps.map.camera.and.time.stamp.ui.stamptemplate
 
 import android.content.Context
 import android.graphics.Color
+import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 
 enum class TemplateAddressMode { AUTOMATIC, MANUAL }
@@ -28,28 +29,28 @@ data class StampCustomization(
 )
 
 object StampTemplateCatalog {
-    data class Item(val key: String, val name: String, val group: String)
+    data class Item(val key: String, val nameRes: Int, val group: String)
 
     val items = listOf(
-        Item("location_spotlight", "Location spotlight", "Reference color"),
-        Item("time_first", "Time first", "Reference color"),
-        Item("centered_destination", "Centered destination", "Reference color"),
-        Item("side_map", "Side map", "Reference color"),
-        Item("travel_footer", "Travel footer", "Reference color"),
-        Item("ocean_postcard", "Ocean postcard", "Decorative"),
-        Item("coral_travel_ticket", "Coral travel ticket", "Decorative"),
-        Item("mint_location_label", "Mint location label", "Decorative"),
-        Item("lavender_photo_journal", "Lavender photo journal", "Decorative"),
-        Item("amber_field_note", "Amber field note", "Decorative"),
-        Item("teal_destination_tag", "Teal destination tag", "Decorative"),
-        Item("stamp_1", "Stamp 1", "Stamps"),
-        Item("stamp_2", "Stamp 2", "Stamps"),
-        Item("stamp_3", "Stamp 3", "Stamps"),
-        Item("stamp_4", "Stamp 4", "Stamps"),
-        Item("stamp_5", "Stamp 5", "Stamps"),
-        Item("stamp_6", "Stamp 6", "Stamps"),
-        Item("stamp_7", "Stamp 7", "Stamps"),
-        Item("stamp_8", "Stamp 8", "Stamps")
+        Item("location_spotlight", R.string.template_name_location_spotlight, "Reference color"),
+        Item("time_first", R.string.template_name_time_first, "Reference color"),
+        Item("centered_destination", R.string.template_name_centered_destination, "Reference color"),
+        Item("side_map", R.string.template_name_side_map, "Reference color"),
+        Item("travel_footer", R.string.template_name_travel_footer, "Reference color"),
+        Item("ocean_postcard", R.string.template_name_ocean_postcard, "Decorative"),
+        Item("coral_travel_ticket", R.string.template_name_coral_travel_ticket, "Decorative"),
+        Item("mint_location_label", R.string.template_name_mint_location_label, "Decorative"),
+        Item("lavender_photo_journal", R.string.template_name_lavender_photo_journal, "Decorative"),
+        Item("amber_field_note", R.string.template_name_amber_field_note, "Decorative"),
+        Item("teal_destination_tag", R.string.template_name_teal_destination_tag, "Decorative"),
+        Item("stamp_1", R.string.template_name_stamp_1, "Stamps"),
+        Item("stamp_2", R.string.template_name_stamp_2, "Stamps"),
+        Item("stamp_3", R.string.template_name_stamp_3, "Stamps"),
+        Item("stamp_4", R.string.template_name_stamp_4, "Stamps"),
+        Item("stamp_5", R.string.template_name_stamp_5, "Stamps"),
+        Item("stamp_6", R.string.template_name_stamp_6, "Stamps"),
+        Item("stamp_7", R.string.template_name_stamp_7, "Stamps"),
+        Item("stamp_8", R.string.template_name_stamp_8, "Stamps")
     )
 
     /**

@@ -17,7 +17,7 @@
         android:fontFamily="sans-serif"
         android:gravity="center"
         android:includeFontPadding="false"
-        android:text="🗺️"
+        android:text="@string/map_emoji"
         android:textSize="68sp" />
 
     <TextView

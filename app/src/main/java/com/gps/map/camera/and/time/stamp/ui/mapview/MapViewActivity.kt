@@ -941,7 +941,7 @@ class MapViewActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMar
         val parts = place.address.split(',').map(String::trim).filter(String::isNotEmpty)
         return when {
             parts.size >= 2 -> parts.takeLast(2).joinToString(", ")
-            parts.firstOrNull().equals(place.name, ignoreCase = true) -> "Country"
+            parts.firstOrNull().equals(place.name, ignoreCase = true) -> getString(R.string.place_type_country)
             else -> place.address
         }
     }

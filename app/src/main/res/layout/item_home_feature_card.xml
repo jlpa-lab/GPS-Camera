@@ -41,7 +41,7 @@
         android:layout_marginBottom="13dp"
         android:fontFamily="@font/poppins_semibold"
         android:includeFontPadding="false"
-        android:text="Earth View"
+        android:text="@string/home_earth_view"
         android:textColor="#F4F6FF"
         android:textSize="14sp" />
 </FrameLayout>

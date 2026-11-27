@@ -74,9 +74,9 @@ class RateAppActivity : AppCompatActivity() {
     }
 
     private fun showStart() {
-        configure(R.drawable.ic_rate_intial, "Enjoying the app?", "Your feedback helps us improve.")
+        configure(R.drawable.ic_rate_intial, getString(R.string.rate_enjoying), getString(R.string.rate_feedback_help))
         renderStars();
-        action.text = "Rate us";
+        action.setText(R.string.rate_us)
         action.isEnabled = rating > 0
         action.setOnClickListener { if (rating > 0) showResult() }
         later.visibility = View.VISIBLE
@@ -86,11 +86,11 @@ class RateAppActivity : AppCompatActivity() {
     private fun showResult() {
         configure(
             if (rating <= 2) R.drawable.ic_rate_sorry else if (rating == 3) R.drawable.ic_rate_thanks else R.drawable.ic_rate_glad,
-            if (rating <= 2) "Sorry to hear that! 😔" else if (rating == 3) "Thanks for your feedback!" else "Glad you're enjoying it! 🎉",
-            if (rating <= 2) "What can we improve?" else if (rating == 3) "What could make it better?" else "Would you like to rate us on Google Play?"
+            if (rating <= 2) getString(R.string.rate_sorry) else if (rating == 3) getString(R.string.rate_feedback_thanks) else getString(R.string.rate_glad),
+            if (rating <= 2) getString(R.string.rate_improve) else if (rating == 3) getString(R.string.rate_better) else getString(R.string.rate_google_prompt)
         )
         renderStars();
-        action.text = if (rating >= 4) "Rate on Google Play" else "Give feedback"; action.isEnabled = true
+        action.text = getString(if (rating >= 4) R.string.rate_google else R.string.rate_give_feedback); action.isEnabled = true
         action.isEnabled = rating > 0
         action.setOnClickListener { if (rating >= 4) openPlay() else showFeedback() }
         later.visibility = View.VISIBLE

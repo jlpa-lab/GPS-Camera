@@ -432,9 +432,9 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         val selectedKey = stampCustomization?.templateKey ?: StampCustomizationStore.selectedTemplate(this)
         val selectedIndex = StampTemplateCatalog.items.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
         AlertDialog.Builder(this)
-            .setTitle("Photo template")
+            .setTitle(R.string.photo_template)
             .setSingleChoiceItems(
-                StampTemplateCatalog.items.map { it.name }.toTypedArray(),
+                StampTemplateCatalog.items.map { getString(it.nameRes) }.toTypedArray(),
                 selectedIndex
             ) { dialog, which ->
                 val selected = StampTemplateCatalog.items[which]
