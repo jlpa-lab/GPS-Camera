@@ -38,7 +38,6 @@ import com.google.android.gms.maps.StreetViewPanorama
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.maps.StreetViewPanoramaView
-import com.google.android.gms.maps.model.StreetViewSource
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.RoundCap
@@ -609,7 +608,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         val hasPreview = selectedPlace != null &&
             ((panorama != null && panoramaHasLocation) || staticPanorama.visibility == View.VISIBLE)
         dragHint.visibility = if (hasPreview) View.GONE else View.VISIBLE
-        panoramaView.visibility = if (panoramaHasLocation) View.VISIBLE else View.GONE
+        // Keep the live panorama surface attached while it is loading. The
+        // loading hint remains over it until a panorama callback succeeds.
+        panoramaView.visibility = if (selectedPlace != null) View.VISIBLE else View.GONE
         panoramaLocation.visibility = if (hasPreview) View.VISIBLE else View.GONE
         panoramaFullscreen.visibility = if (hasPreview) View.VISIBLE else View.GONE
         tryAnotherRoad.visibility = View.GONE
@@ -867,7 +868,9 @@ class StreetViewActivity : AppCompatActivity(), OnMapReadyCallback,
         pendingPanoramaId = null
         staticPanorama.visibility = View.GONE
         showPreviewState()
-        panorama?.setPosition(point, radiusMeters, StreetViewSource.OUTDOOR)
+        // Use the default source so Street View can return any nearby 360°
+        // panorama, including indoor imagery and photo spheres.
+        panorama?.setPosition(point, radiusMeters)
 
         // The Android panorama SDK can take a long time to resolve a LatLng,
         // especially after a map tap. Resolve the same point through Google's

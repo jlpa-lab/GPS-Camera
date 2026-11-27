@@ -199,6 +199,7 @@
     <string name="route_plan_to">To</string>
     <string name="route_plan_your_location">Your location</string>
     <string name="route_plan_select_destination">Select destination</string>
+    <string name="route_plan_destination_hint">Enter destination location</string>
     <string name="route_plan_drive">Drive</string>
     <string name="route_plan_walk">Walk</string>
     <string name="route_plan_cycle">Cycle</string>

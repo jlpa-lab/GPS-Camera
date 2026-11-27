@@ -13,6 +13,7 @@
     <color name="app_color_text">#69B5FF</color>
     <color name="screen_background">#0C121B</color>
     <color name="tracker_green">#2878F0</color>
+    <color name="route_plan_hint">#99FFFFFF</color>
     <color name="on_boarding_background">#0F161F</color>
     <color name="primary_text_color">#F3F7FC</color>
     <color name="location_primary_text">#EEF4FC</color>

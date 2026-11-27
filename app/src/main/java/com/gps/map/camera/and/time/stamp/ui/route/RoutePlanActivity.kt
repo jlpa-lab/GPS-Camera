@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.location.Geocoder
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -85,6 +86,7 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
     private var selectedMode = RouteTravelMode.DRIVE
     private var fromLocation: LatLng? = null
     private var fromPlace: EarthPlace? = null
+    private var currentLocationLabel = ""
     private var destination: EarthPlace? = null
     private var fromQuery = ""
     private var destinationQuery = ""
@@ -126,6 +128,7 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
 
         updateScreen()
         if (fromLocation == null) requestLocationAccess()
+        else resolveCurrentLocationLabel(fromLocation!!)
     }
 
     private fun bindViews() {
@@ -135,6 +138,13 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
         previewContent = findViewById(R.id.route_plan_preview_content)
         noRouteContent = findViewById(R.id.route_plan_no_route_content)
         fromValue = findViewById(R.id.route_plan_from_value)
+        fromValue.apply {
+            isFocusable = false
+            isFocusableInTouchMode = false
+            isCursorVisible = false
+            isLongClickable = false
+            isClickable = false
+        }
         toValue = findViewById(R.id.route_plan_to_value)
         locationStatus = findViewById(R.id.route_plan_location_status)
         locationSettings = findViewById(R.id.route_plan_location_settings)
@@ -152,38 +162,30 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
             RouteTravelMode.WALK to findViewById(R.id.route_plan_mode_walk),
             RouteTravelMode.CYCLE to findViewById(R.id.route_plan_mode_cycle)
         )
-        fromValue.addTextChangedListener(fieldWatcher { text ->
-            fromQuery = text
-            if (!updatingFields && text != getString(R.string.route_plan_your_location)) {
-                fromPlace = null
-                fromLocation = null
-                routeDetails = null
-            }
-        })
         toValue.addTextChangedListener(fieldWatcher { text ->
             destinationQuery = text
             if (!updatingFields && text != getString(R.string.route_plan_select_destination)) {
                 destination = null
                 routeDetails = null
             }
+            if (!updatingFields) {
+                findRouteButton.isEnabled = fromLocation != null &&
+                    (destination != null || text.isNotBlank()) && !isLoading
+            }
         })
-        findViewById<View>(R.id.route_plan_from_row).setOnClickListener {
-            showPlaceSearch(isOrigin = true)
-        }
         findViewById<View>(R.id.route_plan_to_row).setOnClickListener {
-            showPlaceSearch(isOrigin = false)
+            toValue.requestFocus()
+            toValue.setSelection(toValue.text.length)
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                ?.showSoftInput(toValue, InputMethodManager.SHOW_IMPLICIT)
         }
-        fromValue.setOnClickListener { showPlaceSearch(isOrigin = true) }
-        toValue.setOnClickListener { showPlaceSearch(isOrigin = false) }
-        fromValue.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                showPlaceSearch(isOrigin = true)
-                true
-            } else false
+        toValue.setOnClickListener {
+            toValue.requestFocus()
+            toValue.setSelection(toValue.text.length)
         }
         toValue.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
-                showPlaceSearch(isOrigin = false)
+                findRoute()
                 true
             } else false
         }
@@ -245,14 +247,48 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
             onSuccess = { location ->
                 fromLocation = LatLng(location.latitude, location.longitude)
                 fromPlace = null
+                currentLocationLabel = ""
                 showLocationProblem(null)
                 updateScreen()
+                resolveCurrentLocationLabel(fromLocation!!)
             },
             onFailure = { problem ->
                 showLocationProblem(problem)
                 updateScreen()
             }
         )
+    }
+
+    private fun resolveCurrentLocationLabel(location: LatLng) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val label = try {
+                if (!Geocoder.isPresent()) null else {
+                    @Suppress("DEPRECATION")
+                    Geocoder(this@RoutePlanActivity, Locale.getDefault())
+                        .getFromLocation(location.latitude, location.longitude, 1)
+                        ?.firstOrNull()
+                        ?.let { address ->
+                            address.getAddressLine(0)?.takeIf(String::isNotBlank)
+                                ?: listOfNotNull(address.locality, address.adminArea, address.countryName)
+                                    .distinct()
+                                    .joinToString(", ")
+                                    .takeIf(String::isNotBlank)
+                        }
+                }
+            } catch (_: Exception) {
+                null
+            } ?: String.format(Locale.getDefault(), "%.5f, %.5f", location.latitude, location.longitude)
+
+            withContext(Dispatchers.Main) {
+                val current = fromLocation
+                if (fromPlace == null && current != null &&
+                    current.latitude == location.latitude && current.longitude == location.longitude
+                ) {
+                    currentLocationLabel = label
+                    updateScreen()
+                }
+            }
+        }
     }
 
     private fun showLocationProblem(problem: GpsLocationProvider.LocationProblem?) {
@@ -511,17 +547,22 @@ class RoutePlanActivity : AppCompatActivity(), OnMapReadyCallback {
 
         updatingFields = true
         if (fromQuery.isBlank()) {
-            fromValue.setText(fromPlace?.name ?: getString(R.string.route_plan_your_location))
+            fromValue.setText(
+                currentLocationLabel.ifBlank {
+                    getString(R.string.route_plan_your_location)
+                }
+            )
         } else if (fromValue.text.toString() != fromQuery) {
             fromValue.setText(fromQuery)
         }
         if (destinationQuery.isBlank()) {
-            toValue.setText(destination?.name ?: getString(R.string.route_plan_select_destination))
+            toValue.setText(destination?.name.orEmpty())
         } else if (toValue.text.toString() != destinationQuery) {
             toValue.setText(destinationQuery)
         }
         updatingFields = false
-        findRouteButton.isEnabled = fromLocation != null && destination != null && !isLoading
+        findRouteButton.isEnabled = fromLocation != null &&
+            (destination != null || destinationQuery.isNotBlank()) && !isLoading
         searchDestinationButton.isEnabled = !isLoading
         viewDirectionsButton.isEnabled = !isLoading
         editRouteButton.isEnabled = !isLoading
