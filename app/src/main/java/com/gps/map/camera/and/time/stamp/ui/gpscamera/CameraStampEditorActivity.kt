@@ -168,6 +168,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             findViewById<TextView>(R.id.editor_tab_map).setText(R.string.tab_template)
             findViewById<View>(R.id.editor_fullscreen).visibility = View.GONE
             findViewById<View>(R.id.editor_drag_hint).visibility = View.GONE
+            findViewById<View>(R.id.editor_location_pill).visibility = View.GONE
         }
 
         photoView = findViewById(R.id.editor_photo)
@@ -189,6 +190,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         coordinatesText = findViewById(R.id.editor_coordinates)
         dateText = findViewById(R.id.editor_date)
         locationClientLabel = findViewById(R.id.editor_weather)
+
 
         stampCustomization = StampCustomizationStore.read(this)
         templateOverlay = StampOverlayView(this)

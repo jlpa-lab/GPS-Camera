@@ -62,7 +62,23 @@
             android:layout_height="match_parent"
             android:contentDescription="@string/captured_photo"
             android:scaleType="centerCrop" />
-
+        <TextView
+            android:id="@+id/editor_location_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_editor_location_pill"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
         <ImageButton
             android:id="@+id/editor_fullscreen"
             android:layout_width="48dp"
