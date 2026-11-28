@@ -48,7 +48,10 @@ object RemoteConfigUtils {
     private const val FORCE_UPDATE_CONFIG_FILE = "force_update_config.json"
 
     fun getOnShowNavigationButton(): Boolean = getBoolean(ON_SHOW_NAVIGATION_BUTTON)
-    fun getOnShowDialogConsent(): Boolean = getBoolean(ON_SHOW_DIALOG_CONSENT)
+    // Consent must remain enabled while Firebase is still loading. Otherwise
+    // a slow/failed fetch makes the splash skip consent even though the
+    // bundled production default and the Remote Config template are true.
+    fun getOnShowDialogConsent(): Boolean = getBoolean(ON_SHOW_DIALOG_CONSENT, true)
     fun getShowAds(): Boolean = getBoolean(SHOW_ADS, true)
     fun getOneSignalAppId(context: Context): String =
         getString(ONESIGNAL_APP_ID, context.getString(R.string.onesignal_app_id))

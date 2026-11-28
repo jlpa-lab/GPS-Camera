@@ -63,6 +63,10 @@
     <string name="shortcut_phone_locator_long">Open Function 1</string>
     <string name="shortcut_track_friend_short">Function 2</string>
     <string name="shortcut_track_friend_long">Open Function 2</string>
+    <string name="shortcut_gps_camera_short">GPS Camera</string>
+    <string name="shortcut_gps_camera_long">Open GPS Camera</string>
+    <string name="shortcut_earth_view_short">Earth View</string>
+    <string name="shortcut_earth_view_long">Open Earth View</string>
     <string name="uninstall_keep_title">Over 90% of Users Love GPS Camera</string>
     <string name="uninstall_keep_description">Don’t miss exploring new places, preview streets, and capture where your journey takes you.</string>
     <string name="keep_phone_tracker">Keep Phone Tracker</string>
@@ -271,6 +275,9 @@
     <string name="gps_video_camera_error">Could not start the video camera.</string>
     <string name="gps_video_recording_failed">Could not finish recording the video.</string>
     <string name="gps_video_saved">Video saved</string>
+    <string name="gps_video_saved_title">Saved video</string>
+    <string name="gps_video_share">Share video</string>
+    <string name="gps_video_share_failed">Could not open video sharing options.</string>
     <string name="gps_video_no_saved_video">No saved GPS videos yet.</string>
     <string name="tool_gallery">Gallery</string>
     <string name="tool_gallery_description">Browse your captures</string>

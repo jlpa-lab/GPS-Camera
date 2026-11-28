@@ -46,6 +46,7 @@
 
         <activity
             android:name=".ui.earthview.EarthViewActivity"
+            android:exported="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.EarthView" />
 
@@ -122,6 +123,12 @@
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden"
             tools:ignore="LockedOrientationActivity"/>
+
+        <activity
+            android:name=".ui.gpsvideo.GpsVideoSavedActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+            tools:ignore="LockedOrientationActivity"/>
         <activity
             android:name=".ui.gpscamera.CameraPhotoPreviewActivity"
             android:exported="true"
@@ -130,6 +137,7 @@
             tools:ignore="LockedOrientationActivity"/>
 
         <activity android:name=".ui.camera.CameraActivity"
+            android:exported="true"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.EarthView"

@@ -38,6 +38,7 @@ import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
 import com.gps.map.camera.and.time.stamp.service.LocationSharingCoordinator
 import com.gps.map.camera.and.time.stamp.bases.ConsentHandler
 import com.gps.map.camera.and.time.stamp.databinding.ActivitySplashBinding
+import com.gps.map.camera.and.time.stamp.ui.uninstall.ShortcutManager
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.gps.map.camera.and.time.stamp.utils.Routes
 import com.onesignal.OneSignal
@@ -54,6 +55,8 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
     private var isCheckingNetworkForStartup = true
     private var hasStartedStartupFlow = false
     private var startupServicesStarted = false
+    private var consentFlowInProgress = false
+    private var startupAdsConfigured = false
     private var remoteConfigTimer: CountDownTimer? = null
     private lateinit var binding: ActivitySplashBinding
     private lateinit var consentHandler: ConsentHandler
@@ -132,7 +135,10 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
             activity = this,
             appSharedPref = appSharedPref,
             trackingSuffix = 1,
-            onConsentFlowCompleted = { checkRemoteConfigResult() }
+            onConsentFlowCompleted = {
+                consentFlowInProgress = false
+                checkRemoteConfigResult()
+            }
         )
         // NEW: Initial network check to start app flow or show no internet dialog
         checkAndStartAppFlow()
@@ -261,12 +267,18 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
         }
         hasStartedStartupFlow = true
 
-        if (
-            RemoteConfigUtils.getOnShowDialogConsent() &&
+        val shouldRequestConsent = RemoteConfigUtils.getOnShowDialogConsent() &&
             appSharedPref.isConfirmConsent.not() &&
             appSharedPref.isUserGlobal.not() &&
             isNetwork()
-        ) {
+        Log.d(
+            "SplashConsent",
+            "enabled=${RemoteConfigUtils.getOnShowDialogConsent()} " +
+                "confirmed=${appSharedPref.isConfirmConsent} " +
+                "global=${appSharedPref.isUserGlobal} request=$shouldRequestConsent"
+        )
+        if (shouldRequestConsent) {
+            consentFlowInProgress = true
             consentHandler.requestConsent()
         } else {
             checkRemoteConfigResult()
@@ -275,6 +287,9 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
 
     override fun loadSuccess() {
         getConfigSuccess = true
+        // Reconcile launcher shortcuts immediately after Remote Config resolves,
+        // including removal of stale shortcuts when the flag is turned off.
+        ShortcutManager.initIfEligible(this)
         if (!RemoteConfigUtils.getShowAds()) {
             AdsManager.clearAll()
         }
@@ -284,7 +299,9 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
     override fun onResume() {
         super.onResume()
         // Re-check network state when returning to app (e.g. after changing settings in Wi-Fi screen)
-        if (!isCheckingNetworkForStartup && isNetwork() && RemoteConfigUtils.getShowAds()) {
+        // Never show a splash/app-open ad over the consent form. The reference
+        // ad-logic flow configures ads only after consent has completed.
+        if (startupAdsConfigured && !consentFlowInProgress && !isCheckingNetworkForStartup && isNetwork() && RemoteConfigUtils.getShowAds()) {
             noInternetDialog?.dismiss()
             ERainAd.getInstance().onCheckShowSplashWhenFail(this@SplashActivity, object : AdCallback() {
                 override fun onNextAction() {
@@ -298,6 +315,8 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
     }
 
     private fun checkRemoteConfigResult() {
+        if (startupAdsConfigured || isFinishing || isDestroyed) return
+        startupAdsConfigured = true
         AdRemoteConfig.initialize(this, RemoteConfigUtils.getAdRemoteConfig())
         if (!RemoteConfigUtils.getShowAds()) {
             AdsManager.clearAll()

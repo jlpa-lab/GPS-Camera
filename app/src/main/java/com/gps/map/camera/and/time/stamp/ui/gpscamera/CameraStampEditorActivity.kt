@@ -113,6 +113,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
     private var photoOffsetX = 0f
     private var photoOffsetY = 0f
     private var mapCardBoundsFraction: RectF? = null
+    private var mapCardVisibleForExport = false
     private var locationPillBoundsFraction: RectF? = null
     private var locationPillVisible = false
     private var locationPillText = ""
@@ -891,8 +892,17 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             })
         }
         val currentMap = googleMap
+        // Keep a private copy of the map already shown in the editor. The
+        // asynchronous Google Maps snapshot can be delayed or return null on
+        // some devices, even though the preview has a valid map image. Using a
+        // copy also lets the background save safely recycle its bitmap without
+        // invalidating the editor's drawable.
+        val mapFallback = (latestMapBitmap
+            ?: (mapPreview.drawable as? BitmapDrawable)?.bitmap)
+            ?.takeIf { !it.isRecycled }
+            ?.let { runCatching { it.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull() }
         if (currentMap == null) {
-            saveExecutor.execute { renderAndSave(null) }
+            saveExecutor.execute { renderAndSave(mapFallback) }
             return
         }
 
@@ -902,14 +912,14 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
         val mainHandler = Handler(Looper.getMainLooper())
         val timeout = Runnable {
             if (callbackUsed.compareAndSet(false, true)) {
-                saveExecutor.execute { renderAndSave(null) }
+                saveExecutor.execute { renderAndSave(mapFallback) }
             }
         }
         mainHandler.postDelayed(timeout, 1500L)
         currentMap.snapshot { mapBitmap ->
             if (callbackUsed.compareAndSet(false, true)) {
                 mainHandler.removeCallbacks(timeout)
-                saveExecutor.execute { renderAndSave(mapBitmap) }
+                saveExecutor.execute { renderAndSave(mapBitmap ?: mapFallback) }
             } else {
                 mapBitmap?.recycle()
             }
@@ -933,6 +943,11 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
                 (visualTop + mapCard.height * scale) / photoView.height
             )
         }
+        // Capture this before the asynchronous render starts. The activity can
+        // be paused while the final bitmap is encoded, but the saved photo
+        // must retain the map window shown in the editor preview.
+        mapCardVisibleForExport = mapCardVisible &&
+            mapCard.visibility == View.VISIBLE && mapCard.alpha > 0f
         locationPillBoundsFraction = if (
             locationPillVisible && locationPill.width > 0 && locationPill.height > 0 &&
             photoView.width > 0 && photoView.height > 0
@@ -1067,7 +1082,7 @@ class CameraStampEditorActivity : AppCompatActivity(), OnMapReadyCallback {
             !useLiveMapInTemplate && stampImageUri != null -> decodePhotoWithOrientation(stampImageUri!!)
             else -> mapBitmap ?: latestMapBitmap
         }
-        if (floatingBitmap != null && mapCardVisible && mapCard.visibility == View.VISIBLE && mapCard.alpha > 0f) {
+        if (floatingBitmap != null && mapCardVisibleForExport) {
             val mapWidth = photo.width * 0.38f
             val mapHeight = mapWidth * 1.05f
             val savedBounds = mapCardBoundsFraction

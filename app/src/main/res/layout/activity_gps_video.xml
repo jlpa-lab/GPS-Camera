@@ -482,6 +482,16 @@
             </LinearLayout>
         </FrameLayout>
 
+        <ProgressBar
+            android:id="@+id/gps_video_save_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="10dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/home_accent"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/gps_video_position"
             android:layout_width="match_parent"

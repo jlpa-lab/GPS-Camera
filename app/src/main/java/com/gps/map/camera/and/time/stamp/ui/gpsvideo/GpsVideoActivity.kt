@@ -102,6 +102,7 @@ class GpsVideoActivity : AppCompatActivity() {
     private lateinit var micLabel: TextView
     private lateinit var zoomButton: TextView
     private lateinit var player: VideoView
+    private lateinit var saveProgress: View
     private lateinit var positionText: TextView
     private lateinit var playButton: TextView
     private lateinit var soundButton: TextView
@@ -133,7 +134,6 @@ class GpsVideoActivity : AppCompatActivity() {
     private var previewPlayer: MediaPlayer? = null
     private var torchOn = false
     private var tempVideo: File? = null
-    private var lastSavedVideo: Uri? = null
     private var currentZoom = 1f
     private var zoomLevels = listOf(1f)
     private var stampCustomization: StampCustomization? = null
@@ -203,6 +203,14 @@ class GpsVideoActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_START_FRESH, false)) {
+            setIntent(intent)
+            discardPreview()
+        }
+    }
+
     private fun bindViews() {
         cameraPreview = findViewById(R.id.gps_video_preview)
         cameraContent = findViewById(R.id.gps_video_camera_content)
@@ -232,6 +240,7 @@ class GpsVideoActivity : AppCompatActivity() {
         micLabel = findViewById(R.id.gps_video_mic_label)
         zoomButton = findViewById(R.id.gps_video_zoom)
         player = findViewById(R.id.gps_video_player)
+        saveProgress = findViewById(R.id.gps_video_save_progress)
         positionText = findViewById(R.id.gps_video_position)
         playButton = findViewById(R.id.gps_video_play)
         soundButton = findViewById(R.id.gps_video_sound)
@@ -286,7 +295,9 @@ class GpsVideoActivity : AppCompatActivity() {
         zoomButton.setOnClickListener { cycleZoom() }
         playButton.setOnClickListener { togglePlayback() }
         soundButton.setOnClickListener { toggleSound() }
-        findViewById<View>(R.id.gps_video_save).setOnClickListener { saveVideo() }
+        findViewById<View>(R.id.gps_video_save).setOnClickListener {
+            saveVideo()
+        }
         findViewById<View>(R.id.gps_video_record_again).setOnClickListener { confirmDiscard() }
         findViewById<View>(R.id.gps_video_retry_save).setOnClickListener { saveVideo() }
         findViewById<View>(R.id.gps_video_keep_previewing).setOnClickListener {
@@ -563,9 +574,13 @@ class GpsVideoActivity : AppCompatActivity() {
     }
 
     private fun preparePreview() {
-        cameraProvider?.unbindAll()
         val file = tempVideo ?: return
-        player.setVideoPath(file.absolutePath)
+        preparePreview(Uri.fromFile(file))
+    }
+
+    private fun preparePreview(uri: Uri) {
+        cameraProvider?.unbindAll()
+        player.setVideoURI(uri)
         player.setOnPreparedListener { mediaPlayer ->
             previewPlayer = mediaPlayer
             (player as? CenteredVideoView)?.setVideoSize(
@@ -618,31 +633,38 @@ class GpsVideoActivity : AppCompatActivity() {
         }
         setSaveButtonsEnabled(false)
         lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val stampedFile = File.createTempFile("gps-video-stamped-", ".mp4", cacheDir)
-                val stampData = VideoStampData(
-                    place = placeName ?: getString(R.string.location_your_location),
-                    latitude = latestLocation?.latitude,
-                    longitude = latestLocation?.longitude,
-                    recordedAtMillis = recordingStartedWallClock,
-                    customization = stampCustomization ?: StampCustomizationStore.read(this@GpsVideoActivity),
-                    weather = weatherText
-                )
-                val burnedIn = VideoStampBurner.burn(file, stampedFile, stampData)
-                val saved = if (burnedIn) copyToGallery(stampedFile) else null
-                stampedFile.delete()
-                saved
-            }
-            setSaveButtonsEnabled(true)
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    val stampedFile = File.createTempFile("gps-video-stamped-", ".mp4", cacheDir)
+                    try {
+                        val stampData = VideoStampData(
+                            place = placeName ?: getString(R.string.location_your_location),
+                            latitude = latestLocation?.latitude,
+                            longitude = latestLocation?.longitude,
+                            recordedAtMillis = recordingStartedWallClock,
+                            customization = stampCustomization ?: StampCustomizationStore.read(this@GpsVideoActivity),
+                            weather = weatherText
+                        )
+                        val burnedIn = VideoStampBurner.burn(file, stampedFile, stampData)
+                        if (burnedIn) copyToGallery(stampedFile) else null
+                    } finally {
+                        stampedFile.delete()
+                    }
+                }
+            }.getOrNull()
             if (result != null) {
-                lastSavedVideo = result
                 preferences.sharedPref.edit().putString(LAST_VIDEO_URI, result.toString()).apply()
                 file.delete()
                 tempVideo = null
                 loadLastVideoThumbnail()
-                Toast.makeText(this@GpsVideoActivity, R.string.gps_video_saved, Toast.LENGTH_SHORT).show()
-                setScreenState(ScreenState.READY)
+                previewPlayer?.stop()
+                previewPlayer = null
+                startActivity(Intent(this@GpsVideoActivity, GpsVideoSavedActivity::class.java).apply {
+                    putExtra(GpsVideoSavedActivity.EXTRA_VIDEO_URI, result.toString())
+                })
+                finish()
             } else {
+                setSaveButtonsEnabled(true)
                 setScreenState(ScreenState.SAVE_FAILED)
             }
         }
@@ -760,6 +782,8 @@ class GpsVideoActivity : AppCompatActivity() {
         val saveButton = findViewById<TextView>(R.id.gps_video_save)
         saveButton.isEnabled = enabled
         saveButton.setText(if (enabled) R.string.gps_video_save else R.string.gps_video_saving)
+        saveProgress.visibility = if (enabled) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.gps_video_record_again).isEnabled = enabled
         findViewById<View>(R.id.gps_video_retry_save).isEnabled = enabled
     }
 
@@ -864,5 +888,6 @@ class GpsVideoActivity : AppCompatActivity() {
     companion object {
         private const val LAST_VIDEO_URI = "gps_video_last_uri"
         private const val STATE_TEMP_VIDEO = "gps_video_temp_video"
+        const val EXTRA_START_FRESH = "gps_video_start_fresh"
     }
 }
