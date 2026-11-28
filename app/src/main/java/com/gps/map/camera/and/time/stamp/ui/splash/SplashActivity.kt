@@ -31,9 +31,7 @@ import com.gps.map.camera.and.time.stamp.ads.banner_splash
 import com.gps.map.camera.and.time.stamp.ads.banner_splash_uninstall
 import com.gps.map.camera.and.time.stamp.ads.inter_splash
 import com.gps.map.camera.and.time.stamp.ads.inter_splash_uninstall
-import com.gps.map.camera.and.time.stamp.ads.open_resume
 import com.gps.map.camera.and.time.stamp.app.AppConstants
-import com.gps.map.camera.and.time.stamp.app.ResumeAdsEntryRule
 import com.gps.map.camera.and.time.stamp.localization.LocaleManager
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPref
 import com.gps.map.camera.and.time.stamp.pref.AppSharedPreferencesApp
@@ -335,12 +333,12 @@ class SplashActivity : AppCompatActivity() , RemoteConfigUtils.Listener {
         } else {
             moveActivity()
         }
-        if (ResumeAdsEntryRule.shouldEnableOpenResume()) {
-            AppOpenManager.getInstance().setAppResumeAdId(AdRemoteConfig.open_resume.id)
-            AppOpenManager.getInstance().enableAppResume()
-        } else {
-            AppOpenManager.getInstance().disableAppResume()
-        }
+//        if (ResumeAdsEntryRule.shouldEnableOpenResume()) {
+//            AppOpenManager.getInstance().setAppResumeAdId(AdRemoteConfig.open_resume.id)
+//            AppOpenManager.getInstance().enableAppResume()
+//        } else {
+//            AppOpenManager.getInstance().disableAppResume()
+//        }
     }
 
 

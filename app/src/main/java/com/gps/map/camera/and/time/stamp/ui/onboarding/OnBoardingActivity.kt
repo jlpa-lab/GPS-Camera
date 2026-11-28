@@ -11,7 +11,7 @@ import com.gps.map.camera.and.time.stamp.R
 import com.gps.map.camera.and.time.stamp.ads.AdRemoteConfig
 import com.gps.map.camera.and.time.stamp.ads.AdsManager
 import com.gps.map.camera.and.time.stamp.ads.RemoteConfigUtils
-import com.gps.map.camera.and.time.stamp.ads.native_onboarding_fullscreen_1_3
+import com.gps.map.camera.and.time.stamp.ads.native_onboarding_fullscreen_1_2
 import com.gps.map.camera.and.time.stamp.bases.ext.isNetwork
 import com.gps.map.camera.and.time.stamp.databinding.ActivityOnboardingBinding
 import com.gps.map.camera.and.time.stamp.ui.BaseActivity
@@ -138,7 +138,7 @@ class OnBoardingActivity : BaseActivity<ActivityOnboardingBinding>() {
             )
         )
         if (isNetwork(this@OnBoardingActivity) && ERainAd.getInstance().getShouldDisplayNativeOnboardingFull1(
-                AdRemoteConfig.native_onboarding_fullscreen_1_3.enableUaCheck))
+                AdRemoteConfig.native_onboarding_fullscreen_1_2.enableUaCheck))
             onboardingItems.add(OnboardingItem(isHasNativeFull = true))
 
         onboardingItems.add(

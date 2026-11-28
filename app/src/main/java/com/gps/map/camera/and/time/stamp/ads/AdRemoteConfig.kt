@@ -145,9 +145,6 @@ data class AdRemoteConfig(
     val banner_splash_uninstall: AdUnitConfig
         get() = getAdUnit("banner_splash_uninstall")
 
-    val open_resume: AdUnitConfig
-        get() = getAdUnit("open_resume")
-
     val native_language_1: AdUnitConfig
         get() = getAdUnit("native_language_1")
 
@@ -161,22 +158,22 @@ data class AdRemoteConfig(
         get() = getAdUnit("native_language_2_click")
 
     val native_onboarding_1_1: AdUnitConfig
-        get() = getAdUnit("native_onboarding_1_1")
+        get() = getAdUnit("native_onboarding_1")
 
     val native_onboarding_2_1: AdUnitConfig
-        get() = getAdUnit("native_onboarding_2_1")
+        get() = getAdUnit("native_onboarding_1")
 
     val native_onboarding_1_4: AdUnitConfig
-        get() = getAdUnit("native_onboarding_1_4")
+        get() = getAdUnit("native_onboarding_4")
 
     val native_onboarding_2_4: AdUnitConfig
-        get() = getAdUnit("native_onboarding_2_4")
+        get() = getAdUnit("native_onboarding_4")
 
-    val native_onboarding_fullscreen_1_3: AdUnitConfig
-        get() = getAdUnit("native_onboarding_fullscreen_1_3")
+    val native_onboarding_fullscreen_1_2: AdUnitConfig
+        get() = getAdUnit("native_onboarding_fullscreen_1_2")
 
-    val native_onboarding_fullscreen_2_3: AdUnitConfig
-        get() = getAdUnit("native_onboarding_fullscreen_2_3")
+    val native_onboarding_fullscreen_2_2: AdUnitConfig
+        get() = getAdUnit("native_onboarding_fullscreen_2_2")
 
     val native_onboarding_fullscreen_1_4: AdUnitConfig
         get() = getAdUnit("native_onboarding_fullscreen_1_4")
@@ -200,11 +197,8 @@ data class AdRemoteConfig(
     val banner_home: AdUnitConfig
         get() = getAdUnit("banner_home")
 
-    val native_survey: AdUnitConfig
-        get() = getAdUnit("native_survey")
-
-    val native_confirm_uninstall: AdUnitConfig
-        get() = getAdUnit("native_confirm_uninstall")
+    val native_uninstall: AdUnitConfig
+        get() = getAdUnit("native_uninstall")
 
     val native_welcome_back: AdUnitConfig
         get() = getAdUnitWithLegacyKey("native_welcome_back", "native_welcome")

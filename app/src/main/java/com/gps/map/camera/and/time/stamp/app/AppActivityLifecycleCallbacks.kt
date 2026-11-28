@@ -23,8 +23,7 @@ class AppActivityLifecycleCallbacks : Application.ActivityLifecycleCallbacks {
     override fun onActivityResumed(activity: Activity) {
         GlobalApplication.currentActivity = activity
         LocationSharingCoordinator.syncAcceptedFriends(activity.applicationContext)
-        if (ResumeAdsEntryRule.shouldShowWelcomeOnResume() ||
-            !ResumeAdsEntryRule.shouldEnableOpenResume()
+        if (ResumeAdsEntryRule.shouldShowWelcomeOnResume()
         ) {
             AppOpenManager.getInstance().disableAppResume()
         }

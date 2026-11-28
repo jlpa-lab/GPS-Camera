@@ -239,7 +239,7 @@ object AdsManager {
 
     fun loadNativeOnboardingFull(activity: Activity, isFirst: Boolean, layoutRes: Int) {
         val config =
-            if (isFirst) AdRemoteConfig.native_onboarding_fullscreen_1_3 else AdRemoteConfig.native_onboarding_fullscreen_2_3
+            if (isFirst) AdRemoteConfig.native_onboarding_fullscreen_1_2 else AdRemoteConfig.native_onboarding_fullscreen_2_2
         loadNativeInternal(
             activity,
             config,
@@ -249,17 +249,17 @@ object AdsManager {
         )
     }
 
-    fun loadNativeOnboardingFull2(activity: Activity, isFirst: Boolean, layoutRes: Int) {
-        val config =
-            if (isFirst) AdRemoteConfig.native_onboarding_fullscreen_1_4 else AdRemoteConfig.native_onboarding_fullscreen_2_4
-        loadNativeInternal(
-            activity,
-            config,
-            layoutRes,
-            nativeAdOnBoardingFull2Live,
-            ERainAd.getInstance().getShouldDisplayNativeOnboardingFull2(config.enableUaCheck)
-        )
-    }
+//    fun loadNativeOnboardingFull2(activity: Activity, isFirst: Boolean, layoutRes: Int) {
+//        val config =
+//            if (isFirst) AdRemoteConfig.native_onboarding_fullscreen_1_4 else AdRemoteConfig.native_onboarding_fullscreen_2_4
+//        loadNativeInternal(
+//            activity,
+//            config,
+//            layoutRes,
+//            nativeAdOnBoardingFull2Live,
+//            ERainAd.getInstance().getShouldDisplayNativeOnboardingFull2(config.enableUaCheck)
+//        )
+//    }
 
     fun loadNativePermission(activity: Activity, layoutRes: Int) {
         val config = AdRemoteConfig.native_permission
@@ -296,20 +296,21 @@ object AdsManager {
 
     fun loadNativeSurvey(activity: Activity, layoutRes: Int) {
         loadNativeInternal(
-            activity, AdRemoteConfig.native_survey, layoutRes, nativeSurveyAdLive,
+            //changed from native_survey to native_uninstall
+            activity, AdRemoteConfig.native_uninstall, layoutRes, nativeSurveyAdLive,
             ERainAd.getInstance()
-                .getShouldDisplayWidgetUninstall(AdRemoteConfig.native_survey.enableUaCheck)
+                .getShouldDisplayWidgetUninstall(AdRemoteConfig.native_uninstall.enableUaCheck)
         )
     }
 
     fun loadNativeConfirmUninstall(activity: Activity, layoutRes: Int) {
         loadNativeInternal(
             activity,
-            AdRemoteConfig.native_confirm_uninstall,
+            AdRemoteConfig.native_uninstall,
             layoutRes,
             nativeConfirmUninstallAdLive,
             ERainAd.getInstance()
-                .getShouldDisplayWidgetUninstall(AdRemoteConfig.native_confirm_uninstall.enableUaCheck)
+                .getShouldDisplayWidgetUninstall(AdRemoteConfig.native_uninstall.enableUaCheck)
         )
     }
 

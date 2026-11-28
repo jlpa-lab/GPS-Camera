@@ -24,9 +24,6 @@ val AdRemoteConfig.Companion.inter_back: AdUnitConfig
 val AdRemoteConfig.Companion.banner_splash_uninstall: AdUnitConfig
     get() = getInstance().banner_splash_uninstall
 
-val AdRemoteConfig.Companion.open_resume: AdUnitConfig
-    get() = getInstance().open_resume
-
 val AdRemoteConfig.Companion.native_language_1: AdUnitConfig
     get() = getInstance().native_language_1
 
@@ -51,17 +48,17 @@ val AdRemoteConfig.Companion.native_onboarding_1_4: AdUnitConfig
 val AdRemoteConfig.Companion.native_onboarding_2_4: AdUnitConfig
     get() = getInstance().native_onboarding_2_4
 
-val AdRemoteConfig.Companion.native_onboarding_fullscreen_1_3: AdUnitConfig
-    get() = getInstance().native_onboarding_fullscreen_1_3
+val AdRemoteConfig.Companion.native_onboarding_fullscreen_1_2: AdUnitConfig
+    get() = getInstance().native_onboarding_fullscreen_1_2
 
-val AdRemoteConfig.Companion.native_onboarding_fullscreen_2_3: AdUnitConfig
-    get() = getInstance().native_onboarding_fullscreen_2_3
+val AdRemoteConfig.Companion.native_onboarding_fullscreen_2_2: AdUnitConfig
+    get() = getInstance().native_onboarding_fullscreen_2_2
 
-val AdRemoteConfig.Companion.native_onboarding_fullscreen_1_4: AdUnitConfig
-    get() = getInstance().native_onboarding_fullscreen_1_4
-
-val AdRemoteConfig.Companion.native_onboarding_fullscreen_2_4: AdUnitConfig
-    get() = getInstance().native_onboarding_fullscreen_2_4
+//val AdRemoteConfig.Companion.native_onboarding_fullscreen_1_4: AdUnitConfig
+//    get() = getInstance().native_onboarding_fullscreen_1_4
+//
+//val AdRemoteConfig.Companion.native_onboarding_fullscreen_2_4: AdUnitConfig
+//    get() = getInstance().native_onboarding_fullscreen_2_4
 val AdRemoteConfig.Companion.native_home: AdUnitConfig
     get() = getInstance().native_home
 
@@ -80,11 +77,8 @@ val AdRemoteConfig.Companion.banner_home: AdUnitConfig
 val AdRemoteConfig.Companion.banner_collapsible_home: AdUnitConfig
     get() = getInstance().banner_collapsible_home
 
-val AdRemoteConfig.Companion.native_survey: AdUnitConfig
-    get() = getInstance().native_survey
-
-val AdRemoteConfig.Companion.native_confirm_uninstall: AdUnitConfig
-    get() = getInstance().native_confirm_uninstall
+val AdRemoteConfig.Companion.native_uninstall: AdUnitConfig
+    get() = getInstance().native_uninstall
 
 val AdRemoteConfig.Companion.native_welcome_back: AdUnitConfig
     get() = getInstance().native_welcome_back
