@@ -37,7 +37,9 @@ object RemoteConfigUtils {
         ON_SHOW_DIALOG_CONSENT to true,
         ON_SHOW_NAVIGATION_BUTTON to false,
         DELAY_SHOW_LANGUAGE_DONE_BUTTON to true,
-        ON_ENABLE_UNINSTALL_WIDGET to false,
+        // Match the tracker reference: the widget is enabled by default, while
+        // a remotely fetched false value still removes all dynamic shortcuts.
+        ON_ENABLE_UNINSTALL_WIDGET to true,
         TIME_DELAY_SHOW_LANGUAGE_DONE_BUTTON to DEFAULT_TIME_DELAY_SHOW_LANGUAGE_DONE_BUTTON,
     )
     
@@ -55,7 +57,9 @@ object RemoteConfigUtils {
     fun getShowAds(): Boolean = getBoolean(SHOW_ADS, true)
     fun getOneSignalAppId(context: Context): String =
         getString(ONESIGNAL_APP_ID, context.getString(R.string.onesignal_app_id))
-    fun getOnEnableUninstallWidget(): Boolean = getBoolean(ON_ENABLE_UNINSTALL_WIDGET, false)
+    // Keep the pre-fetch fallback aligned with the tracker reference. A fetched
+    // Remote Config false still overrides this and removes the shortcuts.
+    fun getOnEnableUninstallWidget(): Boolean = getBoolean(ON_ENABLE_UNINSTALL_WIDGET, true)
     const val TRACKER_BACKEND_URL: String = "https://phone-tracker-backend-ol00.onrender.com"
 
     fun getBackendBaseUrl(): String = getString(BACKEND_BASE_URL, TRACKER_BACKEND_URL)

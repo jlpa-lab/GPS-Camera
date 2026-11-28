@@ -45,7 +45,7 @@
     },
     "on_enable_uninstall_widget": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Whether the uninstall shortcut/widget flow is enabled."
     },
